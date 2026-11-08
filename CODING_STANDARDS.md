@@ -6,7 +6,7 @@ Tooling checks formatting, clippy with warnings as errors, the workspace lints i
 
 ## One definition
 
-- A list that code enumerates - vocabularies, operations, diagnostic rules, reasons, presets, template slots - is one table: a constant slice, an enum with derives, or a data file. Code iterates the table. No second `match` over its members exists elsewhere. A member that needs a property gets a column in the table.
+- A list that code enumerates - vocabularies (`rules/vocabulary.rs`), operations (`operations.rs`), wire calls (`service.rs`), diagnostic rules, reasons, presets, template slots - is one table: a constant slice, an enum with derives, or a data file. Code iterates the table. No second `match` over its members exists elsewhere. A member that needs a property gets a column in the table.
 - Adding a member of such a list changes the table and the code that gives the member its behaviour, and nothing else. If adding one needs edits in three files, the table is missing.
 - A value that another field determines is not stored. The reader computes it, or a method returns it.
 - A type crosses a boundary (CLI, wire, corpus, YAML) in its serde form. No hand-kept schema mirrors a core type.
@@ -18,8 +18,8 @@ Tooling checks formatting, clippy with warnings as errors, the workspace lints i
 ## One mechanism
 
 - One way does each job. A second mechanism for a job that one mechanism already does (a second tokenizer, a second title cut, a style option beside a template) replaces the first in the same change, or it is not added.
-- A name is tokenized once per parse. Parsers consume the token stream and its spans. They do not scan the raw string again.
-- Every pattern is compiled in one place, `rules::Patterns`, from the rules. A parser file holds no `LazyLock<Regex>`.
+- A parser reads words and brackets through `lexical::tokenize`. A new word or bracket rule goes there, not into a second scan of the raw string.
+- A pattern that contains vocabulary words is compiled in `rules::Patterns`, from the rules. A `LazyLock<Regex>` in a parser file holds a shape only: digits, repetition and fixed separators.
 - A fact is computed once per call. Validation and planning read the interpretation and share the rendered targets. Neither parses a name again.
 - A step that both pipelines need (attaching sidecars, building versions, settling hints) lives in a shared module that both call. The pipelines never call each other. `lexical` and `data` never take or branch on `LibraryType`. A parser reads one name and calls no interpreter, matcher, renderer or validator.
 - One dispatch maps an operation name and its input to a result. The corpus runner, the CLI and any server call it. A front end does not match a word, a pattern or an extension itself.
