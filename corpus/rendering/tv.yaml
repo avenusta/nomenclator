@@ -1,0 +1,138 @@
+- name: an episode renders under its series folder and a two-digit season folder
+  operation: render_names
+  input:
+    facts: { library: tv, title: Harbor Lights, year: 2019, provider_ids: { tvdb: '81189' }, season: 1, episodes: [1], episode_title: Low Tide, container: mkv }
+  expect:
+    path: Harbor Lights (2019) {tvdb-81189}/Season 01/Harbor Lights (2019) - S01E01 - Low Tide.mkv
+    blocked_reasons: []
+
+- name: a series with only a TMDB ID is rendered with the TMDB tag on its folder
+  operation: render_names
+  input:
+    facts: { library: tv, title: Harbor Lights, year: 2019, provider_ids: { tmdb: '1399' }, season: 1, episodes: [1], episode_title: Low Tide, container: mkv }
+  expect:
+    path: Harbor Lights (2019) {tmdb-1399}/Season 01/Harbor Lights (2019) - S01E01 - Low Tide.mkv
+
+- name: a series with TVDB and TMDB IDs is rendered with only the TVDB tag
+  operation: render_names
+  input:
+    facts: { library: tv, title: Harbor Lights, year: 2019, provider_ids: { tmdb: '1399', tvdb: '81189' }, season: 1, episodes: [1], container: mkv }
+  expect:
+    path: Harbor Lights (2019) {tvdb-81189}/Season 01/Harbor Lights (2019) - S01E01.mkv
+
+- name: a profile that prefers TMDB for series renders the TMDB tag
+  operation: render_names
+  input:
+    facts: { library: tv, title: Harbor Lights, year: 2019, provider_ids: { tmdb: '1399', tvdb: '81189' }, season: 1, episodes: [1], container: mkv }
+    profile: { series_provider_order: [tmdb] }
+  expect:
+    path: Harbor Lights (2019) {tmdb-1399}/Season 01/Harbor Lights (2019) - S01E01.mkv
+
+- name: the special of a series goes in Season 00
+  operation: render_names
+  input:
+    facts: { library: tv, title: Sherlock, year: 2010, season: 0, episodes: [1], episode_title: The Abominable Bride, container: mkv }
+  expect:
+    path: Sherlock (2010)/Season 00/Sherlock (2010) - S00E01 - The Abominable Bride.mkv
+
+- name: two contiguous episodes render as a range
+  operation: render_names
+  input:
+    facts: { library: tv, title: Harbor Lights, year: 2019, season: 1, episodes: [2, 3], episode_title: The Storm, container: mkv }
+  expect:
+    path: Harbor Lights (2019)/Season 01/Harbor Lights (2019) - S01E02-E03 - The Storm.mkv
+
+- name: three contiguous episodes render as one range from first to last
+  operation: render_names
+  input:
+    facts: { library: tv, title: Harbor Lights, year: 2019, season: 1, episodes: [1, 2, 3], container: mkv }
+  expect:
+    path: Harbor Lights (2019)/Season 01/Harbor Lights (2019) - S01E01-E03.mkv
+
+- name: non-contiguous episodes are rendered with one episode token each instead of a range
+  operation: render_names
+  input:
+    facts: { library: tv, title: Harbor Lights, year: 2019, season: 1, episodes: [1, 3], container: mkv }
+  expect:
+    path: Harbor Lights (2019)/Season 01/Harbor Lights (2019) - S01E01E03.mkv
+
+- name: an episode number above 99 is written with all its digits
+  operation: render_names
+  input:
+    facts: { library: tv, title: Harbor Lights, year: 2019, season: 1, episodes: [100], container: mkv }
+  expect:
+    path: Harbor Lights (2019)/Season 01/Harbor Lights (2019) - S01E100.mkv
+
+- name: an unknown episode title is omitted with its separator
+  operation: render_names
+  input:
+    facts: { library: tv, title: Harbor Lights, year: 2019, provider_ids: { tvdb: '81189' }, season: 2, episodes: [7], container: mkv }
+  expect:
+    path: Harbor Lights (2019) {tvdb-81189}/Season 02/Harbor Lights (2019) - S02E07.mkv
+
+- name: a series without a year is rendered without a year in the folder and the file
+  operation: render_names
+  input:
+    facts: { library: tv, title: Harbor Lights, provider_ids: { tvdb: '81189' }, season: 1, episodes: [1], episode_title: Low Tide, container: mkv }
+  expect:
+    path: Harbor Lights {tvdb-81189}/Season 01/Harbor Lights - S01E01 - Low Tide.mkv
+
+- name: an episode version label and part are written after the episode title
+  operation: render_names
+  input:
+    facts: { library: tv, title: Harbor Lights, year: 2019, season: 1, episodes: [1], episode_title: Low Tide, version_label: 1080p, part: 1, container: mkv }
+  expect:
+    path: Harbor Lights (2019)/Season 01/Harbor Lights (2019) - S01E01 - Low Tide - 1080p - part1.mkv
+
+- name: a dated episode renders with its air date in the series folder
+  operation: render_names
+  input:
+    facts: { library: tv, title: Evening Report, year: 2010, provider_ids: { tvdb: '7001' }, date: '2024-05-17', episode_title: Election Night, container: mkv }
+  expect:
+    path: Evening Report (2010) {tvdb-7001}/Evening Report (2010) - 2024-05-17 - Election Night.mkv
+
+- name: a dated episode with a known season renders in that season's folder
+  operation: render_names
+  input:
+    facts: { library: tv, title: Evening Report, year: 2010, season: 2024, date: '2024-05-17', container: mkv }
+  expect:
+    path: Evening Report (2010)/Season 2024/Evening Report (2010) - 2024-05-17.mkv
+
+- name: an absolute-only episode is blocked because it has no season to write
+  operation: render_names
+  input:
+    facts: { library: tv, title: Blade Circuit, year: 2004, absolute: [112], container: mkv }
+  expect:
+    path: null
+    blocked_reasons: [absolute_without_season_mapping]
+
+- name: an absolute episode with a season mapping renders with its season and episode
+  operation: render_names
+  input:
+    facts: { library: tv, title: Blade Circuit, year: 2004, absolute: [112], season: 5, episodes: [12], container: mkv }
+  expect:
+    path: Blade Circuit (2004)/Season 05/Blade Circuit (2004) - S05E12.mkv
+
+- name: an episode without a season is blocked
+  operation: render_names
+  input:
+    facts: { library: tv, title: Harbor Lights, year: 2019, episodes: [5], container: mkv }
+  expect:
+    path: null
+    blocked_reasons: [missing_season]
+
+- name: an episode without an episode or date reference is blocked
+  operation: render_names
+  input:
+    facts: { library: tv, title: Harbor Lights, year: 2019, season: 1, container: mkv }
+  expect:
+    path: null
+    blocked_reasons: [missing_episode_reference]
+
+- name: an episode without a series title is blocked
+  operation: render_names
+  input:
+    facts: { library: tv, season: 1, episodes: [1], container: mkv }
+  expect:
+    path: null
+    blocked_reasons: [missing_title]

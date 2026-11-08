@@ -1,0 +1,50 @@
+# Localized artwork words (decision X11): a language pack adds its words for
+# artwork roles. They apply if the library declares the language.
+
+- name: without declared languages a localized poster word is no artwork role
+  operation: classify_artwork
+  input: { name: Locandina.png }
+  expect:
+    role: other
+
+- name: an Italian library reads an Italian poster word
+  languages: [it]
+  operation: classify_artwork
+  input: { name: Locandina.png }
+  expect:
+    role: poster
+
+- name: a French library reads French poster and backdrop words
+  languages: [fr]
+  operation: classify_artwork
+  input: { name: affiche.jpg }
+  expect:
+    role: poster
+
+- name: a French backdrop word is a backdrop
+  languages: [fr]
+  operation: classify_artwork
+  input: { name: fond.jpg }
+  expect:
+    role: backdrop
+
+- name: a German library reads German poster and backdrop words
+  languages: [de]
+  operation: classify_artwork
+  input: { name: Hintergrund.jpg }
+  expect:
+    role: backdrop
+
+- name: a Spanish library reads a Spanish cover word
+  languages: [es]
+  operation: classify_artwork
+  input: { name: portada.jpg }
+  expect:
+    role: poster
+
+- name: the English artwork words stay whatever the declared languages
+  languages: [it]
+  operation: classify_artwork
+  input: { name: fanart.jpg }
+  expect:
+    role: backdrop

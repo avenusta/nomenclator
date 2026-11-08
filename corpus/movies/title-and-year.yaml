@@ -1,0 +1,77 @@
+- name: a file named Title (Year) resolves to its title and year (Death Race (1982).mkv)
+  operation: parse_movie_name
+  input:
+    name: Death Race (1982).mkv
+    kind: file
+  expect:
+    title:
+      status: resolved
+      value: Death Race
+      evidence:
+        rule: text_before_year
+        span:
+        - 0
+        - 10
+    year:
+      status: resolved
+      value: 1982
+      evidence:
+        rule: bracketed_year
+        span:
+        - 12
+        - 16
+
+- name: a folder named Title (Year) resolves to its title and year (Moon (2009))
+  operation: parse_movie_name
+  input:
+    name: Moon (2009)
+    kind: directory
+  expect:
+    title:
+      status: resolved
+      value: Moon
+    year:
+      status: resolved
+      value: 2009
+
+- name: the title of a name made only of a number is the number (2001 (1968).mkv)
+  operation: parse_movie_name
+  input:
+    name: 2001 (1968).mkv
+    kind: file
+  expect:
+    title:
+      status: resolved
+      value: '2001'
+    year:
+      status: resolved
+      value: 1968
+
+- name: a name without a year has an unknown year (Gattaca.mkv)
+  operation: parse_movie_name
+  input:
+    name: Gattaca.mkv
+    kind: file
+  expect:
+    title:
+      status: resolved
+      value: Gattaca
+      evidence:
+        rule: whole_name
+        span:
+        - 0
+        - 7
+    year:
+      status: unknown
+
+- name: a folder name keeps a dot that a file name would treat as its extension (Mr. Smith Goes to Washington)
+  operation: parse_movie_name
+  input:
+    name: Mr. Smith Goes to Washington
+    kind: directory
+  expect:
+    title:
+      status: resolved
+      value: Mr. Smith Goes to Washington
+    year:
+      status: unknown

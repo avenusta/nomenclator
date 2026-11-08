@@ -1,0 +1,37 @@
+# Language pack `it`: the words a library in this language uses. Applied when a
+# caller declares its languages; see decision X11.
+name: language-it
+season_words:
+  add: ["stagione"]
+series_season_words:
+  add: ["serie"]
+leading_articles:
+  add: ["il", "lo", "la", "l", "gli", "le", "un", "una"]
+number_words:
+  add:
+    "uno": 1
+    "due": 2
+    "tre": 3
+    "quattro": 4
+    "cinque": 5
+    "sei": 6
+    "sette": 7
+    "otto": 8
+    "nove": 9
+    "dieci": 10
+    "undici": 11
+    "dodici": 12
+    "tredici": 13
+    "quattordici": 14
+    "quindici": 15
+    "sedici": 16
+    "diciassette": 17
+    "diciotto": 18
+    "diciannove": 19
+    "venti": 20
+ordinal_suffixes:
+  add: ["ª", "º"]
+languages:
+  add: { it: ["italiano"] }
+artwork_roles:
+  add: { "locandina": poster, "copertina": poster, "sfondo": backdrop }

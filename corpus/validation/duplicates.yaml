@@ -1,0 +1,76 @@
+# Duplicates (decision R11): the same work in two folders, and the same
+# episode in two items. The caller does the merging (M10).
+
+- name: two movies with one provider ID in two folders are a duplicate work
+  operation: validate
+  input:
+    library: movies
+    paths: ['Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.mkv', 'Old/Arrival {tmdb-329865}/Arrival.mkv']
+  expect:
+    diagnostics:
+      - rule: duplicate_work
+        severity: warning
+        paths: ['Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.mkv', 'Old/Arrival {tmdb-329865}/Arrival.mkv']
+        reason: tmdb
+      - { rule: missing_year, paths: ['Old/Arrival {tmdb-329865}/Arrival.mkv'] }
+      - { rule: profile_violation, paths: ['Old/Arrival {tmdb-329865}/Arrival.mkv'] }
+
+- name: two movies with one title and year in two folders are a duplicate work
+  operation: validate
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv, Copies/Arrival (2016)/Arrival (2016).mkv]
+  expect:
+    diagnostics:
+      - { rule: missing_provider_id }
+      - rule: duplicate_work
+        paths: [Arrival (2016)/Arrival (2016).mkv, Copies/Arrival (2016)/Arrival (2016).mkv]
+        reason: title_and_year
+      - { rule: missing_provider_id }
+
+- name: versions of one movie are not a duplicate work
+  operation: validate
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016) - 1080p.mkv, Arrival (2016)/Arrival (2016) - 2160p.mkv]
+  expect:
+    diagnostics: [{ rule: missing_provider_id }]
+
+- name: two series with one title and year in two folders are a duplicate work
+  operation: validate
+  input:
+    library: tv
+    paths: [Show (2009)/Season 01/Show (2009) - S01E01 - Pilot.mkv, Old/Show (2009)/Season 02/Show (2009) - S02E01 - Return.mkv]
+  expect:
+    diagnostics:
+      - { rule: missing_provider_id, paths: [Old/Show (2009)] }
+      - { rule: duplicate_work, paths: [Old/Show (2009), Show (2009)], reason: title_and_year }
+      - { rule: missing_provider_id, paths: [Show (2009)] }
+
+- name: two episode items with one season and episode are a duplicate episode
+  operation: validate
+  input:
+    library: tv
+    paths: [Show (2009)/Season 01/Show (2009) - S01E02 - Home.mkv, Show (2009)/Season 01/Show (2009) - S01E02 - Home Again.mkv]
+    inputs:
+      overrides: { split: [Show (2009)/Season 01/Show (2009) - S01E02 - Home Again.mkv] }
+  expect:
+    diagnostics:
+      - { rule: missing_provider_id }
+      - rule: duplicate_episode
+        severity: warning
+        paths: [Show (2009)/Season 01/Show (2009) - S01E02 - Home Again.mkv, Show (2009)/Season 01/Show (2009) - S01E02 - Home.mkv]
+        reason: S01E02
+
+- name: an episode that the reference does not list is an unexpected episode
+  operation: validate
+  input:
+    library: tv
+    paths: [Show (2009)/Season 01/Show (2009) - S01E09 - Lost.mkv]
+    reference:
+      series: [{ series: Show (2009), episodes: [[1, 9], [1, 10], [0, 1]] }]
+  expect:
+    diagnostics:
+      - { rule: missing_provider_id }
+      - { rule: missing_episode, paths: [Show (2009)], reason: S00E01 }
+      - { rule: missing_episode, paths: [Show (2009)], reason: S01E10 }

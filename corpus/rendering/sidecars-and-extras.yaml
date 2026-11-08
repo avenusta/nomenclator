@@ -1,0 +1,269 @@
+- name: a forced English subtitle renders as the video stem with its language and flag
+  operation: render_names
+  input:
+    facts:
+      library: movies
+      title: Northern Passage
+      year: 2021
+      provider_ids: { tmdb: '550' }
+      container: mkv
+      sidecar: { language: en, flags: [forced], extension: srt }
+  expect:
+    path: Northern Passage (2021) {tmdb-550}/Northern Passage (2021) {tmdb-550}.en.forced.srt
+    blocked_reasons: []
+
+- name: subtitle flags are written once each in canonical order with sdh for hearing impaired
+  operation: render_names
+  input:
+    facts:
+      library: movies
+      title: Northern Passage
+      year: 2021
+      container: mkv
+      sidecar: { language: en, flags: [hearing_impaired, forced, default, forced], extension: srt }
+  expect:
+    path: Northern Passage (2021)/Northern Passage (2021).en.default.forced.sdh.srt
+
+- name: a regional language is written as its BCP 47 tag
+  operation: render_names
+  input:
+    facts:
+      library: movies
+      title: Northern Passage
+      year: 2021
+      container: mkv
+      sidecar: { language: pt-BR, extension: SRT }
+  expect:
+    path: Northern Passage (2021)/Northern Passage (2021).pt-BR.srt
+
+- name: a subtitle without a language writes only its flags
+  operation: render_names
+  input:
+    facts:
+      library: movies
+      title: Northern Passage
+      year: 2021
+      container: mkv
+      sidecar: { flags: [forced], extension: srt }
+  expect:
+    path: Northern Passage (2021)/Northern Passage (2021).forced.srt
+
+- name: a subtitle title is written before its language
+  operation: render_names
+  input:
+    facts:
+      library: movies
+      title: Northern Passage
+      year: 2021
+      container: mkv
+      sidecar: { title: Commentary, language: en, extension: srt }
+  expect:
+    path: Northern Passage (2021)/Northern Passage (2021).Commentary.en.srt
+
+- name: an external audio track is named like a subtitle
+  operation: render_names
+  input:
+    facts:
+      library: movies
+      title: Northern Passage
+      year: 2021
+      container: mkv
+      sidecar: { language: de, extension: mka }
+  expect:
+    path: Northern Passage (2021)/Northern Passage (2021).de.mka
+
+- name: a sidecar of a version part is named after that part's stem
+  operation: render_names
+  input:
+    facts:
+      library: movies
+      title: Northern Passage
+      year: 2021
+      version_label: 2160p
+      part: 2
+      container: mkv
+      sidecar: { language: en, extension: srt }
+  expect:
+    path: Northern Passage (2021)/Northern Passage (2021) - 2160p - part2.en.srt
+
+- name: an episode subtitle is named after the episode stem in its season folder
+  operation: render_names
+  input:
+    facts:
+      library: tv
+      title: Harbor Lights
+      year: 2019
+      provider_ids: { tvdb: '81189' }
+      season: 1
+      episodes: [1]
+      episode_title: Low Tide
+      container: mkv
+      sidecar: { language: en, flags: [hearing_impaired], extension: srt }
+  expect:
+    path: Harbor Lights (2019) {tvdb-81189}/Season 01/Harbor Lights (2019) - S01E01 - Low Tide.en.sdh.srt
+
+- name: a sidecar without an extension is blocked
+  operation: render_names
+  input:
+    facts:
+      library: movies
+      title: Northern Passage
+      year: 2021
+      container: mkv
+      sidecar: { language: en }
+  expect:
+    path: null
+    blocked_reasons: [missing_extension]
+
+- name: a movie trailer renders in the Trailers folder under its title
+  operation: render_names
+  input:
+    facts:
+      library: movies
+      title: Northern Passage
+      year: 2021
+      provider_ids: { tmdb: '550' }
+      container: mkv
+      extra: { kind: trailer, title: Theatrical Trailer }
+  expect:
+    path: Northern Passage (2021) {tmdb-550}/Trailers/Theatrical Trailer.mkv
+    blocked_reasons: []
+
+- name: a behind the scenes extra renders in the Behind The Scenes folder
+  operation: render_names
+  input:
+    facts:
+      library: movies
+      title: Northern Passage
+      year: 2021
+      container: mkv
+      extra: { kind: behind_the_scenes, title: Building the Ship }
+  expect:
+    path: Northern Passage (2021)/Behind The Scenes/Building the Ship.mkv
+
+- name: a theme song renders in the Theme Music folder
+  operation: render_names
+  input:
+    facts:
+      library: movies
+      title: Northern Passage
+      year: 2021
+      container: mp3
+      extra: { kind: theme_song, title: Main Theme }
+  expect:
+    path: Northern Passage (2021)/Theme Music/Main Theme.mp3
+
+- name: a theme video renders in the Backdrops folder
+  operation: render_names
+  input:
+    facts:
+      library: movies
+      title: Northern Passage
+      year: 2021
+      container: mp4
+      extra: { kind: theme_video, title: Ocean Loop }
+  expect:
+    path: Northern Passage (2021)/Backdrops/Ocean Loop.mp4
+
+- name: a generic extra renders in the Extras folder
+  operation: render_names
+  input:
+    facts:
+      library: movies
+      title: Northern Passage
+      year: 2021
+      container: mkv
+      extra: { kind: extra, title: Press Kit }
+  expect:
+    path: Northern Passage (2021)/Extras/Press Kit.mkv
+
+- name: an extra with a year is rendered with the year after its title
+  operation: render_names
+  input:
+    facts:
+      library: movies
+      title: Northern Passage
+      year: 2021
+      container: mkv
+      extra: { kind: trailer, title: Teaser, year: 2020 }
+  expect:
+    path: Northern Passage (2021)/Trailers/Teaser (2020).mkv
+
+- name: an extra in parts is rendered with its part marker
+  operation: render_names
+  input:
+    facts:
+      library: movies
+      title: Northern Passage
+      year: 2021
+      part: 1
+      container: mkv
+      extra: { kind: featurette, title: Making Of }
+  expect:
+    path: Northern Passage (2021)/Featurettes/Making Of - part1.mkv
+
+- name: an extra without a title is blocked
+  operation: render_names
+  input:
+    facts:
+      library: movies
+      title: Northern Passage
+      year: 2021
+      container: mkv
+      extra: { kind: trailer }
+  expect:
+    path: null
+    blocked_reasons: [missing_extra_title]
+
+- name: a subtitle of an extra is named after the extra's stem
+  operation: render_names
+  input:
+    facts:
+      library: movies
+      title: Northern Passage
+      year: 2021
+      container: mkv
+      extra: { kind: trailer, title: Theatrical Trailer }
+      sidecar: { language: en, extension: srt }
+  expect:
+    path: Northern Passage (2021)/Trailers/Theatrical Trailer.en.srt
+
+- name: a series extra renders in a vocabulary folder of the series folder
+  operation: render_names
+  input:
+    facts:
+      library: tv
+      title: Harbor Lights
+      year: 2019
+      provider_ids: { tvdb: '81189' }
+      container: mkv
+      extra: { kind: featurette, title: Making Of }
+  expect:
+    path: Harbor Lights (2019) {tvdb-81189}/Featurettes/Making Of.mkv
+
+- name: a season extra renders in a vocabulary folder of its season folder
+  operation: render_names
+  input:
+    facts:
+      library: tv
+      title: Harbor Lights
+      year: 2019
+      season: 1
+      container: mkv
+      extra: { kind: featurette, title: Making Of }
+  expect:
+    path: Harbor Lights (2019)/Season 01/Featurettes/Making Of.mkv
+
+- name: an episode extra renders in its season's vocabulary folder with its episode token in the name
+  operation: render_names
+  input:
+    facts:
+      library: tv
+      title: Harbor Lights
+      year: 2019
+      season: 1
+      episodes: [5]
+      container: mkv
+      extra: { kind: deleted_scene, title: Alternate Ending }
+  expect:
+    path: Harbor Lights (2019)/Season 01/Deleted Scenes/S01E05 - Alternate Ending.mkv

@@ -1,0 +1,318 @@
+- name: files with numbered part markers stack under the shared name, and the trailer stays outside the stack
+  operation: group_parts
+  input:
+    paths:
+    - Braveheart (1995) cd1.mkv
+    - Braveheart (1995) cd2.mkv
+    - Braveheart (1995) cd3.mkv
+    - Braveheart (1995)-trailer.mp4
+  expect:
+    stacks:
+    - name: Braveheart (1995)
+      paths:
+      - Braveheart (1995) cd1.mkv
+      - Braveheart (1995) cd2.mkv
+      - Braveheart (1995) cd3.mkv
+
+- name: files that differ only in a bracketed year are not a stack
+  operation: group_parts
+  input:
+    paths:
+    - Cape Fear (1962).mkv
+    - Cape Fear (1991).mkv
+    - Cape Fear (2030).mkv
+  expect:
+    stacks: []
+
+- name: files that differ only in a bare year are not a stack
+  operation: group_parts
+  input:
+    paths:
+    - Cape.Fear.1962.mkv
+    - Cape.Fear.1991.mkv
+    - Cape.Fear.2030.mkv
+  expect:
+    stacks: []
+
+- name: two titles that are numbers and differ only in a bracketed year are not a stack
+  operation: group_parts
+  input:
+    paths:
+    - 21 (2008).mkv
+    - 21 (2011).mkv
+  expect:
+    stacks: []
+
+- name: sequels with a number in the title are not a stack
+  operation: group_parts
+  input:
+    paths:
+    - Terminator 2 - Judgment Day.mkv
+    - Terminator 2 - The Wrath of Khan.mkv
+  expect:
+    stacks: []
+
+- name: titles with different year-like numbers before one bracketed year are not a stack
+  operation: group_parts
+  input:
+    paths:
+    - Red Riding 1974 (2009).mkv
+    - Red Riding 1980 (2009).mkv
+    - Red Riding 1983 (2009).mkv
+  expect:
+    stacks: []
+
+- name: a stack name includes a bare year before the part token
+  operation: group_parts
+  input:
+    paths:
+    - Gravity 2013 part1.mkv
+    - Gravity 2013 part2.mkv
+  expect:
+    stacks:
+    - name: Gravity 2013
+      paths:
+      - Gravity 2013 part1.mkv
+      - Gravity 2013 part2.mkv
+
+- name: a part word inside a release name, with more text after it, is not a stack
+  operation: group_parts
+  input:
+    paths:
+    - The Usual Suspects (1995).part1.stv.unrated.multi.1080p.bluray.x264-rough.mkv
+    - The Usual Suspects (1995).part2.stv.unrated.multi.1080p.bluray.x264-rough.mkv
+    - The Usual Suspects (1995)-trailer.mkv
+  expect:
+    stacks: []
+
+- name: a number after a title with no part word is not a stack
+  operation: group_parts
+  input:
+    paths:
+    - Mad Max.mkv
+    - Mad Max 1.mkv
+    - Mad Max 2.mkv
+    - Mad Max 3.mkv
+    - Mad Max 4.mkv
+  expect:
+    stacks: []
+
+- name: the part files of a number title are stacked
+  operation: group_parts
+  input:
+    paths:
+    - 21 (2008) part1.mkv
+    - 21 (2008) part2.mkv
+    - 21 (2008) part3.mkv
+    - 21 (2008) part4.mkv
+    - 21 (2008)-trailer.mkv
+  expect:
+    stacks:
+    - name: 21 (2008)
+      paths:
+      - 21 (2008) part1.mkv
+      - 21 (2008) part2.mkv
+      - 21 (2008) part3.mkv
+      - 21 (2008) part4.mkv
+
+- name: a stack holds number parts or letter parts, never both
+  operation: group_parts
+  input:
+    paths:
+    - Fight Club (1999) disc1.mkv
+    - Fight Club (1999) disc2.mkv
+    - Fight Club (1999) discb.mkv
+  expect:
+    stacks:
+    - name: Fight Club (1999)
+      paths:
+      - Fight Club (1999) disc1.mkv
+      - Fight Club (1999) disc2.mkv
+
+- name: two titles in one folder are grouped into two stacks
+  operation: group_parts
+  input:
+    paths:
+    - Gladiator (2000) part1.mkv
+    - Gladiator (2000) part2.mkv
+    - Gladiator (2000) part3.mkv
+    - Gladiator (2000) part4.mkv
+    - Gladiator (2000)-trailer.mkv
+    - 1408 (2007) part1.mkv
+    - 1408 (2007) part2.mkv
+    - 1408 (2007) part3.mkv
+    - 1408 (2007)-trailer.mkv
+  expect:
+    stacks:
+    - name: 1408 (2007)
+      paths:
+      - 1408 (2007) part1.mkv
+      - 1408 (2007) part2.mkv
+      - 1408 (2007) part3.mkv
+    - name: Gladiator (2000)
+      paths:
+      - Gladiator (2000) part1.mkv
+      - Gladiator (2000) part2.mkv
+      - Gladiator (2000) part3.mkv
+      - Gladiator (2000) part4.mkv
+
+- name: folders with a dash and a disc number stack under the text before the dash
+  operation: group_parts
+  input:
+    paths:
+    - Fight Club - disc 1/
+    - Fight Club - disc 2/
+    - Fight Club - disc 3/
+  expect:
+    stacks:
+    - name: Fight Club
+      paths:
+      - Fight Club - disc 1/
+      - Fight Club - disc 2/
+      - Fight Club - disc 3/
+
+- name: letters attached to a title with no part word are not a stack
+  operation: group_parts
+  input:
+    paths:
+    - 21a.mkv
+    - 21b.mkv
+    - 21c.mkv
+    - 21-trailer.mkv
+  expect:
+    stacks: []
+
+- name: an unrelated entry between two stacks does not split either stack
+  operation: group_parts
+  input:
+    paths:
+    - 21 part1.mkv
+    - 21 part2.mkv
+    - The Usual Suspects
+    - Ghostbusters part1.mkv
+    - Ghostbusters part2.mkv
+    - Ghostbusters part3.mkv
+  expect:
+    stacks:
+    - name: '21'
+      paths:
+      - 21 part1.mkv
+      - 21 part2.mkv
+    - name: Ghostbusters
+      paths:
+      - Ghostbusters part1.mkv
+      - Ghostbusters part2.mkv
+      - Ghostbusters part3.mkv
+
+- name: only the letters a to d are letter part markers
+  operation: group_parts
+  input:
+    paths:
+    - 21 (2008) parta.mkv
+    - 21 (2008) partb.mkv
+    - 21 (2008) partc.mkv
+    - 21 (2008) partd.mkv
+    - 21 (2008) parte.mkv
+    - 21 (2008) partf.mkv
+    - 21 (2008) partg.mkv
+    - 21 (2008)-trailer.mkv
+  expect:
+    stacks:
+    - name: 21 (2008)
+      paths:
+      - 21 (2008) parta.mkv
+      - 21 (2008) partb.mkv
+      - 21 (2008) partc.mkv
+      - 21 (2008) partd.mkv
+
+- name: stacks of files and stacks of folders are returned together
+  operation: group_parts
+  input:
+    paths:
+    - The Usual Suspects (1995) part1.mkv
+    - The Usual Suspects (1995) part2.mkv
+    - 1408 (2007) part2/
+    - 1408 (2007) part3/
+    - 1408 (2007) part1/
+  expect:
+    stacks:
+    - name: 1408 (2007)
+      paths:
+      - 1408 (2007) part1/
+      - 1408 (2007) part2/
+      - 1408 (2007) part3/
+    - name: The Usual Suspects (1995)
+      paths:
+      - The Usual Suspects (1995) part1.mkv
+      - The Usual Suspects (1995) part2.mkv
+
+- name: a part token glued after bracket groups that contain numbers is stacked
+  operation: group_parts
+  input:
+    paths:
+    - The Usual Suspects (1995)[1080p][R][Voted 8.3][Crime-Drama]part1.mkv
+    - The Usual Suspects (1995)[1080p][R][Voted 8.3][Crime-Drama]part2.mkv
+  expect:
+    stacks:
+    - paths:
+      - The Usual Suspects (1995)[1080p][R][Voted 8.3][Crime-Drama]part1.mkv
+      - The Usual Suspects (1995)[1080p][R][Voted 8.3][Crime-Drama]part2.mkv
+
+- name: folders with a bracketed disc number are stacked
+  operation: group_parts
+  input:
+    paths:
+    - Movies (Action)/Ben-Hur/Ben-Hur (1959) (Disc 01)/
+    - Movies (Action)/Ben-Hur/Ben-Hur (1959) (Disc 02)/
+  expect:
+    stacks:
+    - paths:
+      - Movies (Action)/Ben-Hur/Ben-Hur (1959) (Disc 01)/
+      - Movies (Action)/Ben-Hur/Ben-Hur (1959) (Disc 02)/
+
+- name: parts with a gap are stacked as ambiguous
+  operation: group_parts
+  input:
+    paths:
+    - Gladiator (2000) part1.mkv
+    - Gladiator (2000) part3.mkv
+  expect:
+    stacks:
+    - name: Gladiator (2000)
+      paths:
+      - Gladiator (2000) part1.mkv
+      - Gladiator (2000) part3.mkv
+      ambiguous: true
+      ambiguity_reason: missing_part
+
+- name: a repeated part number is stacked as ambiguous
+  operation: group_parts
+  input:
+    paths:
+    - Psycho (1960)/Psycho (1960) cd1.mkv
+    - Psycho (1960)/Psycho (1960) cd1.avi
+    - Psycho (1960)/Psycho (1960) cd2.mkv
+  expect:
+    stacks:
+    - name: Psycho (1960)
+      paths:
+      - Psycho (1960)/Psycho (1960) cd1.avi
+      - Psycho (1960)/Psycho (1960) cd1.mkv
+      - Psycho (1960)/Psycho (1960) cd2.mkv
+      ambiguous: true
+      ambiguity_reason: duplicate_part
+
+- name: contiguous parts are stacked without ambiguity
+  operation: group_parts
+  input:
+    paths:
+    - Hugo (2011)/Hugo (2011) - Disc 2.mkv
+    - Hugo (2011)/Hugo (2011) - Disc 1.mkv
+  expect:
+    stacks:
+    - name: Hugo (2011)
+      paths:
+      - Hugo (2011)/Hugo (2011) - Disc 1.mkv
+      - Hugo (2011)/Hugo (2011) - Disc 2.mkv
+      ambiguous: false
+      ambiguity_reason: null

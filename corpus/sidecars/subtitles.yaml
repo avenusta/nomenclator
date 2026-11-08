@@ -1,0 +1,635 @@
+- name: an empty string is no subtitle sidecar
+  operation: parse_sidecar
+  input:
+    name: ''
+    video_name: Parasite.2019.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: false
+
+- name: a flac audio track with the video's stem is not a subtitle sidecar
+  operation: parse_sidecar
+  input:
+    name: Parasite.2019.1080p.BluRay.x264-GRP.flac
+    video_name: Parasite.2019.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: false
+
+- name: an m4v video with the video's stem is not a subtitle sidecar
+  operation: parse_sidecar
+  input:
+    name: Parasite.2019.1080p.BluRay.x264-GRP.m4v
+    video_name: Parasite.2019.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: false
+
+- name: an ass subtitle with the video's stem is a subtitle sidecar
+  operation: parse_sidecar
+  input:
+    name: Parasite.2019.1080p.BluRay.x264-GRP.ass
+    video_name: Parasite.2019.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+
+- name: a subtitle named only after the video stem has no title, language or flags
+  operation: parse_sidecar
+  input:
+    name: Parasite.2019.1080p.BluRay.x264-GRP.srt
+    video_name: Parasite.2019.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: null
+    language: null
+    flags: []
+
+- name: the word default marks the subtitle as default
+  operation: parse_sidecar
+  input:
+    name: Parasite.2019.1080p.BluRay.x264-GRP.default.srt
+    video_name: Parasite.2019.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: null
+    language: null
+    flags: [default]
+
+- name: the word forced marks the subtitle as forced
+  operation: parse_sidecar
+  input:
+    name: Parasite.2019.1080p.BluRay.x264-GRP.forced.srt
+    video_name: Parasite.2019.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: null
+    language: null
+    flags: [forced]
+
+- name: the word foreign marks the subtitle as forced
+  operation: parse_sidecar
+  input:
+    name: Dune.Part.Two.2024.foreign.srt
+    video_name: Dune.Part.Two.2024.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: null
+    language: null
+    flags: [forced]
+
+- name: default and forced tokens set both flags, listed in canonical order regardless of their order in the name
+  operation: parse_sidecar
+  input:
+    name: Parasite.2019.1080p.BluRay.x264-GRP.forced.default.srt
+    video_name: Parasite.2019.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: null
+    language: null
+    flags: [default, forced]
+
+- name: flag words match in any letter case
+  operation: parse_sidecar
+  input:
+    name: Parasite.2019.1080p.BluRay.x264-GRP.DEFAULT.FORCED.srt
+    video_name: Parasite.2019.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: null
+    language: null
+    flags: [default, forced]
+
+- name: a two-letter language code resolves to its BCP 47 tag
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.en.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: null
+    language: en
+    flags: []
+
+- name: language codes match in any letter case
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.EN.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: null
+    language: en
+    flags: []
+
+- name: the word hi alone means Hindi, not hearing impaired
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.hi.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: null
+    language: hi
+    flags: []
+
+- name: two different language codes make the language ambiguous with both candidates in name order
+  operation: parse_sidecar
+  input:
+    name: Amélie.2001.1080p.BluRay.x264-GRP.fr.en.srt
+    video_name: Amélie.2001.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: null
+    language:
+      status: ambiguous
+      candidates: [fr, en]
+    flags: []
+
+- name: a title beside two different language codes is the title and the language is ambiguous
+  operation: parse_sidecar
+  input:
+    name: Amélie.2001.1080p.BluRay.x264-GRP.Director Commentary.en.fr.srt
+    video_name: Amélie.2001.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: Director Commentary
+    language:
+      status: ambiguous
+      candidates: [en, fr]
+    flags: []
+
+- name: a free-text token after the stem is the title
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.Full Subtitles.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: Full Subtitles
+    language: null
+    flags: []
+
+- name: unrecognised dotted tokens are the title, with their dots
+  operation: parse_sidecar
+  input:
+    name: Spirited.Away.2001.1080p.BluRay.x264-GRP.Signs.and.Songs.srt
+    video_name: Spirited.Away.2001.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: Signs.and.Songs
+    language: null
+    flags: []
+
+- name: title, language and flags are all read from the tokens after the stem
+  operation: parse_sidecar
+  input:
+    name: Spirited.Away.2001.1080p.BluRay.x264-GRP.Parents Guide.en.default.forced.srt
+    video_name: Spirited.Away.2001.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: Parents Guide
+    language: en
+    flags: [default, forced]
+
+- name: flags and language before the title are read the same way as after it
+  operation: parse_sidecar
+  input:
+    name: Amélie.2001.1080p.BluRay.x264-GRP.forced.default.en.Parents Guide.srt
+    video_name: Amélie.2001.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: Parents Guide
+    language: en
+    flags: [default, forced]
+
+- name: the word sdh marks the subtitle as hearing impaired
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.sdh.en.Full Subtitles.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: Full Subtitles
+    language: en
+    flags: [hearing_impaired]
+
+- name: a cc token after the language sets the hearing impaired flag
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.en.cc.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: null
+    language: en
+    flags: [hearing_impaired]
+
+- name: hi before a language code is the hearing impaired flag, not Hindi
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.hi.en.Parents Guide.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: Parents Guide
+    language: en
+    flags: [hearing_impaired]
+
+- name: the word hi after a language code marks the subtitle as hearing impaired
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.en.hi.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    title: null
+    language: en
+    flags: [hearing_impaired]
+
+- name: a descriptive word before the language does not prevent the language from being read
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.commentary.fr.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    language: fr
+    flags: []
+
+- name: a subtitle whose stem is another film's name is not a sidecar of this video
+  operation: parse_sidecar
+  input:
+    name: Death.Race.2000.2017.en.srt
+    video_name: The Usual Suspects (1995).mkv
+    kind: subtitle
+  expect:
+    matches: false
+
+- name: an image with the exact name of the extra video is the still of that extra
+  operation: parse_sidecar
+  input:
+    name: Inside Pixar.jpg
+    video_name: Inside Pixar.mkv
+    kind: image
+  expect:
+    matches: true
+
+- name: a -THUMB image matches its extra video in any letter case
+  operation: parse_sidecar
+  input:
+    name: Inside Pixar-THUMB.JPG
+    video_name: Inside Pixar.mkv
+    kind: image
+  expect:
+    matches: true
+
+- name: an image with the name of another extra is no still of this extra
+  operation: parse_sidecar
+  input:
+    name: Inside Pixar 3.jpg
+    video_name: Inside Pixar.mkv
+    kind: image
+  expect:
+    matches: false
+
+- name: a -poster image is artwork and no still of an extra
+  operation: parse_sidecar
+  input:
+    name: Inside Pixar-poster.jpg
+    video_name: Inside Pixar.mkv
+    kind: image
+  expect:
+    matches: false
+
+- name: a file with the extra's name and no image extension is not its still
+  operation: parse_sidecar
+  input:
+    name: Inside Pixar.nfo
+    video_name: Inside Pixar.mkv
+    kind: image
+  expect:
+    matches: false
+
+- name: a bmp image with the extra's name is its still, because every image extension is accepted
+  operation: parse_sidecar
+  input:
+    name: Inside Pixar.bmp
+    video_name: Inside Pixar.mkv
+    kind: image
+  expect:
+    matches: true
+
+- name: an English language name is read as its language code and forced is a flag
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.English.forced.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    language: en
+    flags: [forced]
+
+- name: sdh and default after the language are flags, not language or title
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.de.sdh.default.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    language: de
+    flags: [default, hearing_impaired]
+
+- name: a word after the language that no vocabulary lists is skipped
+  operation: parse_sidecar
+  input:
+    name: Parasite.2019.1080p.BluRay.x264-GRP.hr.ai.srt
+    video_name: Parasite.2019.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    language: hr
+    flags: []
+
+- name: a forced flag after the language is read and the part number remains in the stem
+  operation: parse_sidecar
+  input:
+    name: Kill.Bill.Vol.2.2004.1080p.BluRay.x264-GRP.fr.forced.ass
+    video_name: Kill.Bill.Vol.2.2004.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    language: fr
+    flags: [forced]
+
+- name: the stem is matched case-insensitively and the language is lowercased
+  operation: parse_sidecar
+  input:
+    name: the usual suspects.1995.1080p.bluray.EN.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.mkv
+    kind: subtitle
+  expect:
+    matches: true
+    language: en
+    flags: []
+
+- name: a stem matches when case folding changes its byte length
+  operation: parse_sidecar
+  input:
+    name: GROẞSTADTREVIER (1985).de.srt
+    video_name: Großstadtrevier (1985).mkv
+    kind: subtitle
+  expect:
+    matches: true
+    language: de
+    flags: []
+
+- name: a longer name without a separator after the stem does not match
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects (1995)Extra.srt
+    video_name: The Usual Suspects (1995).mkv
+    kind: subtitle
+  expect:
+    matches: false
+    language: null
+    flags: []
+
+- name: a three-letter language code is shortened to its two-letter tag
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.eng.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: en
+
+- name: an English language name is read as its language code
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.Arabic.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: ar
+
+- name: a language tag with a region is read with the region
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.pt-BR.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: pt-BR
+
+- name: a language tag with a script is read with the script
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.zh-Hant.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: zh-Hant
+
+- name: a flag word alone has no language
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.forced.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: null
+
+- name: free text before a three-letter language code stays whole as the title
+  operation: parse_sidecar
+  input:
+    name: Spirited.Away.2001.1080p.BluRay.x264-GRP.Subs for Italian Audio.eng.srt
+    video_name: Spirited.Away.2001.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    title: Subs for Italian Audio
+    language: en
+    flags: []
+
+- name: an unknown word has no language
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.zzzz.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: null
+
+- name: EN and SDH in uppercase are read as language and hearing impaired
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.EN.SDH.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: en
+    flags: [hearing_impaired]
+
+- name: an sdh flag alone sets hearing impaired with no language
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.sdh.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: null
+    flags: [hearing_impaired]
+
+- name: forced and sdh before a three-letter language code are both read
+  operation: parse_sidecar
+  input:
+    name: Kill.Bill.Vol.2.2004.1080p.BluRay.x264-GRP.forced.sdh.eng.srt
+    video_name: Kill.Bill.Vol.2.2004.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: en
+    flags: [forced, hearing_impaired]
+
+- name: default before the language sets the default flag
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.default.en.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: en
+    flags: [default]
+
+- name: jp is not a language code and has no language
+  operation: parse_sidecar
+  input:
+    name: Spirited.Away.2001.1080p.BluRay.x264-GRP.jp.srt
+    video_name: Spirited.Away.2001.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: null
+
+- name: a bare region word after a language is not a region tag
+  operation: parse_sidecar
+  input:
+    name: Amélie.2001.1080p.BluRay.x264-GRP.pt.br.srt
+    video_name: Amélie.2001.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: pt
+    flags: []
+
+- name: a short word before a two-letter language is not a language and the two-letter language is read
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.sub.en.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: en
+    flags: []
+
+- name: a video extension left in the suffix is skipped
+  operation: parse_sidecar
+  input:
+    name: Spirited.Away.2001.1080p.BluRay.x264-GRP.mkv.en.sdh.srt
+    video_name: Spirited.Away.2001.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: en
+    flags: [hearing_impaired]
+
+- name: an undetermined language code is replaced by a real language
+  operation: parse_sidecar
+  input:
+    name: Parasite.2019.1080p.BluRay.x264-GRP.und.en.srt
+    video_name: Parasite.2019.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: en
+    flags: []
+
+- name: a language with only a three-letter code is written as that code
+  operation: parse_sidecar
+  input:
+    name: Parasite.2019.1080p.BluRay.x264-GRP.yue.srt
+    video_name: Parasite.2019.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: yue
+    flags: []
+
+- name: a three-letter-only language with the forced flag is read with its code and flag
+  operation: parse_sidecar
+  input:
+    name: Parasite.2019.1080p.BluRay.x264-GRP.fil.forced.srt
+    video_name: Parasite.2019.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: fil
+    flags: [forced]
+
+- name: Tagalog and English in one name are ambiguous
+  operation: parse_sidecar
+  input:
+    name: Parasite.2019.1080p.BluRay.x264-GRP.tl.en.srt
+    video_name: Parasite.2019.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language:
+      status: ambiguous
+      candidates: [tl, en]
+    flags: []
+
+- name: hi with forced and no other language is Hindi with the forced flag
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.hi.forced.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: hi
+    flags: [forced]
+
+- name: hi next to sdh is Hindi and the sdh token sets hearing impaired
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.hi.sdh.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: hi
+    flags: [hearing_impaired]
+
+- name: a repeated hi is Hindi, then hearing impaired
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.hi.hi.srt
+    video_name: The Usual Suspects.1995.1080p.BluRay.x264-GRP.mkv
+    kind: subtitle
+  expect:
+    language: hi
+    flags: [hearing_impaired]
+

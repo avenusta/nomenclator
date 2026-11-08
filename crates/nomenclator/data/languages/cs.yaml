@@ -1,0 +1,7 @@
+# Language pack `cs`: the words a library in this language uses. Applied when a
+# caller declares its languages; see decision X11.
+name: language-cs
+season_words:
+  add: ["sezóna"]
+languages:
+  add: { cs: ["čeština", "cestina", "česky", "cesky"] }

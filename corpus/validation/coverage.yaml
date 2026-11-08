@@ -1,0 +1,107 @@
+# Required assets and subtitle coverage (decision R12): the profile
+# declares the asset roles that each item kind needs and the subtitle languages that each
+# video needs.
+
+- name: a movie without a required poster and NFO is missing both assets
+  operation: validate
+  input:
+    library: movies
+    paths: ['Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.mkv', 'Arrival (2016) {tmdb-329865}/fanart.jpg']
+    profile:
+      required_assets: { movie: [poster, backdrop, nfo] }
+  expect:
+    diagnostics:
+      - { rule: missing_asset, severity: warning, paths: ['Arrival (2016) {tmdb-329865}'], reason: nfo }
+      - { rule: missing_asset, severity: warning, paths: ['Arrival (2016) {tmdb-329865}'], reason: poster }
+
+- name: a movie with every required asset has no missing asset
+  operation: validate
+  input:
+    library: movies
+    paths:
+      - 'Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.mkv'
+      - 'Arrival (2016) {tmdb-329865}/poster.jpg'
+      - 'Arrival (2016) {tmdb-329865}/movie.nfo'
+      - 'Arrival (2016) {tmdb-329865}/Theme Music/theme.mp3'
+    profile:
+      required_assets: { movie: [poster, nfo, theme_song] }
+  expect:
+    diagnostics: []
+
+- name: a series and its season and episode are checked for their own required assets
+  operation: validate
+  input:
+    library: tv
+    paths:
+      - 'Show (2009) {tvdb-1}/poster.jpg'
+      - 'Show (2009) {tvdb-1}/Season 01/Show (2009) - S01E01 - Pilot.mkv'
+    profile:
+      required_assets: { series: [poster], season: [poster], episode: [episode_still] }
+  expect:
+    diagnostics:
+      - { rule: missing_asset, paths: ['Show (2009) {tvdb-1}/Season 01'], reason: poster }
+      - { rule: missing_asset, paths: ['Show (2009) {tvdb-1}/Season 01/Show (2009) - S01E01 - Pilot.mkv'], reason: episode_still }
+
+- name: a video without a wanted subtitle language is missing that subtitle
+  operation: validate
+  input:
+    library: movies
+    paths:
+      - 'Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.mkv'
+      - 'Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.en.srt'
+    profile:
+      wanted_subtitles: [{ language: en }, { language: de }, { language: en, flags: [forced] }]
+  expect:
+    diagnostics:
+      - { rule: missing_subtitle, severity: warning, paths: ['Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.mkv'], reason: de }
+      - { rule: missing_subtitle, severity: warning, paths: ['Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.mkv'], reason: en.forced }
+
+- name: a wanted base language accepts a subtitle with a region
+  operation: validate
+  input:
+    library: movies
+    paths:
+      - 'Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.mkv'
+      - 'Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.pt-BR.srt'
+    profile:
+      wanted_subtitles: [{ language: pt }]
+  expect:
+    diagnostics: []
+
+- name: each episode video is checked for wanted subtitles
+  operation: validate
+  input:
+    library: tv
+    paths:
+      - 'Show (2009) {tvdb-1}/Season 01/Show (2009) - S01E01 - Pilot.mkv'
+      - 'Show (2009) {tvdb-1}/Season 01/Show (2009) - S01E01 - Pilot.en.srt'
+      - 'Show (2009) {tvdb-1}/Season 01/Show (2009) - S01E02 - Home.mkv'
+    profile:
+      wanted_subtitles: [{ language: en }]
+  expect:
+    diagnostics:
+      - { rule: missing_subtitle, paths: ['Show (2009) {tvdb-1}/Season 01/Show (2009) - S01E02 - Home.mkv'], reason: en }
+
+- name: an NFO of any version of a movie satisfies a required NFO
+  operation: validate
+  input:
+    library: movies
+    paths:
+      - "The Usual Suspects (1995) {tmdb-949}/The Usual Suspects (1995) {tmdb-949} - 1080p.mkv"
+      - "The Usual Suspects (1995) {tmdb-949}/The Usual Suspects (1995) {tmdb-949} - 1080p.nfo"
+      - "The Usual Suspects (1995) {tmdb-949}/The Usual Suspects (1995) {tmdb-949} - 2160p.mkv"
+    profile: { required_assets: { movie: [nfo] } }
+  expect:
+    diagnostics: []
+
+- name: an NFO of any version of an episode satisfies a required NFO
+  operation: validate
+  input:
+    library: tv
+    paths:
+      - "Show (2009) {tvdb-1}/Season 01/Show (2009) - S01E01 - Pilot - 1080p.mkv"
+      - "Show (2009) {tvdb-1}/Season 01/Show (2009) - S01E01 - Pilot - 1080p.nfo"
+      - "Show (2009) {tvdb-1}/Season 01/Show (2009) - S01E01 - Pilot - 2160p.mkv"
+    profile: { required_assets: { episode: [nfo] } }
+  expect:
+    diagnostics: []

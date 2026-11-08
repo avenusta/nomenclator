@@ -1,0 +1,9 @@
+# Language pack `da`: the words a library in this language uses. Applied when a
+# caller declares its languages; see decision X11.
+name: language-da
+season_words:
+  add: ["sæson"]
+ordinal_suffixes:
+  add: ["."]
+languages:
+  add: { da: ["dansk"] }

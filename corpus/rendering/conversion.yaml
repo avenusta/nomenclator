@@ -1,0 +1,72 @@
+# Layout conversion (decision R18): a library written under one output
+# profile is planned under another profile as one plan.
+
+- name: a folder layout converts to a flat layout with bracketed provider tags
+  operation: convert_layout
+  input:
+    library: movies
+    paths: ["Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.mkv"]
+    to_profile: { movie_layout: flat, provider_tag_style: brackets_id }
+  expect:
+    proposals:
+      - { from: "Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.mkv", to: "Arrival (2016) [tmdbid-329865].mkv" }
+
+- name: a flat layout with bracketed provider tags converts to the folder layout
+  operation: convert_layout
+  input:
+    library: movies
+    paths: ["Arrival (2016) [tmdbid-329865].mkv", "Arrival (2016) [tmdbid-329865].en.srt"]
+    from_profile: { movie_layout: flat, provider_tag_style: brackets_id }
+  expect:
+    proposals:
+      - { from: "Arrival (2016) [tmdbid-329865].en.srt", to: "Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.en.srt" }
+      - { from: "Arrival (2016) [tmdbid-329865].mkv", to: "Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.mkv" }
+
+- name: unpadded season folders and a custom specials folder convert to the default season folders
+  operation: convert_layout
+  input:
+    library: tv
+    paths:
+      - Quiet Hours/Season 1/Quiet Hours - S01E01.mkv
+      - Quiet Hours/Hors-série/Quiet Hours - S00E01.mkv
+    from_profile: { season_folder_style: unpadded, specials_folder: Hors-série }
+  expect:
+    proposals:
+      - { from: Quiet Hours/Hors-série/Quiet Hours - S00E01.mkv, to: Quiet Hours/Season 00/Quiet Hours - S00E01.mkv }
+      - { from: Quiet Hours/Season 1/Quiet Hours - S01E01.mkv, to: Quiet Hours/Season 01/Quiet Hours - S01E01.mkv }
+
+- name: a custom extras folder of the source profile converts to the default extras folder
+  operation: convert_layout
+  input:
+    library: movies
+    paths:
+      - Arrival (2016)/Arrival (2016).mkv
+      - Arrival (2016)/Making Of/Building the Ship.mkv
+    from_profile: { extras_folders: { behind_the_scenes: Making Of } }
+  expect:
+    proposals:
+      - { from: Arrival (2016)/Making Of/Building the Ship.mkv, to: Arrival (2016)/Behind The Scenes/Building the Ship.mkv }
+
+- name: bracketed version labels convert to dash version labels
+  operation: convert_layout
+  input:
+    library: movies
+    paths:
+      - "Arrival (2016)/Arrival (2016) [2160p].mkv"
+      - "Arrival (2016)/Arrival (2016) [1080p].mkv"
+    from_profile: { version_label_style: brackets }
+  expect:
+    proposals:
+      - { from: "Arrival (2016)/Arrival (2016) [1080p].mkv", to: Arrival (2016)/Arrival (2016) - 1080p.mkv }
+      - { from: "Arrival (2016)/Arrival (2016) [2160p].mkv", to: Arrival (2016)/Arrival (2016) - 2160p.mkv }
+
+- name: a library that already follows the target profile has no proposals
+  operation: convert_layout
+  input:
+    library: movies
+    paths: ["Arrival (2016) [tmdbid-329865].mkv"]
+    from_profile: { movie_layout: flat, provider_tag_style: brackets_id }
+    to_profile: { movie_layout: flat, provider_tag_style: brackets_id }
+  expect:
+    proposals: []
+    blocked: []

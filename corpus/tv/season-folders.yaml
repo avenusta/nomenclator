@@ -1,0 +1,734 @@
+- name: a season folder in English under its series folder gives the season number
+  operation: parse_season_folder
+  input:
+    name: Season 3
+    parent_name: Ted Lasso
+    parent_is_series_folder: true
+  expect:
+    season: 3
+
+- name: a German Staffel folder under its series folder resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: Staffel 3
+    parent_name: Dark
+    parent_is_series_folder: true
+  expect:
+    season: 3
+
+- name: a French Saison folder under its series folder resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: Saison 2
+    parent_name: Lupin
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: an Italian Stagione folder under its series folder resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: Stagione 4
+    parent_name: Gomorra
+    parent_is_series_folder: true
+  expect:
+    season: 4
+
+- name: a Swedish Säsong folder under its series folder resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: Säsong 6
+    parent_name: Wallander
+    parent_is_series_folder: true
+  expect:
+    season: 6
+
+- name: a Danish Sæson folder under its series folder resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: Sæson 3
+    parent_name: Borgen
+    parent_is_series_folder: true
+  expect:
+    season: 3
+
+- name: a Polish Sezon folder under its series folder resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: Sezon 2
+    parent_name: Ziemia obiecana
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: a Croatian Sezona folder under its series folder resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: Sezona 3
+    parent_name: Lud, zbunjen, normalan
+    parent_is_series_folder: true
+  expect:
+    season: 3
+
+- name: a Slovak Sezóna folder with an accented vowel under its series folder resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: Sezóna 7
+    parent_name: Ordinácia
+    parent_is_series_folder: true
+  expect:
+    season: 7
+
+- name: a сезон folder in Russian under its series folder gives the season number
+  operation: parse_season_folder
+  input:
+    name: Сезон 2
+    parent_name: Метод
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: a 시즌 folder in Korean under its series folder gives the season number
+  operation: parse_season_folder
+  input:
+    name: 시즌 2
+    parent_name: 킹덤
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: a Japanese シーズン folder under its series folder resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: シーズン 2
+    parent_name: Kamen Rider
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: a Swedish SÄSONG folder in upper case gives the season number, and the fold of its non-ASCII letters uses no locale
+  operation: parse_season_folder
+  input:
+    name: SÄSONG 3
+    parent_name: Beck
+    parent_is_series_folder: true
+  expect:
+    season: 3
+
+- name: a season word with no space before its number, Season7, gives that season number
+  operation: parse_season_folder
+  input:
+    name: Season7
+    parent_name: Yellowstone
+    parent_is_series_folder: true
+  expect:
+    season: 7
+
+- name: a French Série folder under its series folder resolves to its season number, and the series word is a season word only under a series folder
+  operation: parse_season_folder
+  input:
+    name: Série 2
+    parent_name: Engrenages
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: a Série folder in French with a decomposed accent gives the same season number as the composed form
+  operation: parse_season_folder
+  input:
+    name: "Série 6"
+    parent_name: Lupin
+    parent_is_series_folder: true
+  expect:
+    season: 6
+
+- name: an uppercase SÉRIE folder resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: SÉRIE 2
+    parent_name: Engrenages
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: a Spanish or Italian Serie folder under its series folder resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: Serie 2
+    parent_name: Rebelde
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: a Polish Seria folder under its series folder resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: Seria 3
+    parent_name: Ziemia obiecana
+    parent_is_series_folder: true
+  expect:
+    season: 3
+
+- name: a Slovak Séria folder under its series folder resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: Séria 5
+    parent_name: Ordinácia
+    parent_is_series_folder: true
+  expect:
+    season: 5
+
+- name: a UK-style Series folder with words after the number resolves to that season number
+  operation: parse_season_folder
+  input:
+    name: Series 5 - Extras
+    parent_name: The Twilight Zone
+    parent_is_series_folder: true
+  expect:
+    season: 5
+
+- name: a Series folder with no series folder above it is not a season (T9)
+  operation: parse_season_folder
+  input:
+    name: Series 4
+  expect:
+    season: null
+
+- name: a series word with a title after it is not a season folder without a series folder above it (T9)
+  operation: parse_season_folder
+  input:
+    name: Series 7 - The Contenders
+  expect:
+    season: null
+
+- name: a Serie word in Spanish with Temporada Completa after it and no series folder above it gives no season (T9)
+  operation: parse_season_folder
+  input:
+    name: Serie 3 Temporada Completa
+  expect:
+    season: null
+
+- name: a Series folder with a year and a remux tag resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: Series 2 (2019) [REMUX]
+    parent_name: Broadchurch
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: a Series folder followed by a quality word resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: Series 2 HDR10
+    parent_name: Broadchurch
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: a Series folder with a provider tag in braces resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: Series 2 {tvdb-12345}
+    parent_name: Broadchurch
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: a release name with a dotted Series word gives the season number
+  operation: parse_season_folder
+  input:
+    name: Series.3.720p.HDTV.x264-GRP
+    parent_name: Luther
+    parent_is_series_folder: true
+  expect:
+    season: 3
+
+- name: a Staffel folder with a year in brackets gives the season number
+  operation: parse_season_folder
+  input:
+    name: Staffel 5 (2018)
+    parent_name: Tatort
+    parent_is_series_folder: true
+  expect:
+    season: 5
+
+- name: a season folder with a year as its number has that year as its season (T9)
+  operation: parse_season_folder
+  input:
+    name: Saison 2012
+    parent_name: Survivor
+    parent_is_series_folder: true
+  expect:
+    season: 2012
+
+- name: a number above 99 that is no year gives no season (T16)
+  operation: parse_season_folder
+  input:
+    name: Season 250
+    parent_name: Survivor
+    parent_is_series_folder: true
+  expect:
+    season: null
+
+- name: a resolution after a season word is not a season (T16)
+  operation: parse_season_folder
+  input:
+    name: Season 1920x1080
+    parent_name: Broadchurch
+    parent_is_series_folder: true
+  expect:
+    season: null
+
+- name: a season folder with the series title before it and a release suffix after it gives the season number
+  operation: parse_season_folder
+  input:
+    name: Blackadder Season 03 720p
+    parent_name: Blackadder
+    parent_is_series_folder: true
+  expect:
+    season: 3
+
+- name: a release folder with the season token after the series title gives that season
+  operation: parse_season_folder
+  input:
+    name: Ozark.S02.2160p.WEB-DL.DDP5.1.H.265-QRST
+    parent_name: Ozark
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: a release folder with a dotted season token gives that season
+  operation: parse_season_folder
+  input:
+    name: Black.Books.S02.1080p.PDTV.x264-LMN
+    parent_name: Black Books
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: a release folder in square brackets reads as the name inside the brackets
+  operation: parse_season_folder
+  input:
+    name: '[Black.Books.S03.1080p.PDTV.x264-LMN]'
+    parent_name: Black Books
+    parent_is_series_folder: true
+  expect:
+    season: 3
+
+- name: a release folder with the season token in brackets gives that season
+  operation: parse_season_folder
+  input:
+    name: Black.Books [S05][1080p.PDTV.x264-LMN]
+    parent_name: Black Books
+    parent_is_series_folder: true
+  expect:
+    season: 5
+
+- name: a season word after a series title with punctuation gives the season
+  operation: parse_season_folder
+  input:
+    name: Babylon-5 Season 2
+    parent_name: Babylon-5
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: a season folder that repeats its series title and a year resolves to the season
+  operation: parse_season_folder
+  input:
+    name: The Leftovers - Season 2 (2015)
+    parent_name: The Leftovers
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: a release-pack season folder under a series folder that has a provider tag resolves to the season
+  operation: parse_season_folder
+  input:
+    name: Broadchurch.S02.1080p
+    parent_name: Broadchurch [tvdbid-123]
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: a dotted ordinal release folder resolves to its season
+  operation: parse_season_folder
+  input:
+    name: 2nd.Season.1080p
+    parent_name: Broadchurch
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: an underscore between the season word and its number is a separator
+  operation: parse_season_folder
+  input:
+    name: Season_02
+    parent_name: Broadchurch
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: an arc title after a dash in a season folder is ignored, and the folder gives the season
+  operation: parse_season_folder
+  input:
+    name: SEASON-03 - Arc 2
+    parent_name: Luther
+    parent_is_series_folder: true
+  expect:
+    season: 3
+
+- name: a season number with a leading zero gives that season
+  operation: parse_season_folder
+  input:
+    name: Season 04
+    parent_name: Ozark
+    parent_is_series_folder: true
+  expect:
+    season: 4
+
+- name: a short S-prefixed folder under its series folder resolves to the season
+  operation: parse_season_folder
+  input:
+    name: S01
+    parent_name: Friends
+    parent_is_series_folder: true
+  expect:
+    season: 1
+
+- name: a folder with a lowercase s and a number under its series folder gives the season
+  operation: parse_season_folder
+  input:
+    name: s03
+    parent_name: Ozark
+    parent_is_series_folder: true
+  expect:
+    season: 3
+
+- name: a number alone as a folder under a series folder is the season
+  operation: parse_season_folder
+  input:
+    name: '5'
+    parent_name: Frasier
+    parent_is_series_folder: true
+  expect:
+    season: 5
+
+- name: a bare number with no series folder above it is not a season (T9)
+  operation: parse_season_folder
+  input:
+    name: '02'
+  expect:
+    season: null
+
+- name: a bare number under a collection folder that is not a series folder is not a season (T9)
+  operation: parse_season_folder
+  input:
+    name: '1'
+    parent_name: 1408 Collection
+  expect:
+    season: null
+
+- name: a title that starts with a number under a collection folder is not a season
+  operation: parse_season_folder
+  input:
+    name: 3 Idiots
+    parent_name: 3 Idiots Collection
+  expect:
+    season: null
+
+- name: a year after a number-led title under a collection folder is not a season
+  operation: parse_season_folder
+  input:
+    name: 1408 (2007)
+    parent_name: 1408 Collection
+  expect:
+    season: null
+
+- name: a disc folder under a collection folder is not a season
+  operation: parse_season_folder
+  input:
+    name: 1408 Disc 1
+    parent_name: 1408 Collection
+  expect:
+    season: null
+
+- name: a season word under a collection folder resolves to the season, since it contains no series word or bare number
+  operation: parse_season_folder
+  input:
+    name: Season 01
+    parent_name: 3 Idiots Collection
+  expect:
+    season: 1
+
+- name: a season folder with the title of another show before its season word gives no season (T9)
+  operation: parse_season_folder
+  input:
+    name: Frasier Season 5
+    parent_name: Cheers
+    parent_is_series_folder: true
+  expect:
+    season: null
+
+- name: a folder with an episode number before a season word gives no season (T9)
+  operation: parse_season_folder
+  input:
+    name: Episode 4 Season 3
+    parent_name: Ozark
+    parent_is_series_folder: true
+  expect:
+    season: null
+
+- name: a season word after a disc label with no series folder above it is not a season (T9)
+  operation: parse_season_folder
+  input:
+    name: Disc 1 Season 2
+  expect:
+    season: null
+
+- name: a season word with a number in parentheses gives no season
+  operation: parse_season_folder
+  input:
+    name: Season (6)
+    parent_name: Ozark
+    parent_is_series_folder: true
+  expect:
+    season: null
+
+- name: a folder with only an episode code gives no season
+  operation: parse_season_folder
+  input:
+    name: s04e09
+    parent_name: Ozark
+    parent_is_series_folder: true
+  expect:
+    season: null
+
+- name: the release name of another show without a season token gives no season
+  operation: parse_season_folder
+  input:
+    name: The.Bridge.on.the.River.2016.V3.web-dl.720p.h264.aac-zzqtv
+    parent_name: Ozark
+    parent_is_series_folder: true
+  expect:
+    season: null
+
+- name: a dated folder under a series folder is not a season folder
+  operation: parse_season_folder
+  input:
+    name: 2024-01-24 Rebuild in under 7 minutes
+    parent_name: Garage Builds
+    parent_is_series_folder: true
+  expect:
+    season: null
+
+- name: a folder with a long run of digits gives no season
+  operation: parse_season_folder
+  input:
+    name: '201907183355'
+    parent_name: Ozark
+    parent_is_series_folder: true
+  expect:
+    season: null
+
+- name: an extras folder under a series folder gives no season, not season 0 (T11)
+  operation: parse_season_folder
+  input:
+    name: featurettes
+    parent_name: Yellowstone
+    parent_is_series_folder: true
+  expect:
+    season: null
+
+- name: a Special folder under a series folder gives season 0
+  operation: parse_season_folder
+  input:
+    name: Special
+    parent_name: Ozark
+    parent_is_series_folder: true
+  expect:
+    season: 0
+
+- name: a singular Special folder under a series folder is season 0
+  operation: parse_season_folder
+  input:
+    name: Special
+    parent_name: Broadchurch
+    parent_is_series_folder: true
+  expect:
+    season: 0
+
+- name: a Season 0 folder is season 0
+  operation: parse_season_folder
+  input:
+    name: Season 0
+  expect:
+    season: 0
+
+- name: a second-season ordinal folder resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: 2nd Season
+    parent_name: Broadchurch
+    parent_is_series_folder: true
+  expect:
+    season: 2
+
+- name: a two-digit ordinal folder resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: 21st Season
+    parent_name: Broadchurch
+    parent_is_series_folder: true
+  expect:
+    season: 21
+
+- name: a French ordinal Saison folder resolves to its season number
+  operation: parse_season_folder
+  input:
+    name: 3rd Saison
+    parent_name: Broadchurch
+    parent_is_series_folder: true
+  expect:
+    season: 3
+
+- name: an ordinal followed by a title under a show is not a season folder
+  operation: parse_season_folder
+  input:
+    name: 21st C.S.I. Archive
+    parent_name: Broadchurch
+    parent_is_series_folder: true
+  expect:
+    season: null
+
+- name: an ordinal and a series word with no series folder above them give no season
+  operation: parse_season_folder
+  input:
+    name: 2nd Series Of Trials
+  expect:
+    season: null
+
+- name: a series word followed by a letter under a show is not a season folder
+  operation: parse_season_folder
+  input:
+    name: Serie A
+    parent_name: Broadchurch
+    parent_is_series_folder: true
+  expect:
+    season: null
+
+- name: a season folder with a provider tag in square brackets has the season's tvdb id
+  operation: parse_season_folder
+  input:
+    name: Season 04 [tvdbid=24680]
+  expect:
+    provider_ids:
+      tvdb: '24680'
+
+- name: a season folder with a provider tag in parentheses and a dash has the season's tvdb id
+  operation: parse_season_folder
+  input:
+    name: Season 01 (tvdbid-12345)
+  expect:
+    provider_ids:
+      tvdb: '12345'
+
+- name: a season folder tag is read as the season's tvmaze id
+  operation: parse_season_folder
+  input:
+    name: Season 05 [tvmazeid-13579]
+  expect:
+    provider_ids:
+      tvmaze: '13579'
+
+- name: a season folder tag is read as the season's tmdb id
+  operation: parse_season_folder
+  input:
+    name: Season 06 [tmdbid=31415]
+  expect:
+    provider_ids:
+      tmdb: '31415'
+
+- name: a season folder tag is read as the season's anidb id
+  operation: parse_season_folder
+  input:
+    name: Season 02 [anidbid=40404]
+  expect:
+    provider_ids:
+      anidb: '40404'
+
+- name: a season folder tag is read as the season's anilist id
+  operation: parse_season_folder
+  input:
+    name: Season 03 (anilistid=50505)
+  expect:
+    provider_ids:
+      anilist: '50505'
+
+- name: a season folder tag is read as the season's anisearch id
+  operation: parse_season_folder
+  input:
+    name: Season 04 [anisearchid=60606]
+  expect:
+    provider_ids:
+      anisearch: '60606'
+
+- name: a season folder with two id tags has both ids
+  operation: parse_season_folder
+  input:
+    name: Season 07 [tvdbid=77777][tmdbid=88888]
+  expect:
+    provider_ids:
+      tvdb: '77777'
+      tmdb: '88888'
+
+- name: a season folder keeps its own id and takes no id from its series folder
+  operation: parse_season_folder
+  input:
+    name: Season 02 [tvdbid=47120]
+    parent_name: Babylon-5 [tvdbid=70726]
+    parent_is_series_folder: true
+  expect:
+    provider_ids:
+      tvdb: '47120'
+
+- name: a season folder name with no tag gives no provider IDs
+  operation: parse_season_folder
+  input:
+    name: Season 05
+  expect:
+    provider_ids:
+      tvdb: null
+      tmdb: null
+      anidb: null
+
+- name: Seizoen alone is a bare season folder label
+  operation: parse_season_folder
+  input:
+    name: Seizoen
+  expect:
+    is_bare_season_folder: true
+
+- name: Series alone is not a bare season folder label, since a Series folder is a season only with a number
+  operation: parse_season_folder
+  input:
+    name: Series
+    parent_name: Broadchurch
+    parent_is_series_folder: true
+  expect:
+    is_bare_season_folder: false
+
+- name: a truncated season word is not a bare season folder label
+  operation: parse_season_folder
+  input:
+    name: Sea
+  expect:
+    is_bare_season_folder: false
+
+- name: Staffeln is not a bare season folder label
+  operation: parse_season_folder
+  input:
+    name: Staffeln
+  expect:
+    is_bare_season_folder: false

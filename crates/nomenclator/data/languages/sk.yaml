@@ -1,0 +1,9 @@
+# Language pack `sk`: the words a library in this language uses. Applied when a
+# caller declares its languages; see decision X11.
+name: language-sk
+season_words:
+  add: ["sezóna"]
+series_season_words:
+  add: ["séria"]
+languages:
+  add: { sk: ["slovenčina", "slovencina"] }

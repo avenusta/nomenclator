@@ -1,0 +1,24 @@
+[package]
+name = "nomenclator-cli"
+version.workspace = true
+description = "Diagnostics for the media naming conventions: parse a name, interpret or plan a real folder"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories = ["command-line-utilities", "multimedia::video"]
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "nomenclator"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.6", features = ["derive"] }
+nomenclator = { workspace = true, features = ["clap"] }
+serde = "1.0.229"
+serde_json = "1.0.154"

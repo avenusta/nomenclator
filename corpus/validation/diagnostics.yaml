@@ -1,0 +1,254 @@
+- name: a library that matches the profile has no diagnostics
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Northern Passage (2021) {tmdb-550}/Northern Passage (2021) {tmdb-550}.mkv
+    - Northern Passage (2021) {tmdb-550}/Northern Passage (2021) {tmdb-550}.en.srt
+    - Northern Passage (2021) {tmdb-550}/Northern Passage (2021) {tmdb-550}.nfo
+    - Northern Passage (2021) {tmdb-550}/Trailers/Theatrical Trailer.mkv
+  expect:
+    diagnostics: []
+
+- name: a name that renders differently under the profile is a profile violation with the proposed path
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Northern.Passage.2021.1080p.BluRay.x264.mkv
+  expect:
+    diagnostics:
+    - rule: missing_provider_id
+      paths:
+      - 'Northern.Passage.2021.1080p.BluRay.x264.mkv'
+    - rule: profile_violation
+      paths: [Northern.Passage.2021.1080p.BluRay.x264.mkv]
+      reason: null
+      proposed_path: Northern Passage (2021)/Northern Passage (2021).mkv
+
+- name: validation uses the profile it is given
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - 'Mission: Unbreakable (2011)/Mission: Unbreakable (2011).mkv'
+    profile: { target_filesystem: posix }
+  expect:
+    diagnostics:
+    - rule: missing_provider_id
+      paths:
+      - 'Mission: Unbreakable (2011)/Mission: Unbreakable (2011).mkv'
+
+- name: conflicting provider tags are reported with the provider
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Quiet Harbor (2020) {tmdb-1}/Quiet Harbor (2020) {tmdb-2}.mkv
+  expect:
+    diagnostics:
+    - rule: conflicting_provider_ids
+      paths: ['Quiet Harbor (2020) {tmdb-1}/Quiet Harbor (2020) {tmdb-2}.mkv']
+      reason: tmdb
+
+- name: an ambiguous identity is reported with its reason
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Quiet Harbor (2020)/Loud Harbor (1999).mkv
+  expect:
+    diagnostics:
+    - rule: ambiguous_identity
+      paths: [Quiet Harbor (2020)/Loud Harbor (1999).mkv]
+      reason: contradicts_owning_folder
+    - rule: folder_mismatch
+      paths: [Quiet Harbor (2020)/Loud Harbor (1999).mkv]
+      reason: title
+    - rule: folder_mismatch
+      paths: [Quiet Harbor (2020)/Loud Harbor (1999).mkv]
+      reason: year
+
+- name: series content in a movie library is reported as misplaced
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Some Show/Season 01/Some Show S01E01.mkv
+  expect:
+    diagnostics:
+    - rule: misplaced_series
+      paths: [Some Show/Season 01/Some Show S01E01.mkv]
+
+- name: an extra that no item owns is reported as an orphan
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Movie One (2001)/Movie One (2001).mkv
+    - trailer.mkv
+  expect:
+    diagnostics:
+    - rule: missing_provider_id
+      paths:
+      - 'Movie One (2001)/Movie One (2001).mkv'
+    - rule: orphan_extra
+      paths: [trailer.mkv]
+
+- name: unclaimed subtitles, images and other files are reported by kind and a video's NFO is not
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Northern Passage (2021)/Northern Passage (2021).mkv
+    - Northern Passage (2021)/Northern Passage (2021).nfo
+    - Northern Passage (2021)/Other Thing.en.srt
+    - Northern Passage (2021)/notes.txt
+    - fanart.jpg
+  expect:
+    diagnostics:
+    - rule: missing_provider_id
+      paths:
+      - 'Northern Passage (2021)/Northern Passage (2021).mkv'
+    - rule: orphan_sidecar
+      paths: [Northern Passage (2021)/Other Thing.en.srt]
+    - rule: unclaimed_file
+      paths: [Northern Passage (2021)/notes.txt]
+    - rule: orphan_artwork
+      paths: [fanart.jpg]
+
+- name: an NFO named after any version's video is not reported unclaimed
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Northern Passage (2021)/Northern Passage (2021) - 1080p.mkv
+    - Northern Passage (2021)/Northern Passage (2021) - 1080p.nfo
+    - Northern Passage (2021)/Northern Passage (2021) - 720p.mkv
+    - Northern Passage (2021)/Northern Passage (2021) - 720p.nfo
+  expect:
+    diagnostics:
+    - rule: missing_provider_id
+      paths:
+      - 'Northern Passage (2021)/Northern Passage (2021) - 1080p.mkv'
+      - 'Northern Passage (2021)/Northern Passage (2021) - 720p.mkv'
+
+- name: parts with a gap are reported as a grouping problem
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Quiet Harbor (2020)/Quiet Harbor (2020) - cd1.mkv
+    - Quiet Harbor (2020)/Quiet Harbor (2020) - cd3.mkv
+  expect:
+    diagnostics:
+    - rule: missing_part
+      paths:
+      - Quiet Harbor (2020)/Quiet Harbor (2020) - cd1.mkv
+      - Quiet Harbor (2020)/Quiet Harbor (2020) - cd3.mkv
+
+- name: versions with the same label are reported as a clash
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Quiet Harbor (2020)/Quiet Harbor (2020) [1080p].mkv
+    - Quiet Harbor (2020)/Quiet Harbor (2020) - 1080p.mkv
+  expect:
+    diagnostics:
+    - rule: clashing_version_labels
+      paths:
+      - Quiet Harbor (2020)/Quiet Harbor (2020) - 1080p.mkv
+      - Quiet Harbor (2020)/Quiet Harbor (2020) [1080p].mkv
+    - rule: missing_provider_id
+      paths:
+      - 'Quiet Harbor (2020)/Quiet Harbor (2020) - 1080p.mkv'
+      - 'Quiet Harbor (2020)/Quiet Harbor (2020) [1080p].mkv'
+    - rule: profile_violation
+      paths: ['Quiet Harbor (2020)/Quiet Harbor (2020) [1080p].mkv']
+      proposed_path: Quiet Harbor (2020)/Quiet Harbor (2020) - 1080p.mkv
+
+- name: versions that differ only in their edition tags are not a clash
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - "Death Race (1982) {tmdb-78}/Death Race (1982) {tmdb-78} {edition-Director's Cut}.mkv"
+    - Death Race (1982) {tmdb-78}/Death Race (1982) {tmdb-78} {edition-Final Cut}.mkv
+  expect:
+    diagnostics: []
+
+- name: a video missing a required fact is reported as insufficient facts
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - title00.mkv
+  expect:
+    diagnostics:
+    - rule: insufficient_facts
+      paths: [title00.mkv]
+      reason: missing_title
+
+- name: an episode without a season is reported as insufficient facts
+  operation: validate
+  input:
+    library: tv
+    paths:
+    - Third Watch/Third Watch E05.mkv
+  expect:
+    diagnostics:
+    - rule: missing_series_year
+      paths:
+      - 'Third Watch'
+    - rule: missing_provider_id
+      paths:
+      - 'Third Watch'
+    - rule: insufficient_facts
+      paths: [Third Watch/Third Watch E05.mkv]
+      reason: missing_season
+
+- name: a name that the target filesystem cannot store is reported with its reason
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Con.mkv
+  expect:
+    diagnostics:
+    - rule: invalid_name_under_profile
+      paths: [Con.mkv]
+      reason: reserved_name
+
+- name: an episode that matches the profile in a series that matches the profile has no diagnostics
+  operation: validate
+  input:
+    library: tv
+    paths:
+    - Harbor Lights (2019) {tvdb-81189}/Season 01/Harbor Lights (2019) - S01E05 - Low Tide.mkv
+    - Harbor Lights (2019) {tvdb-81189}/Season 01/Harbor Lights (2019) - S01E05 - Low Tide.en.forced.srt
+  expect:
+    diagnostics: []
+
+- name: a generic NFO in a folder of several movies has no role and is reported unclaimed
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Collection/Collateral (2004).mkv
+    - Collection/The Usual Suspects (1995).mkv
+    - Collection/movie.nfo
+  expect:
+    diagnostics:
+    - rule: missing_provider_id
+      paths:
+      - 'Collection/Collateral (2004).mkv'
+    - rule: profile_violation
+      paths: [Collection/Collateral (2004).mkv]
+    - rule: missing_provider_id
+      paths:
+      - 'Collection/The Usual Suspects (1995).mkv'
+    - rule: profile_violation
+      paths: [Collection/The Usual Suspects (1995).mkv]
+    - rule: unclaimed_file
+      paths: [Collection/movie.nfo]

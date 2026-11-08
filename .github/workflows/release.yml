@@ -1,0 +1,77 @@
+name: release
+
+# A `v<version>` tag publishes every crate to crates.io. Running the workflow by hand
+# checks the same steps with `cargo publish --dry-run` and publishes nothing.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      # Creates the GitHub release.
+      contents: write
+      # Trusted publishing: crates.io exchanges the workflow's OpenID Connect token for a
+      # short-lived publish token. No registry token is stored in the repository.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - uses: extractions/setup-just@v2
+      - run: just check
+      - name: Check that the tag names the crates' version
+        if: github.ref_type == 'tag'
+        run: |
+          version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "nomenclator") | .version')
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match the crate version $version. Tag the release with cargo release."
+            exit 1
+          fi
+      # CHANGELOG.md is the one source of the release notes for every platform. A run
+      # without a tag reads the `[Unreleased]` section to check the extraction.
+      - name: Write the release notes from CHANGELOG.md
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            heading="## [${GITHUB_REF_NAME#v}]"
+          else
+            heading="## [Unreleased]"
+          fi
+          awk -v heading="$heading" 'index($0, heading) == 1 { found = 1; next } found && /^## \[/ { exit } found { print }' CHANGELOG.md > release-notes.md
+          if ! grep -q '[^[:space:]]' release-notes.md; then
+            echo "CHANGELOG.md has no entries under $heading. Release with cargo release, which dates the section."
+            exit 1
+          fi
+          cat release-notes.md
+      - name: Check the packages without publishing
+        if: github.ref_type != 'tag'
+        run: cargo publish --workspace --dry-run
+      - uses: rust-lang/crates-io-auth-action@v1
+        if: github.ref_type == 'tag'
+        id: auth
+      # Publishes in dependency order and skips a crate whose version is already on
+      # crates.io, so the first release (published by hand) and a rerun after a partial
+      # failure both finish.
+      - name: Publish the crates
+        if: github.ref_type == 'tag'
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          for crate in nomenclator nomenclator-cli nomenclator-grpc; do
+            status=$(curl -s -o /dev/null -w '%{http_code}' -A "nomenclator-release (github.com/avenusta/nomenclator)" "https://crates.io/api/v1/crates/$crate/$version")
+            if [ "$status" = "200" ]; then
+              echo "$crate $version is already on crates.io. It is skipped."
+            else
+              cargo publish -p "$crate"
+            fi
+          done
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+      - name: Create the GitHub release
+        if: github.ref_type == 'tag'
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file release-notes.md --verify-tag
+        env:
+          GH_TOKEN: ${{ github.token }}

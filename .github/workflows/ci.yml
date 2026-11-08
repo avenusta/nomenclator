@@ -1,0 +1,89 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # Results must be identical on every OS, so the gate runs on each of them.
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      # The toolchain comes from rust-toolchain.toml.
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      # Caches the compiled dependencies per OS and lockfile.
+      - uses: Swatinem/rust-cache@v2
+      - uses: extractions/setup-just@v2
+      - run: just check
+
+  minimum-rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@1.89
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo +1.89 check --workspace --all-targets
+
+  # Interprets and plans synthetic libraries of 1k, 10k and 100k entries in release
+  # mode, and keeps the times of each run as the `benchmarks` artifact.
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: extractions/setup-just@v2
+      - run: just bench
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmarks
+          path: target/benchmarks.json
+
+  # Dependency licenses and security advisories (`deny.toml`).
+  deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: EmbarkStudios/cargo-deny-action@v2
+
+  # Lint rules and breaking changes of the wire contract (`buf.yaml`). A pull request is
+  # compared with its base branch, and a push with the previous commit.
+  proto:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+      - run: buf lint crates/nomenclator-grpc/proto
+      - run: buf breaking crates/nomenclator-grpc/proto --against ".git#ref=${AGAINST},subdir=crates/nomenclator-grpc/proto"
+        env:
+          AGAINST: ${{ github.event_name == 'pull_request' && format('refs/remotes/origin/{0}', github.base_ref) || 'HEAD~1' }}
+
+  # Breaking changes of the core crate's public API against the latest release tag. Before
+  # the first release there is no tag, and the job reports that it skipped the check.
+  semver:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - id: baseline
+        run: echo "tag=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)" >> "$GITHUB_OUTPUT"
+      - if: steps.baseline.outputs.tag == ''
+        run: echo "No release tag exists yet. The public API check starts at the first release."
+      - if: steps.baseline.outputs.tag != ''
+        uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+          package: nomenclator
+          baseline-rev: ${{ steps.baseline.outputs.tag }}

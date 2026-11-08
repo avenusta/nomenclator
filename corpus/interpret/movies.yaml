@@ -1,0 +1,3124 @@
+- name: files with version labels and 3D layout tags in a folder without a year are one movie with its trailer
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Mad Max Fury Road/Mad Max Fury Road - 1080p.mkv
+    - Mad Max Fury Road/Mad Max Fury Road-trailer.mp4
+    - Mad Max Fury Road/Mad Max Fury Road - [hsbs].mkv
+    - Mad Max Fury Road/Mad Max Fury Road [hsbs].mkv
+  expect:
+    items:
+    - kind: movie
+      title: Mad Max Fury Road
+      extras:
+      - extra: trailer
+        paths:
+        - Mad Max Fury Road/Mad Max Fury Road-trailer.mp4
+
+- name: files with free-text labels after a title, with or without a dash, are versions of one movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Hidden Figures/Hidden Figures - apple.mkv
+    - Hidden Figures/Hidden Figures-trailer.mp4
+    - Hidden Figures/Hidden Figures - banana.mkv
+    - Hidden Figures/Hidden Figures [banana].mp4
+  expect:
+    items:
+    - kind: movie
+      extras:
+      - extra: trailer
+        paths:
+        - Hidden Figures/Hidden Figures-trailer.mp4
+      versions:
+      - {}
+      - {}
+      - {}
+
+- name: two labels with different years in one dated movie folder are versions of that movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - The Shape of Water (2017)/The Shape of Water (2017) - 2017 version.mkv
+    - The Shape of Water (2017)/The Shape of Water (2017) - 2020 version.mkv
+  expect:
+    items:
+    - kind: movie
+      title: The Shape of Water
+      year: 2017
+      versions:
+      - {}
+      - {}
+
+- name: a one-letter folder that contains different movies is not one movie with versions
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - F/The Leftovers.mkv
+    - F/Frozen.mkv
+    - F/Fight Club.mkv
+    - F/Fantasia.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - {}
+    - kind: movie
+      versions:
+      - {}
+    - kind: movie
+      versions:
+      - {}
+    - kind: movie
+      versions:
+      - {}
+
+- name: eight dash-numbered files in one movie folder are one movie with eight versions
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Ghostbusters/Ghostbusters.mkv
+    - Ghostbusters/Ghostbusters-2.mkv
+    - Ghostbusters/Ghostbusters-3.mkv
+    - Ghostbusters/Ghostbusters-4.mkv
+    - Ghostbusters/Ghostbusters-5.mkv
+    - Ghostbusters/Ghostbusters-6.mkv
+    - Ghostbusters/Ghostbusters-7.mkv
+    - Ghostbusters/Ghostbusters-8.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - {}
+      - {}
+      - {}
+      - {}
+      - {}
+      - {}
+      - {}
+      - {}
+
+- name: a folder named by the first letters of its movies' titles contains separate movies, not versions
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Mo/Moana.mkv
+    - Mo/Monsters Inc.mkv
+    - Mo/Mommy.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - {}
+    - kind: movie
+      versions:
+      - {}
+    - kind: movie
+      versions:
+      - {}
+
+- name: space-separated numbers after a folder's title are separate movies, not versions
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Rocky/Rocky 1.mkv
+    - Rocky/Rocky 2.mkv
+    - Rocky/Rocky 3.mkv
+    - Rocky/Rocky 4.mkv
+    - Rocky/Rocky 5.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - {}
+    - kind: movie
+      versions:
+      - {}
+    - kind: movie
+      versions:
+      - {}
+    - kind: movie
+      versions:
+      - {}
+    - kind: movie
+      versions:
+      - {}
+
+- name: files in a folder with differing years, or with none, are separate movies
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Total Recall/Total Recall.mkv
+    - Total Recall/Total Recall (1990).mkv
+    - Total Recall/Total Recall (2012).mkv
+  expect:
+    items:
+    - kind: movie
+      year: 1990
+    - kind: movie
+      year: 2012
+    - kind: movie
+      year: null
+
+- name: labels after a dash or in brackets are versions, ordered by the plain file, the resolution and the name
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Stand by Me/Stand by Me.mkv
+    - Stand by Me/Stand by Me-720p.mkv
+    - Stand by Me/Stand by Me-draft.mkv
+    - Stand by Me/Stand by Me-bluray.mkv
+    - Stand by Me/Stand by Me-3d.mkv
+    - Stand by Me/Stand by Me-3d-hsbs.mkv
+    - Stand by Me/Stand by Me[draft].mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - paths:
+        - Stand by Me/Stand by Me.mkv
+      - paths:
+        - Stand by Me/Stand by Me-720p.mkv
+      - paths:
+        - Stand by Me/Stand by Me-3d.mkv
+      - paths:
+        - Stand by Me/Stand by Me-3d-hsbs.mkv
+      - paths:
+        - Stand by Me/Stand by Me-bluray.mkv
+      - paths:
+        - Stand by Me/Stand by Me-draft.mkv
+      - paths:
+        - Stand by Me/Stand by Me[draft].mkv
+
+- name: labels after a spaced dash are versions in the order of labels without spaces
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Rear Window/Rear Window.mkv
+    - Rear Window/Rear Window - 720p.mkv
+    - Rear Window/Rear Window - draft.mkv
+    - Rear Window/Rear Window - bluray.mkv
+    - Rear Window/Rear Window - 3d.mkv
+    - Rear Window/Rear Window - 3d-hsbs.mkv
+    - Rear Window/Rear Window [draft].mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - paths:
+        - Rear Window/Rear Window.mkv
+      - paths:
+        - Rear Window/Rear Window - 720p.mkv
+      - paths:
+        - Rear Window/Rear Window - 3d.mkv
+      - paths:
+        - Rear Window/Rear Window - 3d-hsbs.mkv
+      - paths:
+        - Rear Window/Rear Window - bluray.mkv
+      - paths:
+        - Rear Window/Rear Window - draft.mkv
+      - paths:
+        - Rear Window/Rear Window [draft].mkv
+
+- name: labelled files with different years are separate movies
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Paper Crane - Pre-release (1995).mkv
+    - Paper Crane - Remaster (2005).mkv
+  expect:
+    items:
+    - kind: movie
+    - kind: movie
+
+- name: labels after an underscore in a folder without a year are versions
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Paths of Glory/Paths of Glory.mkv
+    - Paths of Glory/Paths of Glory_720p.mkv
+    - Paths of Glory/Paths of Glory_draft.mkv
+    - Paths of Glory/Paths of Glory_bluray.mkv
+    - Paths of Glory/Paths of Glory_3d.mkv
+    - Paths of Glory/Paths of Glory_3d-hsbs.mkv
+    - Paths of Glory/Paths of Glory_3d.hsbs.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - {}
+      - {}
+      - {}
+      - {}
+      - {}
+      - {}
+      - {}
+
+- name: files with bracketed edition and quality groups after the title and year are versions
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Apocalypse Now (1979)/Apocalypse Now (1979) [Final Cut] [1080p HEVC AAC].mkv
+    - Apocalypse Now (1979)/Apocalypse Now (1979) [Extended Cut] [480p HEVC AAC,AAC,AAC].mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - {}
+      - {}
+
+- name: a bracketed resolution with release words after it makes a file a version
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Amelie (2001)/Amelie (2001) [1080p] Blu-ray.x264.AC3.mkv
+    - Amelie (2001)/Amelie (2001) [2160p] Blu-ray.x265.FLAC.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - {}
+      - {}
+
+- name: version order is the plain file, then resolution highest first, then label name, with other labels last
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Whiplash (2014)/Whiplash (2014) - Thollow.roadrical Release.mkv
+    - Whiplash (2014)/Whiplash (2014) - Directors Cut.mkv
+    - Whiplash (2014)/Whiplash (2014) - 1080p.mkv
+    - Whiplash (2014)/Whiplash (2014) - 2160p.mkv
+    - Whiplash (2014)/Whiplash (2014) - 720p.mkv
+    - Whiplash (2014)/Whiplash (2014).mkv
+    - Whiplash (2014)/Whiplash (2014) - 1080p Directors Cut.mkv
+    - Whiplash (2014)/Whiplash (2014) - 2160p Remux.mkv
+    - Whiplash (2014)/Whiplash (2014) - 1080p Thollow.roadrical Release.mkv
+    - Whiplash (2014)/Whiplash (2014) - 720p Directors Cut.mkv
+    - Whiplash (2014)/Whiplash (2014) - 1080p High Bitrate.mkv
+    - Whiplash (2014)/Whiplash (2014) - 1080p Remux.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - paths:
+        - Whiplash (2014)/Whiplash (2014).mkv
+      - paths:
+        - Whiplash (2014)/Whiplash (2014) - 2160p.mkv
+      - paths:
+        - Whiplash (2014)/Whiplash (2014) - 2160p Remux.mkv
+      - paths:
+        - Whiplash (2014)/Whiplash (2014) - 1080p.mkv
+      - paths:
+        - Whiplash (2014)/Whiplash (2014) - 1080p Directors Cut.mkv
+      - paths:
+        - Whiplash (2014)/Whiplash (2014) - 1080p High Bitrate.mkv
+      - paths:
+        - Whiplash (2014)/Whiplash (2014) - 1080p Remux.mkv
+      - paths:
+        - Whiplash (2014)/Whiplash (2014) - 1080p Thollow.roadrical Release.mkv
+      - paths:
+        - Whiplash (2014)/Whiplash (2014) - 720p.mkv
+      - paths:
+        - Whiplash (2014)/Whiplash (2014) - 720p Directors Cut.mkv
+      - paths:
+        - Whiplash (2014)/Whiplash (2014) - Directors Cut.mkv
+      - paths:
+        - Whiplash (2014)/Whiplash (2014) - Thollow.roadrical Release.mkv
+
+- name: files in a folder whose title has a dash and an IMDb tag are grouped as versions
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Hellboy - Golden Army (2008) [imdbid=tt0800383]/Hellboy - Golden Army (2008) [imdbid=tt0800383] - Version 1.mkv
+    - Hellboy - Golden Army (2008) [imdbid=tt0800383]/Hellboy - Golden Army (2008) [imdbid=tt0800383] - Version 2.mkv
+  expect:
+    items:
+    - kind: movie
+      title: Hellboy - Golden Army
+      year: 2008
+      versions:
+      - {}
+      - {}
+
+- name: a file with an unclosed bracket after title and year is a version
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Collateral (2004)/Collateral (2004) [Version 1].mkv
+    - Collateral (2004)/Collateral (2004) [Version 2.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - {}
+      - {}
+
+- name: an empty TV library returns an empty interpretation
+  operation: interpret
+  input:
+    library: tv
+    paths: []
+  expect:
+    items: []
+
+- name: files with underscore and dot separators after a title and year are versions of one movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Arrival (2016)/Arrival (2016)_4K.mkv
+    - Arrival (2016)/Arrival (2016)_1080p.mkv
+    - Arrival (2016)/Arrival (2016).UHD.mkv
+    - Arrival (2016)/Arrival (2016).720p.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - {}
+      - {}
+      - {}
+      - {}
+
+- name: episode-coded files under a season folder in a movies library are separate movies, flagged as misplaced series
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Severance/Season 1/Severance - S01E01 - 1080p.mkv
+    - Severance/Season 1/Severance - S01E01 - 720p.mkv
+  expect:
+    items:
+    - kind: movie
+      misplaced_series: true
+    - kind: movie
+      misplaced_series: true
+
+- name: a movie's files are stacked by a part marker whether spaced, dotted, dashed or hyphenated
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Gladiator/Gladiator part1.mkv
+    - Gladiator/Gladiator part2.mkv
+    - Jurassic Park/Jurassic Park - part1.mkv
+    - Jurassic Park/Jurassic Park - part2.mkv
+    - Apocalypse Now/Apocalypse Now.pt1.mkv
+    - Apocalypse Now/Apocalypse Now.pt2.mkv
+    - Death Race/Death Race-part1.mkv
+    - Death Race/Death Race-part2.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - paths:
+        - Apocalypse Now/Apocalypse Now.pt1.mkv
+        - Apocalypse Now/Apocalypse Now.pt2.mkv
+    - kind: movie
+      versions:
+      - paths:
+        - Death Race/Death Race-part1.mkv
+        - Death Race/Death Race-part2.mkv
+    - kind: movie
+      versions:
+      - paths:
+        - Gladiator/Gladiator part1.mkv
+        - Gladiator/Gladiator part2.mkv
+    - kind: movie
+      versions:
+      - paths:
+        - Jurassic Park/Jurassic Park - part1.mkv
+        - Jurassic Park/Jurassic Park - part2.mkv
+
+- name: a hyphen-labelled stacked version is primary over a single-file version of lower resolution
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Arrival/Arrival-1080p-part1.mkv
+    - Arrival/Arrival-1080p-part2.mkv
+    - Arrival/Arrival-720p.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - paths:
+        - Arrival/Arrival-1080p-part1.mkv
+        - Arrival/Arrival-1080p-part2.mkv
+      - paths:
+        - Arrival/Arrival-720p.mkv
+
+- name: a stacked alternate version holds all its parts, and the file named for the folder is primary
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Snatch (2000)/Snatch (2000).mkv
+    - Snatch (2000)/Snatch (2000) - 2160p cd1.mkv
+    - Snatch (2000)/Snatch (2000) - 2160p cd2.mkv
+    - Snatch (2000)/Snatch (2000) - 2160p cd3.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - paths:
+        - Snatch (2000)/Snatch (2000).mkv
+      - paths:
+        - Snatch (2000)/Snatch (2000) - 2160p cd1.mkv
+        - Snatch (2000)/Snatch (2000) - 2160p cd2.mkv
+        - Snatch (2000)/Snatch (2000) - 2160p cd3.mkv
+
+- name: the suffix extras of loose stacked movies belong to those movies, and a trailer for an absent movie has no owner
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Alien.mkv
+    - Alien.trailer.mkv
+    - Goodfellas part1.mkv
+    - Goodfellas part2.mkv
+    - Goodfellas-deleted.mkv
+    - Goodfellas-sample.mkv
+    - Toy Story cd1.mkv
+    - Toy Story cd2.mkv
+    - Toy Story-trailer.mkv
+    - Zodiac-trailer.mkv
+    - trailer.mkv
+  expect:
+    items:
+    - kind: movie
+      title: Alien
+      versions:
+      - paths:
+        - Alien.mkv
+      extras:
+      - extra: trailer
+        paths:
+        - Alien.trailer.mkv
+    - kind: movie
+      title: Goodfellas
+      versions:
+      - paths:
+        - Goodfellas part1.mkv
+        - Goodfellas part2.mkv
+      extras:
+      - extra: deleted_scene
+        paths:
+        - Goodfellas-deleted.mkv
+      - extra: sample
+        paths:
+        - Goodfellas-sample.mkv
+    - kind: movie
+      title: Toy Story
+      versions:
+      - paths:
+        - Toy Story cd1.mkv
+        - Toy Story cd2.mkv
+      extras:
+      - extra: trailer
+        paths:
+        - Toy Story-trailer.mkv
+    - kind: extra
+      extra: trailer
+      paths:
+      - Zodiac-trailer.mkv
+    - kind: extra
+      extra: trailer
+      paths:
+      - trailer.mkv
+
+- name: an NFO beside a video is attached, not counted as an item
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Her (2013).mkv
+    - Her (2013).nfo
+  expect:
+    items:
+    - kind: movie
+
+- name: a trailer joined by a spaced dash belongs to the movie whose title it repeats
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Moonlight.mkv
+    - Moonlight - trailer.mkv
+  expect:
+    items:
+    - kind: movie
+      extras:
+      - extra: trailer
+        paths:
+        - Moonlight - trailer.mkv
+
+- name: a numbered -trailer suffix makes a file a trailer, also when the movie file has a version label
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Rocky - 720p.mkv
+    - Rocky-trailer3.mkv
+    - Rocky-trailer7.mkv
+  expect:
+    items:
+    - kind: movie
+      extras:
+      - extra: trailer
+        paths:
+        - Rocky-trailer3.mkv
+      - extra: trailer
+        paths:
+        - Rocky-trailer7.mkv
+
+- name: a trailer named for a dated release file belongs to that movie, with or without brackets around the year
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Ran (1985)-trailer.mp4
+    - Ran 1985-trailer.mp4
+    - Ran.1985.2160p.WEB-DL.x265.mkv
+    - Ran.1985.2160p.WEB-DL.x265.srt
+  expect:
+    items:
+    - kind: movie
+      extras:
+      - extra: trailer
+        paths:
+        - Ran (1985)-trailer.mp4
+      - extra: trailer
+        paths:
+        - Ran 1985-trailer.mp4
+
+- name: a trailer with the name of the folder's movie belongs to the movie of that folder
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Roma (2018)/Roma (2018)-trailer.mp4
+    - Roma (2018)/Roma.2018.1080p.WEB-DL.mkv
+  expect:
+    items:
+    - kind: movie
+      extras:
+      - extra: trailer
+        paths:
+        - Roma (2018)/Roma (2018)-trailer.mp4
+
+- name: loose files whose names differ only in a final number are different movies
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Beach Trip 1.mkv
+    - Beach Trip 2.mkv
+    - Beach Trip 3.mkv
+    - Beach Trip 4.mkv
+    - Beach Trip 5.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - {}
+    - kind: movie
+      versions:
+      - {}
+    - kind: movie
+      versions:
+      - {}
+    - kind: movie
+      versions:
+      - {}
+    - kind: movie
+      versions:
+      - {}
+
+- name: two disc folders with disc structures are the ordered parts of one movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Movies (Epics)/Ben-Hur (1959)/Ben-Hur Disc 1/
+    - Movies (Epics)/Ben-Hur (1959)/Ben-Hur Disc 1/VIDEO_TS/
+    - Movies (Epics)/Ben-Hur (1959)/Ben-Hur Disc 1/VIDEO_TS/VIDEO_TS.IFO
+    - Movies (Epics)/Ben-Hur (1959)/Ben-Hur Disc 2/
+    - Movies (Epics)/Ben-Hur (1959)/Ben-Hur Disc 2/VIDEO_TS/
+    - Movies (Epics)/Ben-Hur (1959)/Ben-Hur Disc 2/VIDEO_TS/VIDEO_TS.IFO
+  expect:
+    items:
+    - kind: movie
+      title: Ben-Hur
+      year: 1959
+      path: Movies (Epics)/Ben-Hur (1959)
+      versions:
+      - paths:
+        - Movies (Epics)/Ben-Hur (1959)/Ben-Hur Disc 1/
+        - Movies (Epics)/Ben-Hur (1959)/Ben-Hur Disc 2/
+    unclaimed_files: []
+
+- name: files differing by a number after a hash sign are separate movies
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - 'Holiday Video #1.mp4'
+    - 'Holiday Video #2.mp4'
+  expect:
+    items:
+    - kind: movie
+    - kind: movie
+
+- name: a stacked movie owns trailers with and without a part suffix
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Warrior (2011) part1.mp4
+    - Warrior (2011) part2.mp4
+    - Warrior (2011) part1-trailer.mp4
+    - Warrior (2011)-trailer.mp4
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - paths:
+        - Warrior (2011) part1.mp4
+        - Warrior (2011) part2.mp4
+      extras:
+      - extra: trailer
+        paths:
+        - Warrior (2011) part1-trailer.mp4
+      - extra: trailer
+        paths:
+        - Warrior (2011)-trailer.mp4
+
+- name: a trailer named for the folder's movie belongs to that movie, and a trailer at the root has no owner
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Clerks (1994)/movie.mkv
+    - Clerks (1994)/Clerks (1994)-trailer.mkv
+    - Clerks (1994)/Clerks (1994)-trailer5.mkv
+    - trailer.mkv
+  expect:
+    items:
+    - kind: movie
+      extras:
+      - extra: trailer
+        paths:
+        - Clerks (1994)/Clerks (1994)-trailer.mkv
+      - extra: trailer
+        paths:
+        - Clerks (1994)/Clerks (1994)-trailer5.mkv
+    - kind: extra
+      extra: trailer
+      paths:
+      - trailer.mkv
+
+- name: two cd stacks with different disc labels in one dated movie folder are two versions of that movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - The Big Lebowski (1998)/The Big Lebowski (1998) Disc 1 cd1.avi
+    - The Big Lebowski (1998)/The Big Lebowski (1998) Disc 1 cd2.avi
+    - The Big Lebowski (1998)/The Big Lebowski (1998) Disc 2 cd1.avi
+    - The Big Lebowski (1998)/The Big Lebowski (1998) Disc 2 cd2.avi
+  expect:
+    items:
+    - kind: movie
+      title: The Big Lebowski
+      year: 1998
+      ambiguous: false
+      versions:
+      - paths:
+        - The Big Lebowski (1998)/The Big Lebowski (1998) Disc 1 cd1.avi
+        - The Big Lebowski (1998)/The Big Lebowski (1998) Disc 1 cd2.avi
+      - paths:
+        - The Big Lebowski (1998)/The Big Lebowski (1998) Disc 2 cd1.avi
+        - The Big Lebowski (1998)/The Big Lebowski (1998) Disc 2 cd2.avi
+
+- name: a generic file name deep in nested folders is one movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Downloads/3 - ACTION/Argo (2012)/movie.mkv
+  expect:
+    items:
+    - kind: movie
+
+- name: one loose file is one movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Sunset Boulevard.mkv
+  expect:
+    items:
+    - kind: movie
+
+- name: loose files that differ by a dash label are not versions
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Love Actually - A.avi
+    - Love Actually - B.avi
+  expect:
+    items:
+    - kind: movie
+    - kind: movie
+
+- name: loose files sharing a stem but not a container are separate movies
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Ghost Town - A.avi
+    - Ghost Town - A.mp4
+  expect:
+    items:
+    - kind: movie
+    - kind: movie
+
+- name: a file named trailer inside a movie folder is that movie's trailer
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Ratatouille (2007)/Ratatouille (2007).mkv
+    - Ratatouille (2007)/trailer.mkv
+  expect:
+    items:
+    - kind: movie
+      extras:
+      - extra: trailer
+        paths:
+        - Ratatouille (2007)/trailer.mkv
+
+- name: every video in a movie's trailers folder is a trailer, whatever its name
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Coco (2017)/Coco (2017).mkv
+    - Coco (2017)/trailers/some title.mkv
+    - Coco (2017)/trailers/trailer.mkv
+  expect:
+    items:
+    - kind: movie
+      extras:
+      - extra: trailer
+        paths:
+        - Coco (2017)/trailers/some title.mkv
+      - extra: trailer
+        paths:
+        - Coco (2017)/trailers/trailer.mkv
+
+- name: suffixed trailer, sample and extra files are extras of the movie beside them, but a longer name with the same start is not
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Shrek/
+    - Shrek/Shrek.mkv
+    - Shrek/Shrek - extra.mkv
+    - Shrek/Shrek-sample.mkv
+    - Shrek/Shrek-trailer.mkv
+    - Shrek/Shrek Forever After.mkv
+  expect:
+    extras_of:
+      Shrek/Shrek.mkv:
+      - extra: extra
+        paths:
+        - Shrek/Shrek - extra.mkv
+      - extra: sample
+        paths:
+        - Shrek/Shrek-sample.mkv
+      - extra: trailer
+        paths:
+        - Shrek/Shrek-trailer.mkv
+
+- name: an extra's title drops its type suffix and bracketed release tags
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Coraline/
+    - Coraline/Coraline.mkv
+    - Coraline/Recording the puppets[Bluray]-behindthescenes.mkv
+    - Coraline/Interview with the designer-interview.mkv
+    - Coraline/shorts/
+    - Coraline/shorts/Tunnel of Gold[1080p].mkv
+  expect:
+    extras_of:
+      Coraline/Coraline.mkv:
+      - extra: interview
+        title: Interview with the designer
+        paths:
+        - Coraline/Interview with the designer-interview.mkv
+      - extra: behind_the_scenes
+        title: Recording the puppets
+        paths:
+        - Coraline/Recording the puppets[Bluray]-behindthescenes.mkv
+      - extra: short
+        title: Tunnel of Gold
+        paths:
+        - Coraline/shorts/Tunnel of Gold[1080p].mkv
+
+- name: suffix extras, exact-name theme audio and extras folders attach to the movie, while look-alike names and non-media files do not
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Coraline/
+    - Coraline/Coraline.mkv
+    - Coraline/Coraline - trailer.mkv
+    - Coraline/trailers/
+    - Coraline/trailers/some trailer.mkv
+    - Coraline/theme-music/
+    - Coraline/theme-music/theme2.mp3
+    - Coraline/theme.mp3
+    - Coraline/not a theme.mp3
+    - Coraline/behind the scenes/
+    - Coraline/behind the scenes/the making of Coraline.mkv
+    - Coraline/behind the scenes.mkv
+    - Coraline/Coraline - sample.mkv
+    - Coraline/Coraline something else.mkv
+    - Coraline/extras/
+    - Coraline/extras/Honest Trailer.mkv
+    - Coraline/notes.txt
+  expect:
+    extras_of:
+      Coraline/Coraline.mkv:
+      - extra: sample
+        paths:
+        - Coraline/Coraline - sample.mkv
+      - extra: trailer
+        paths:
+        - Coraline/Coraline - trailer.mkv
+      - extra: behind_the_scenes
+        paths:
+        - Coraline/behind the scenes/the making of Coraline.mkv
+      - extra: extra
+        paths:
+        - Coraline/extras/Honest Trailer.mkv
+      - extra: theme_song
+        paths:
+        - Coraline/theme-music/theme2.mp3
+      - extra: theme_song
+        paths:
+        - Coraline/theme.mp3
+      - extra: trailer
+        paths:
+        - Coraline/trailers/some trailer.mkv
+    unclaimed_files:
+    - Coraline/not a theme.mp3
+    - Coraline/notes.txt
+
+- name: an exact-name trailer belongs only to the movie in its own folder, also for a multi-part movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Coraline/
+    - Coraline/Coraline.mkv
+    - Coraline/trailer.mkv
+    - Paddington/
+    - Paddington/trailer.mkv
+    - Brave/
+    - Brave/Brave - part1.mkv
+    - Brave/Brave - part2.mkv
+    - Brave/trailer.mkv
+  expect:
+    extras_of:
+      Coraline/Coraline.mkv:
+      - extra: trailer
+        paths:
+        - Coraline/trailer.mkv
+      Brave/Brave - part1.mkv:
+      - extra: trailer
+        paths:
+        - Brave/trailer.mkv
+
+- name: a file without a media extension is not an extra
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Bambi/
+    - Bambi/Bambi.mkv
+    - Bambi/trailer.txt
+    - Bambi/theme.gif
+    - Bambi/extras/
+    - Bambi/extras/clip.txt
+    - Bambi/trailers/
+    - Bambi/trailers/teaser.png
+  expect:
+    extras_of:
+      Bambi/Bambi.mkv: []
+
+- name: the year in the name of a trailer is the year of that extra
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Dumbo/
+    - Dumbo/Dumbo.mkv
+    - Dumbo/trailers/
+    - Dumbo/trailers/Trailer 2 (2015).mkv
+  expect:
+    extras_of:
+      Dumbo/Dumbo.mkv:
+      - extra: trailer
+        year: 2015
+        paths:
+        - Dumbo/trailers/Trailer 2 (2015).mkv
+
+- name: one extra in two containers is two extras, and the text before the suffix is the title of each
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Birdman (2014)/
+    - Birdman (2014)/Birdman (2014) - [720p AV1].mkv
+    - Birdman (2014)/Birdman (2014) - [720p AV1]-trailer.mkv
+    - Birdman (2014)/Birdman (2014) - [720p AV1]-trailer.mp4
+    - Birdman (2014)/Birdman (2014) - [720p AV1]-behindthescenes.mkv
+    - Birdman (2014)/Birdman (2014) - [720p AV1]-behindthescenes.mp4
+  expect:
+    extras_of:
+      Birdman (2014)/Birdman (2014) - [720p AV1].mkv:
+      - title: Birdman
+        year: 2014
+        paths:
+        - Birdman (2014)/Birdman (2014) - [720p AV1]-behindthescenes.mkv
+      - title: Birdman
+        year: 2014
+        paths:
+        - Birdman (2014)/Birdman (2014) - [720p AV1]-behindthescenes.mp4
+      - title: Birdman
+        year: 2014
+        paths:
+        - Birdman (2014)/Birdman (2014) - [720p AV1]-trailer.mkv
+      - title: Birdman
+        year: 2014
+        paths:
+        - Birdman (2014)/Birdman (2014) - [720p AV1]-trailer.mp4
+
+- name: the same trailer in two resolutions is two separate extras, each titled by the text before its suffix
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Mulan (2020)/
+    - Mulan (2020)/Mulan (2020) - [2160p].mkv
+    - Mulan (2020)/Mulan (2020) - [1080p]-trailer.mkv
+    - Mulan (2020)/Mulan (2020) - [2160p]-trailer.mkv
+  expect:
+    extras_of:
+      Mulan (2020)/Mulan (2020) - [2160p].mkv:
+      - title: Mulan
+        paths:
+        - Mulan (2020)/Mulan (2020) - [1080p]-trailer.mkv
+      - title: Mulan
+        paths:
+        - Mulan (2020)/Mulan (2020) - [2160p]-trailer.mkv
+
+- name: each numbered trailer file is its own extra, and its title is the text before the suffix, without a count
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Argo (2012)/
+    - Argo (2012)/Argo (2012).mkv
+    - Argo (2012)/Argo (2012)-trailer4.avi
+    - Argo (2012)/Argo (2012)-trailer4.mkv
+    - Argo (2012)/Argo (2012)-trailer9.mkv
+  expect:
+    extras_of:
+      Argo (2012)/Argo (2012).mkv:
+      - title: Argo
+        paths:
+        - Argo (2012)/Argo (2012)-trailer4.avi
+      - title: Argo
+        paths:
+        - Argo (2012)/Argo (2012)-trailer4.mkv
+      - title: Argo
+        paths:
+        - Argo (2012)/Argo (2012)-trailer9.mkv
+
+- name: an extra named after its movie has the movie's title and year, and a descriptive extra is titled by its own name
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Ponyo (2008)/
+    - Ponyo (2008)/Ponyo (2008).mkv
+    - Ponyo (2008)/Ponyo (2008)-trailer.mkv
+    - Ponyo (2008)/Recording the score-behindthescenes.mkv
+    - Ponyo (2008)/Ponyo (2008)-behindthescenes.mkv
+  expect:
+    extras_of:
+      Ponyo (2008)/Ponyo (2008).mkv:
+      - extra: behind_the_scenes
+        title: Ponyo
+        year: 2008
+        paths:
+        - Ponyo (2008)/Ponyo (2008)-behindthescenes.mkv
+      - extra: trailer
+        title: Ponyo
+        year: 2008
+        paths:
+        - Ponyo (2008)/Ponyo (2008)-trailer.mkv
+      - extra: behind_the_scenes
+        title: Recording the score
+        paths:
+        - Ponyo (2008)/Recording the score-behindthescenes.mkv
+
+- name: extras in an extras-type folder are titled from their file names
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Soul (2020)/
+    - Soul (2020)/Soul (2020).mkv
+    - Soul (2020)/trailers/
+    - Soul (2020)/trailers/Teaser.mkv
+    - Soul (2020)/trailers/Comic-Con Panel.mkv
+  expect:
+    extras_of:
+      Soul (2020)/Soul (2020).mkv:
+      - extra: trailer
+        title: Comic-Con Panel
+        paths:
+        - Soul (2020)/trailers/Comic-Con Panel.mkv
+      - extra: trailer
+        title: Teaser
+        paths:
+        - Soul (2020)/trailers/Teaser.mkv
+
+- name: every distinct file in one extras folder is its own extra, even two containers of one name
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Luca (2021)/
+    - Luca (2021)/Luca (2021).mkv
+    - Luca (2021)/trailers/
+    - Luca (2021)/trailers/Teaser.mkv
+    - Luca (2021)/trailers/Official.mkv
+    - Luca (2021)/trailers/Official.mp4
+  expect:
+    extras_of:
+      Luca (2021)/Luca (2021).mkv:
+      - paths:
+        - Luca (2021)/trailers/Official.mkv
+      - paths:
+        - Luca (2021)/trailers/Official.mp4
+      - paths:
+        - Luca (2021)/trailers/Teaser.mkv
+
+- name: a lone labelled 3D file (.mk3d or .mkv) in its own movie folder is one movie with one version
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Dune (2021)/
+    - Dune (2021)/Dune (2021) - 1080p 3D.mk3d
+    - Frozen (2013)/
+    - Frozen (2013)/Frozen (2013) - 1080p 3D.mkv
+  expect:
+    items:
+    - kind: movie
+      title: Dune
+      versions:
+      - paths:
+        - Dune (2021)/Dune (2021) - 1080p 3D.mk3d
+    - kind: movie
+      title: Frozen
+      versions:
+      - paths:
+        - Frozen (2013)/Frozen (2013) - 1080p 3D.mkv
+
+- name: files of one title with labels in a movie folder are versions of one movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Zootopia (2016)/Zootopia (2016) - 480p.mkv
+    - Zootopia (2016)/Zootopia (2016) - 1080p.mkv
+    - Zootopia (2016)/Zootopia (2016) - 2160p.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - paths:
+        - Zootopia (2016)/Zootopia (2016) - 2160p.mkv
+      - paths:
+        - Zootopia (2016)/Zootopia (2016) - 1080p.mkv
+      - paths:
+        - Zootopia (2016)/Zootopia (2016) - 480p.mkv
+
+- name: an empty folder with a TV provider tag in a movies library returns no items
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Sherlock [tvdbid=79168]/
+  expect:
+    items: []
+
+- name: subtitles and audio whose names are the full video stem and a delimiter attach to the movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - The Departed (2006)/
+    - The Departed (2006)/The Departed (2006).commentary.mka
+    - The Departed (2006)/The Departed (2006).de.srt
+    - The Departed (2006)/The Departed (2006).jpg
+    - The Departed (2006)/The Departed (2006).mkv
+    - The Departed (2006)/The Departed (2006).srt
+    - The Departed (2006)/The Departed (2006)x.srt
+    - The Departed (2006)/Another Film.srt
+  expect:
+    items:
+    - kind: movie
+      subtitles:
+      - path: The Departed (2006)/The Departed (2006).de.srt
+      - path: The Departed (2006)/The Departed (2006).srt
+      audio:
+      - path: The Departed (2006)/The Departed (2006).commentary.mka
+
+- name: a loose movie at the root receives only its own forced subtitle, with the language of that subtitle
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - The Kid (1921).srt
+    - Sunrise (1927).fr.forced.srt
+    - Sunrise (1927).mp4
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - paths:
+        - Sunrise (1927).mp4
+      subtitles:
+      - path: Sunrise (1927).fr.forced.srt
+        language: fr
+        flags:
+        - forced
+
+- name: subtitles in a Subs or SUBTITLES folder beside the video attach by stem, with their language and hearing-impaired flag
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Silent Tide (1995)/
+    - Silent Tide (1995)/Silent Tide (1995).mkv
+    - Silent Tide (1995)/Subs/
+    - Silent Tide (1995)/Subs/Silent Tide (1995).de.sdh.srt
+    - Silent Tide (1995)/Subs/Silent Tide (1995).es.srt
+    - Silent Tide (1995)/SUBTITLES/
+    - Silent Tide (1995)/SUBTITLES/Silent Tide (1995).en.srt
+  expect:
+    items:
+    - kind: movie
+      subtitles:
+      - path: Silent Tide (1995)/SUBTITLES/Silent Tide (1995).en.srt
+        language: en
+      - path: Silent Tide (1995)/Subs/Silent Tide (1995).de.sdh.srt
+        language: de
+        flags:
+        - hearing_impaired
+      - path: Silent Tide (1995)/Subs/Silent Tide (1995).es.srt
+        language: es
+
+- name: a subtitle named for one version reads its flags after the name of that version
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Soul (2020)/
+    - Soul (2020)/Soul (2020) - 1080p.mkv
+    - Soul (2020)/Soul (2020) - 720p.es.default.srt
+    - Soul (2020)/Soul (2020) - 720p.mkv
+  expect:
+    items:
+    - kind: movie
+      subtitles:
+      - path: Soul (2020)/Soul (2020) - 720p.es.default.srt
+        language: es
+        flags:
+        - default
+
+- name: a flag word inside the name of the video is not a flag of its subtitle
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Cube (1997)/Cube.forced.mkv
+    - Cube (1997)/Cube.forced.srt
+  expect:
+    items:
+    - kind: movie
+      subtitles:
+      - path: Cube (1997)/Cube.forced.srt
+        language: null
+        flags: []
+
+- name: three-letter language codes are normalised to two letters, eng to en, fre to fr and ger to de
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Solaris.mkv
+    - Solaris.eng.srt
+    - Stalker.mkv
+    - Stalker.fre.srt
+    - Ran.mkv
+    - Ran.ger.srt
+  expect:
+    items:
+    - kind: movie
+      subtitles:
+      - path: Ran.ger.srt
+        language: de
+    - kind: movie
+      subtitles:
+      - path: Solaris.eng.srt
+        language: en
+    - kind: movie
+      subtitles:
+      - path: Stalker.fre.srt
+        language: fr
+
+- name: a clean movie folder resolves to its title and year and contains its featurettes and subtitle, and a loose root video is its own movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Sunset Boulevard (1950).mkv
+    - Gattaca (1997)/
+    - Gattaca (1997)/Featurettes/
+    - Gattaca (1997)/Featurettes/Behind the Story/
+    - Gattaca (1997)/Featurettes/Behind the Story/The Making of Gattaca.mkv
+    - Gattaca (1997)/Featurettes/Deleted Scenes/Vincent at the pool.mkv
+    - Gattaca (1997)/Featurettes/Storyboards/Launch sequence.mkv
+    - Gattaca (1997)/Gattaca (1997) DC (1080p BluRay x265 Cinefile).hu.srt
+    - Gattaca (1997)/Gattaca (1997) DC (1080p BluRay x265 Cinefile).mkv
+  expect:
+    items:
+    - kind: movie
+      title: Gattaca
+      year: 1997
+      versions:
+      - paths:
+        - Gattaca (1997)/Gattaca (1997) DC (1080p BluRay x265 Cinefile).mkv
+      subtitles:
+      - path: Gattaca (1997)/Gattaca (1997) DC (1080p BluRay x265 Cinefile).hu.srt
+      extras:
+      - paths:
+        - Gattaca (1997)/Featurettes/Behind the Story/The Making of Gattaca.mkv
+      - paths:
+        - Gattaca (1997)/Featurettes/Deleted Scenes/Vincent at the pool.mkv
+      - paths:
+        - Gattaca (1997)/Featurettes/Storyboards/Launch sequence.mkv
+    - kind: movie
+      title: Sunset Boulevard
+      year: 1950
+      path: null
+      versions:
+      - paths:
+        - Sunset Boulevard (1950).mkv
+      extras: []
+
+- name: a release-named movie folder resolves to the clean title and year and owns its featurettes, and a release-named file beside them is the version
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Lost in Translation (2003) Criterion (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/
+    - Lost in Translation (2003) Criterion (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Featurettes/
+    - Lost in Translation (2003) Criterion (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Featurettes/Interview - Sofia Coppola.mkv
+    - Lost in Translation (2003) Criterion (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Featurettes/Interview - Bill Murray and Sofia Coppola.mkv
+    - Lost in Translation (2003) Criterion (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Featurettes/Making a Scene with Sofia Coppola.mkv
+    - Lost in Translation (2003) Criterion (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Featurettes/The Players.mkv
+    - Lost in Translation (2003) Criterion (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Featurettes/Trailer - Tokyo.mkv
+    - Lost in Translation (2003) Criterion (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Lost in Translation (2003) Criterion (1080p BluRay x265 10bit Cinefile).mkv
+  expect:
+    items:
+    - kind: movie
+      title: Lost in Translation
+      year: 2003
+      versions:
+      - paths:
+        - Lost in Translation (2003) Criterion (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Lost in Translation (2003) Criterion (1080p BluRay x265 10bit Cinefile).mkv
+      extras:
+      - paths:
+        - Lost in Translation (2003) Criterion (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Featurettes/Interview - Bill Murray and Sofia Coppola.mkv
+        extra: featurette
+      - paths:
+        - Lost in Translation (2003) Criterion (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Featurettes/Interview - Sofia Coppola.mkv
+        extra: featurette
+      - paths:
+        - Lost in Translation (2003) Criterion (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Featurettes/Making a Scene with Sofia Coppola.mkv
+        extra: featurette
+      - paths:
+        - Lost in Translation (2003) Criterion (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Featurettes/The Players.mkv
+        extra: featurette
+      - paths:
+        - Lost in Translation (2003) Criterion (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Featurettes/Trailer - Tokyo.mkv
+        extra: featurette
+
+- name: a dotted release folder resolves to the movie title, has no extras, and its text files are unclaimed
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - The.Long.Goodbye.1973.1080p.BluRay.DDP5.1.x265.10bit-KRAVE[ABC]/
+    - The.Long.Goodbye.1973.1080p.BluRay.DDP5.1.x265.10bit-KRAVE[ABC]/NEW releases.txt
+    - The.Long.Goodbye.1973.1080p.BluRay.DDP5.1.x265.10bit-KRAVE[ABC]/The.Long.Goodbye.1973.1080p.BluRay.DDP5.1.x265.10bit-KRAVE.mkv
+    - The.Long.Goodbye.1973.1080p.BluRay.DDP5.1.x265.10bit-KRAVE[ABC]/[ABC]Downloaded from example.to .txt
+    - The.Long.Goodbye.1973.1080p.BluRay.DDP5.1.x265.10bit-KRAVE[ABC]/source.txt
+  expect:
+    items:
+    - kind: movie
+      title: The Long Goodbye
+      year: 1973
+      versions:
+      - paths:
+        - The.Long.Goodbye.1973.1080p.BluRay.DDP5.1.x265.10bit-KRAVE[ABC]/The.Long.Goodbye.1973.1080p.BluRay.DDP5.1.x265.10bit-KRAVE.mkv
+      extras: []
+    unclaimed_files:
+    - The.Long.Goodbye.1973.1080p.BluRay.DDP5.1.x265.10bit-KRAVE[ABC]/NEW releases.txt
+    - The.Long.Goodbye.1973.1080p.BluRay.DDP5.1.x265.10bit-KRAVE[ABC]/[ABC]Downloaded from example.to .txt
+    - The.Long.Goodbye.1973.1080p.BluRay.DDP5.1.x265.10bit-KRAVE[ABC]/source.txt
+
+- name: a release folder whose title ends in a number resolves to a title that includes the number, its screenshots and bitrate image are release junk, its other images are artwork, and it has no extras
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/
+    - Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/Banner_Crew.jpg
+    - Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew.mkv
+    - Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/Locandina.png
+    - Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/bitrate.png
+    - Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/nfo.nfo
+    - Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/screen1.jpg
+    - Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/screen2.jpg
+    - Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/screen3.jpg
+    - Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/screen4.jpg
+    - Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/screenshots.jpg
+  expect:
+    items:
+    - kind: movie
+      title: Toy Story 3
+      year: 2010
+      versions:
+      - paths:
+        - Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew.mkv
+      artwork:
+      - path: Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/Banner_Crew.jpg
+      - path: Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/Locandina.png
+      extras: []
+    release_junk:
+    - Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/bitrate.png
+    - Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/screen1.jpg
+    - Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/screen2.jpg
+    - Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/screen3.jpg
+    - Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/screen4.jpg
+    - Toy.Story.3.2010.2160p.H265.HDR10.DTS.ENG.AC3.5.1.BDMux-Crew/screenshots.jpg
+
+- name: a loose root video is a movie with no folder and no extras
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Vertigo (1958).mkv
+  expect:
+    items:
+    - kind: movie
+      title: Vertigo
+      year: 1958
+      path: null
+      versions:
+      - paths:
+        - Vertigo (1958).mkv
+      extras: []
+
+- name: a folder with a title and a bracketed year gives the movie its title and year
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Vertigo (1958)/vertigo.1080p.mkv
+    - Vertigo (1958)/poster.jpg
+  expect:
+    items:
+    - kind: movie
+      title: Vertigo
+      year: 1958
+
+- name: a folder without a year takes the year of a video with the same title
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Jaws/Jaws 1975 720p.mkv
+    - Jaws/Jaws 1975 720p.srt
+  expect:
+    items:
+    - kind: movie
+      title: Jaws
+      year: 1975
+
+- name: a yearless folder whose title does not prefix the video's title does not own that video
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Network/
+    - Network/NW.1976.mkv
+  expect:
+    items:
+    - kind: movie
+      title: NW
+      year: 1976
+      path: null
+
+- name: a movie folder with release-named files owns its Extras folder and its subtitles
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Nightcrawler (2014)/
+    - Nightcrawler (2014)/Extras/
+    - Nightcrawler (2014)/Extras/Behind the Story/
+    - Nightcrawler (2014)/Extras/Behind the Story/The Creative Process.mkv
+    - Nightcrawler (2014)/Extras/Behind the Story/The Visual Effects.mkv
+    - Nightcrawler (2014)/Extras/Deleted Scenes/
+    - Nightcrawler (2014)/Extras/Deleted Scenes/Art lesson.mkv
+    - Nightcrawler (2014)/Extras/Deleted Scenes/Stalker ending.mkv
+    - Nightcrawler (2014)/Extras/Storyboards/
+    - Nightcrawler (2014)/Extras/Storyboards/Armless fall.mkv
+    - Nightcrawler (2014)/Nightcrawler 2014 1080p BluRay x264 DTS-LBR.en.srt
+    - Nightcrawler (2014)/Nightcrawler 2014 1080p BluRay x264 DTS-LBR.hu.srt
+    - Nightcrawler (2014)/Nightcrawler 2014 1080p BluRay x264 DTS-LBR.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - paths:
+        - Nightcrawler (2014)/Nightcrawler 2014 1080p BluRay x264 DTS-LBR.mkv
+      subtitles:
+      - path: Nightcrawler (2014)/Nightcrawler 2014 1080p BluRay x264 DTS-LBR.en.srt
+      - path: Nightcrawler (2014)/Nightcrawler 2014 1080p BluRay x264 DTS-LBR.hu.srt
+      extras:
+      - paths:
+        - Nightcrawler (2014)/Extras/Behind the Story/The Creative Process.mkv
+      - paths:
+        - Nightcrawler (2014)/Extras/Behind the Story/The Visual Effects.mkv
+      - paths:
+        - Nightcrawler (2014)/Extras/Deleted Scenes/Art lesson.mkv
+      - paths:
+        - Nightcrawler (2014)/Extras/Deleted Scenes/Stalker ending.mkv
+      - paths:
+        - Nightcrawler (2014)/Extras/Storyboards/Armless fall.mkv
+
+- name: a subtitle in an Extras folder is never attached to the movie beside it
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Seven Samurai (1954)/
+    - Seven Samurai (1954)/Extras/
+    - Seven Samurai (1954)/Extras/Seven Samurai (1954).en.srt
+    - Seven Samurai (1954)/Seven Samurai (1954).mkv
+  expect:
+    items:
+    - kind: movie
+      subtitles: []
+
+- name: two differently named videos in one movie folder are versions of that movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - The Truman Show (1998)/
+    - The Truman Show (1998)/The Truman Show (1998) - 1080p.mkv
+    - The Truman Show (1998)/the truman show.directors.cut.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - paths:
+        - The Truman Show (1998)/The Truman Show (1998) - 1080p.mkv
+      - paths:
+        - The Truman Show (1998)/the truman show.directors.cut.mkv
+
+- name: loose videos at the root with one title and one year are versions of one movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Network (1976) - 1080p.mkv
+    - Network.1976.2160p.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - paths:
+        - Network.1976.2160p.mkv
+      - paths:
+        - Network (1976) - 1080p.mkv
+
+- name: loose videos at the root with one title and different years are different movies
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Scarface (1932).mkv
+    - Scarface (1983).mp4
+    - Scarface (2030).mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - paths:
+        - Scarface (1932).mkv
+    - kind: movie
+      versions:
+      - paths:
+        - Scarface (1983).mp4
+    - kind: movie
+      versions:
+      - paths:
+        - Scarface (2030).mkv
+
+- name: versions sort by resolution from highest to lowest, then the other labels sort by file name
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Incendies/
+    - Incendies/Incendies - 8K.mkv
+    - Incendies/Incendies - 2160p.mkv
+    - Incendies/Incendies - 900p.mkv
+    - Incendies/Incendies - 540p.mkv
+    - Incendies/Incendies - 360p.mkv
+    - Incendies/Incendies - Arthouse.mkv
+    - Incendies/Incendies - unrated.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - paths:
+        - Incendies/Incendies - 8K.mkv
+      - paths:
+        - Incendies/Incendies - 2160p.mkv
+      - paths:
+        - Incendies/Incendies - 900p.mkv
+      - paths:
+        - Incendies/Incendies - 540p.mkv
+      - paths:
+        - Incendies/Incendies - 360p.mkv
+      - paths:
+        - Incendies/Incendies - Arthouse.mkv
+      - paths:
+        - Incendies/Incendies - unrated.mkv
+
+- name: a version label is the text after the movie name, with dots replaced by spaces
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Hunters (2020)/
+    - Hunters (2020)/Hunters (2020) - 2160p.mkv
+    - Hunters (2020)/Hunters (2020) - 1080p.mkv
+    - Hunters (2020)/hunters.directors.cut.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - paths:
+        - Hunters (2020)/Hunters (2020) - 2160p.mkv
+        label: 2160p
+      - paths:
+        - Hunters (2020)/Hunters (2020) - 1080p.mkv
+        label: 1080p
+      - paths:
+        - Hunters (2020)/hunters.directors.cut.mkv
+        label: directors cut
+
+- name: a video named exactly as its movie, or the only version of its movie, has no version label
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Gravity (2013)/
+    - Gravity (2013)/Gravity (2013) - 2160p.mkv
+    - Gravity (2013)/Gravity (2013).mkv
+    - Her (2013)/
+    - Her (2013)/Her (2013) - 1080p.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - paths:
+        - Gravity (2013)/Gravity (2013).mkv
+        label: null
+      - paths:
+        - Gravity (2013)/Gravity (2013) - 2160p.mkv
+        label: 2160p
+    - kind: movie
+      versions:
+      - paths:
+        - Her (2013)/Her (2013) - 1080p.mkv
+        label: null
+
+- name: the title of a dotted acronym before release metadata includes the dots, and the year is read
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - unsorted/C.H.U.D.1984.1080p.BluRay.x264.mkv
+  expect:
+    items:
+    - kind: movie
+      title: C.H.U.D.
+      year: 1984
+
+- name: a title-like or format-like word in a clean folder name is part of the title
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Mrs Doubtfire Encore/Mrs Doubtfire Encore.mkv
+    - The 4K Project/The 4K Project.mkv
+    - Super movie/Super movie 1080p BluRay.mkv
+  expect:
+    items:
+    - kind: movie
+      title: Mrs Doubtfire Encore
+    - kind: movie
+      title: Super movie
+    - kind: movie
+      title: The 4K Project
+
+- name: a movie-library folder above the library root is not read as a season folder
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Silent Harbor (2019)/Silent.Harbor.2019.S01E43.1080p.mkv
+  expect:
+    items:
+    - kind: movie
+      misplaced_series: false
+
+- name: an episode under a season folder in a movie library is misplaced series content
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Harbor Pack/Season 01/Harbor.Show.S01E01.mkv
+  expect:
+    items:
+    - kind: movie
+      misplaced_series: true
+      ambiguous: true
+
+- name: a TV-looking file in a season folder is a movie without a folder, titled by the text before its episode token
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Desert Run/Season 01/Desert Run S01E03.mkv
+  expect:
+    items:
+    - kind: movie
+      title: Desert Run
+      path: null
+      versions:
+      - paths:
+        - Desert Run/Season 01/Desert Run S01E03.mkv
+
+- name: a date in a movie's file name is not an air date
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Market Week (2026)/Market Week 2026-04-24.mkv
+  expect:
+    items:
+    - kind: movie
+      title: Market Week
+      year: 2026
+      date: null
+
+- name: provider tags, bare or bracketed, are stripped from movie titles
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Moon Walk (2022)/Moon Walk (2022) (tt0473100) [WEBDL-1080p.AAC.h264.Cinefile].mp4
+    - Night Bus [tt7654321]/Night Bus.mkv
+    - Glass Lake (tmdb-12345)/Glass Lake.mkv
+  expect:
+    items:
+    - title: Glass Lake
+      year: null
+    - title: Moon Walk
+      year: 2022
+    - title: Night Bus
+      year: null
+
+- name: an episode-code-named movie folder with a year and provider tags is a resolved movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - s02e11 (2020) {imdb-tt2345678} {tmdb-123456}/s02e11 (2020).mkv
+  expect:
+    items:
+    - kind: movie
+      path: s02e11 (2020) {imdb-tt2345678} {tmdb-123456}
+      title: s02e11
+      year: 2020
+      ambiguous: false
+
+- name: the title of an ID-tagged folder is the movie title when the release file name differs
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - The Grey Harbor {imdb-tt1234001} {tmdb-111222}/Grey Harbour Reborn (2023) [Remux-1080p 8-bit AVC TrueHD Atmos 7.1]-Cinefile.mkv
+  expect:
+    items:
+    - kind: movie
+      path: The Grey Harbor {imdb-tt1234001} {tmdb-111222}
+      title: The Grey Harbor
+      ambiguous: false
+
+- name: a dotted release folder resolves to the movie title when the file inside it has a generic name
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Silent.Harbor.2020.1080p.BluRay/random.mkv
+  expect:
+    items:
+    - kind: movie
+      title: Silent Harbor
+      year: 2020
+      ambiguous: false
+
+- name: a title (year) folder with a quality layout in its file name resolves to the title and year
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Paper Moon (1973)/Paper Moon (1973) Bluray-1080p.mkv
+  expect:
+    items:
+    - kind: movie
+      title: Paper Moon
+      year: 1973
+      ambiguous: false
+
+- name: a disc rip track named title00 resolves to the movie of its dated folder, with or without a quality tag
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Ghost Story (2020)/title00.mkv
+    - Night Watch (2020)/title00.1080p.mkv
+  expect:
+    items:
+    - kind: movie
+      title: Ghost Story
+      year: 2020
+      ambiguous: false
+    - kind: movie
+      title: Night Watch
+      year: 2020
+      ambiguous: false
+
+- name: a disc track named title_t00 in a dotted release folder or a dated folder resolves to the movie of that folder
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Hunters.2020.1080p.BluRay/title_t00.mkv
+    - Hunters (2020)/title_t00.1080p.mkv
+  expect:
+    items:
+    - kind: movie
+      title: Hunters
+      year: 2020
+      ambiguous: false
+    - kind: movie
+      title: Hunters
+      year: 2020
+      ambiguous: false
+
+- name: a trailing number in the year range is the year, also when the folder agrees with the title
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Death Race 2000/Death Race 2000.mkv
+    - Death Race 2000/Death.Race.2000.1080p.mkv
+  expect:
+    items:
+    - kind: movie
+      title: Death Race
+      year: 2000
+      ambiguous: false
+
+- name: an explicit year before a release group's year resolves to the title and that year
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Downloads/Night Ferry (1997) - Cinefile 2019.mp4
+  expect:
+    items:
+    - kind: movie
+      title: Night Ferry
+      year: 1997
+      ambiguous: false
+
+- name: the folder title is the movie title when the folder has provider tags and the file title differs
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Downloads/Dusk Patrol {imdb-tt4567890} {tmdb-445566}/Dusk Patrol Returns (2025) [WEBDL-1080p 8-bit h264 EAC3 5.1]-Cinefile.mkv
+  expect:
+    items:
+    - ambiguous: false
+      title: Dusk Patrol
+      provider_ids:
+        tmdb: '445566'
+        imdb: tt4567890
+
+- name: a folder with a bare IMDb id at the end of its name resolves a title conflict with its file to the folder title
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Pages/Ocean Tide (2021) tt5550123/Lighthouse Kids (2022) [WEBDL-1080p]-Cinefile.mkv
+  expect:
+    items:
+    - ambiguous: false
+      title: Ocean Tide
+      provider_ids:
+        imdb: tt5550123
+
+- name: a bare IMDb id at the end of a file name is not a provider ID, and the movie resolves to the dated folder's title
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Glass Tide (2024)/Glass Tide tt28078628.mkv
+  expect:
+    items:
+    - ambiguous: false
+      title: Glass Tide
+      year: 2024
+      provider_ids:
+        imdb: null
+
+- name: a movie whose folder and file have different titles and no provider ID is ambiguous
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Pages/Blue Harbor (2024)/Blue Harbour Rising (2025) [WEBDL-1080p 8-bit h264 EAC3 5.1]-Cinefile.mkv
+  expect:
+    items:
+    - ambiguous: true
+
+- name: two loose files of one title that differ only by an edition tag resolve to one title
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Apocalypse Now (1979) {edition-Director's Cut}.mp4
+    - Apocalypse Now (1979) {edition-Tcold.meadowrical Cut}.mp4
+  expect:
+    items:
+    - kind: movie
+      title: Apocalypse Now
+      year: 1979
+      ambiguous: false
+
+- name: release noise and an edition phrase in the file name do not make the folder title ambiguous
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - alt-cuts/1080p/Step Brothers (2008)/Step.Brothers.2008.Extended.Edition.Bluray.Remux.1080p.AVC.DTS-HD.MA.5.1-Cinefile.mkv
+  expect:
+    items:
+    - title: Step Brothers
+      ambiguous: false
+
+- name: a folder title with an all-caps alias prefix agrees with the file name, and the title is resolved
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - alt-cuts/1080p/MOTU Masters of the Universe (1987)/Masters.of.the.Universe.1987.Bluray.Remux.1080p.mkv
+  expect:
+    items:
+    - year: 1987
+      ambiguous: false
+
+- name: a movie whose file title conflicts with its folder title is ambiguous
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - alt-cuts/1080p/Hollow Crown (2011)/Hollow.Crown.Rising.2011.1080p.BluRay.x264.mkv
+  expect:
+    items:
+    - ambiguous: true
+
+- name: a file title without the folder's leading article agrees with the folder
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - The Glass Garden (2021)/Glass.Garden.2021.1080p.BluRay.x264.mkv
+  expect:
+    items:
+    - kind: movie
+      title: The Glass Garden
+      year: 2021
+      ambiguous: false
+
+- name: a digit sequel number agrees with the same number written in roman numerals
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Iron Tide II (2024)/Iron.Tide.2.2024.1080p.WEB-DL.mkv
+  expect:
+    items:
+    - kind: movie
+      title: Iron Tide II
+      year: 2024
+      ambiguous: false
+
+- name: a file title with a spelled-out number, a foreign article and missing accents agrees with its folder
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Le Dernier Pont (2021)/Dernier.Pont.2021.720p.mkv
+    - Silver Harbor Three (2022)/Silver.Harbor.3.2022.720p.mkv
+    - Café Lumière (2003)/Cafe.Lumiere.2003.DVDRip.mkv
+  expect:
+    items:
+    - kind: movie
+      title: Café Lumière
+      year: 2003
+      ambiguous: false
+    - kind: movie
+      title: Le Dernier Pont
+      year: 2021
+      ambiguous: false
+    - kind: movie
+      title: Silver Harbor Three
+      year: 2022
+      ambiguous: false
+
+- name: a sequel number that folds to a different number conflicts with the folder
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - The Iron Tide II (2024)/Iron.Tide.3.2024.1080p.mkv
+  expect:
+    items:
+    - ambiguous: true
+
+- name: untagged files of one title and year in one folder are versions, and files that parse to the same title and year merge into one movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Brazil (1985)/Brazil (1985) 1080p.mkv
+    - Brazil (1985)/Brazil (1985) 2160p.mkv
+    - Downfall (2004)/Downfall (2004).mkv
+    - Downfall (2004)/Downfall (2004) DE Original.mkv
+  expect:
+    items:
+    - kind: movie
+      title: Brazil
+      year: 1985
+      versions:
+      - {}
+      - {}
+    - kind: movie
+      title: Downfall
+      year: 2004
+      versions:
+      - {}
+      - {}
+
+- name: two movies with different provider IDs stay separate when their names differ only by an article
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Silent Tide (2025) [imdb-tt41200558][tmdb-2044310]/Silent Tide (2025) {imdb-tt41200558} {tmdb-2044310} [WEBDL-2160p][EAC3 5.1][h265].mkv
+    - Silent Tide (2025) [imdb-tt41200558][tmdb-2044310]/Silent Tide (2025) {imdb-tt41200558} {tmdb-2044310} [WEBDL-1080p][EAC3 5.1][h264].mkv
+    - The Silent Tide (2025) [imdb-tt40871236][tmdb-1977402]/The Silent Tide (2025) {imdb-tt40871236} {tmdb-1977402} [WEBDL-2160p][EAC3 5.1][h265].mkv
+    - The Silent Tide (2025) [imdb-tt40871236][tmdb-1977402]/The Silent Tide (2025) {imdb-tt40871236} {tmdb-1977402} [WEBDL-1080p][EAC3 5.1][h264].mkv
+  expect:
+    items:
+    - title: Silent Tide
+      provider_ids:
+        tmdb: '2044310'
+        imdb: tt41200558
+      versions:
+      - {}
+      - {}
+    - title: The Silent Tide
+      provider_ids:
+        tmdb: '1977402'
+        imdb: tt40871236
+      versions:
+      - {}
+      - {}
+
+- name: the same provider ID in two locations resolves to two movies, which the caller can merge
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - shelf/Cold Harbor (1982) {tmdb-78}/Cold Harbor (1982) [WEBDL-2160p].mkv
+    - shelf-4k/Cold Harbor (1982) Final Cut {tmdb-78}/Cold Harbor (1982) [Remux-2160p].mkv
+  expect:
+    items:
+    - kind: movie
+      path: shelf-4k/Cold Harbor (1982) Final Cut {tmdb-78}
+      provider_ids:
+        tmdb: '78'
+      versions:
+      - {}
+    - kind: movie
+      path: shelf/Cold Harbor (1982) {tmdb-78}
+      provider_ids:
+        tmdb: '78'
+      versions:
+      - {}
+
+- name: a loose root movie resolves to the title and year of its own name, with no folder
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Solace.2016.1080p.mkv
+  expect:
+    items:
+    - kind: movie
+      title: Solace
+      year: 2016
+      path: null
+      provider_ids:
+        tmdb: null
+      ambiguous: false
+
+- name: a file in a trusted folder takes the title and year of the folder, with or without a provider tag
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - The Copper Opus (2013)/The Copper Opus (2013) [1080p H264].mkv
+    - Far Shore (2013) {tmdb-67123}/Far Shore (2013) [1080p H264].mkv
+  expect:
+    items:
+    - title: Far Shore
+      year: 2013
+      ambiguous: false
+    - title: The Copper Opus
+      year: 2013
+      ambiguous: false
+
+- name: a number in the title of a trusted folder stays in the title, with or without a provider tag
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Odyssey 8K (2015)/Odyssey 8K (2015) [1080p H264].mkv
+    - Odyssey 8K (2015) {tmdb-55123}/Odyssey 8K (2015) [1080p H264].mkv
+  expect:
+    items:
+    - title: Odyssey 8K
+      year: 2015
+      ambiguous: false
+    - title: Odyssey 8K
+      year: 2015
+      ambiguous: false
+
+- name: a folder title with a hyphen matches its file, with or without a provider tag
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - The Blu-ray Handbook (2012)/The Blu-ray Handbook (2012) [1080p H264].mkv
+    - The Blu-ray Handbook (2012) {tmdb-33871}/The Blu-ray Handbook (2012) [1080p H264].mkv
+  expect:
+    items:
+    - title: The Blu-ray Handbook
+      year: 2012
+      ambiguous: false
+    - title: The Blu-ray Handbook
+      year: 2012
+      ambiguous: false
+
+- name: an undated release file resolves to its trusted folder's identity
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Glass Voyage (2008)/Glass.Voyage.Special.Broadcast.1080p.HDTV.x264-GROUP.mkv
+  expect:
+    items:
+    - title: Glass Voyage
+      year: 2008
+      ambiguous: false
+
+- name: a file with a different title, with or without the folder's year, makes the trusted folder identity ambiguous
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Glass Harbor (2008)/Another.Story.2012.1080p.BluRay.mkv
+    - Iron Gate (2010)/Another Story (2010) 1080p.mkv
+  expect:
+    items:
+    - title: Glass Harbor
+      year: 2008
+      ambiguous: true
+    - title: Iron Gate
+      year: 2010
+      ambiguous: true
+
+- name: an episode-coded file in a dated movie folder conflicts with the folder, and the movie is ambiguous
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Copper Voyage (2008)/Another.Show.S01E01.1080p.mkv
+  expect:
+    items:
+    - ambiguous: true
+
+- name: a year written twice in the release name, matching the folder, does not contradict the folder
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Copper Harbor (2008)/Copper Harbor 2008 (2008) HDTV.mkv
+  expect:
+    items:
+    - title: Copper Harbor
+      year: 2008
+      ambiguous: false
+
+- name: a number inside a tagged, bracket-dated title is part of the title, and the title is not ambiguous
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - 70s/Metro 2000 (1963) {imdb-tt0056841} {tmdb-206998}/Metro 2000 (1963) [Remux-1080p 8-bit AVC FLAC 2.0]-Cinefile.mkv
+  expect:
+    items:
+    - title: Metro 2000
+      year: 1963
+      ambiguous: false
+
+- name: a trusted folder title with a subtitle is kept in full
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Iron Harbor Noir Edition (2021)/Iron.Harbor.Noir.Edition.2021.2160p.WEB-DL.DDP5.1.Atmos.HDR.HEVC-Cinefile.mkv
+  expect:
+    items:
+    - title: Iron Harbor Noir Edition
+      ambiguous: false
+
+- name: the title ends before a resolution, whether the resolution is bare or in brackets
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - unsorted/Quiet Harbor 480p.mp4
+    - unsorted/Glass Lantern [480p].mp4
+  expect:
+    items:
+    - title: Glass Lantern
+      year: null
+      ambiguous: false
+    - title: Quiet Harbor
+      year: null
+      ambiguous: false
+
+- name: words that are also release words, such as Web, Extended, Multi, are part of the title of a clean file name when no release material follows them
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - unsorted/The Web.mkv
+    - unsorted/Extended Family.mkv
+    - unsorted/Multi Story.mkv
+    - unsorted/Night Orchard Multi.mp4
+  expect:
+    items:
+    - title: Extended Family
+      year: null
+      ambiguous: false
+    - title: Multi Story
+      year: null
+      ambiguous: false
+    - title: Night Orchard Multi
+      year: null
+      ambiguous: false
+    - title: The Web
+      year: null
+      ambiguous: false
+
+- name: the title of a dot-separated name ends before a format word, whether 4k, UltraHD, UHD, HDR, HDC or a BDrip tag
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - unsorted/Dark.Harbor.4k.mkv
+    - unsorted/Night.Lantern.UltraHD.mkv
+    - unsorted/Iron.Orchard.UHD.mkv
+    - unsorted/Paper.Lantern.HDR.mkv
+    - unsorted/Silver.Lantern.HDC.mkv
+    - unsorted/Stone.Garden.BDrip-HDC.mkv
+    - unsorted/Wild.Harbor.4K.UltraHD.HDR.BDrip-HDC.mkv
+  expect:
+    items:
+    - title: Dark Harbor
+      year: null
+      ambiguous: false
+    - title: Iron Orchard
+      year: null
+      ambiguous: false
+    - title: Night Lantern
+      year: null
+      ambiguous: false
+    - title: Paper Lantern
+      year: null
+      ambiguous: false
+    - title: Silver Lantern
+      year: null
+      ambiguous: false
+    - title: Stone Garden
+      year: null
+      ambiguous: false
+    - title: Wild Harbor
+      year: null
+      ambiguous: false
+
+- name: the title of a dotted release name ends before its WEB-DL and resolution words, and the name has no year if it states none
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - unsorted/Long.Road.Home.WEB-DL.1080p.mkv
+  expect:
+    items:
+    - title: Long Road Home
+      year: null
+      ambiguous: false
+
+- name: bracketed release markers around or after a title, such as Multi-Subs, a group, a site, a checksum or a dual audio tag, are dropped
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - unsorted/Silver Arrow [Multi-Subs] [2018].mkv
+    - unsorted/[GroupX] Lantern Hill (2016) [1080p].mkv
+    - unsorted/[www.site.example] Sea Breeze.2016.1080p.mkv
+    - unsorted/Glass Tower [ABC123EF].mkv
+    - unsorted/Dusk Harbor [Dual Audio].mkv
+  expect:
+    items:
+    - title: Dusk Harbor
+      year: null
+      ambiguous: false
+    - title: Glass Tower
+      year: null
+      ambiguous: false
+    - title: Silver Arrow
+      year: 2018
+      ambiguous: false
+    - title: Lantern Hill
+      year: 2016
+      ambiguous: false
+    - title: Sea Breeze
+      year: 2016
+      ambiguous: false
+
+- name: a dash-separated release tail after a year is removed from the title, and the year is read
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - unsorted/Sky Harbor - 2016 - WEBDL-1080p - x264 AC3.mkv
+  expect:
+    items:
+    - title: Sky Harbor
+      year: 2016
+      ambiguous: false
+
+- name: REMASTERED and an audio group after a year are release words, and the title and year are unchanged
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - unsorted/Stone Wall 1988 REMASTERED 1080p BluRay x264 AAC - Hollis.mp4
+  expect:
+    items:
+    - title: Stone Wall
+      year: 1988
+      ambiguous: false
+
+- name: a parenthesized foreign title before the year is an alternate title (M16)
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - unsorted/Stalker (Zona) (1979).mp4
+  expect:
+    items:
+    - title: Stalker
+      alternate_titles: [Zona]
+      year: 1979
+      ambiguous: false
+
+- name: a leading bracket that is not a release group is part of the title, with or without a year
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - unsorted/[Ring].mkv
+    - unsorted/[Dread] 4 Apocalypse (2014).mkv
+    - unsorted/[Dread]² (2009).mkv
+  expect:
+    items:
+    - title: '[Dread] 4 Apocalypse'
+      year: 2014
+      ambiguous: false
+    - title: '[Dread]²'
+      year: 2009
+      ambiguous: false
+    - title: '[Ring]'
+      year: null
+      ambiguous: false
+
+- name: a leading number is part of the title, and a year after it is the year
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - unsorted/2012.4k.HDR.mkv
+    - unsorted/300.Lantern.Hill.1962.4K.mkv
+  expect:
+    items:
+    - title: '2012'
+      year: null
+      ambiguous: false
+    - title: 300 Lantern Hill
+      year: 1962
+      ambiguous: false
+
+- name: release material after a title is removed from the title, whether resolution, source, codec, audio or channel tags
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - unsorted/Quiet Lake 1920x1080 x264.mkv
+    - unsorted/Pale Road DVD-SCR XviD.avi
+    - unsorted/Hollow Field AV1 Opus.mkv
+    - unsorted/Night Ferry DTS-HD MA.mkv
+    - unsorted/Old Mill DDP5.1.mkv
+    - unsorted/Iron Gate EAC3.mkv
+  expect:
+    items:
+    - title: Hollow Field
+      year: null
+      ambiguous: false
+    - title: Iron Gate
+      year: null
+      ambiguous: false
+    - title: Night Ferry
+      year: null
+      ambiguous: false
+    - title: Old Mill
+      year: null
+      ambiguous: false
+    - title: Pale Road
+      year: null
+      ambiguous: false
+    - title: Quiet Lake
+      year: null
+      ambiguous: false
+
+- name: a dotted date inside a spaced name is part of the title, and no year is read from it
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - unsorted/Lost Film 2013.12.09 1080p.mkv
+  expect:
+    items:
+    - title: Lost Film 2013.12.09
+      year: null
+      ambiguous: false
+
+- name: a generic file name resolves to the identity of its release folder, with bracket or dot-separated tags
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Quiet Harbor [Multi-Subs] [2020]/title00.mkv
+    - Silent.Field.2020.[1080p]/title00.mkv
+  expect:
+    items:
+    - title: Quiet Harbor
+      year: 2020
+      ambiguous: false
+    - title: Silent Field
+      year: 2020
+      ambiguous: false
+
+- name: a disc track named VTS_01_1 has no title, so the movie resolves to its dated folder's title
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Night Field (2020)/VTS_01_1.1080p.mkv
+  expect:
+    items:
+    - title: Night Field
+      year: 2020
+      ambiguous: false
+
+- name: an accented title in a folder and its file resolves to one title and year
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Élise (2020)/Élise (2020) [Bluray-1080p].mkv
+  expect:
+    items:
+    - title: Élise
+      year: 2020
+      ambiguous: false
+
+- name: provider attributes on a movie folder identify the movie, in square brackets or in upper-case braces and parentheses
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Glass Hour (2020) [tmdbid=12345] [imdbid=tt1234567]/title00.mkv
+    - Night Hour (2020) {TMDB=23456} (IMDB=tt2345678)/title00.mkv
+  expect:
+    items:
+    - title: Glass Hour
+      year: 2020
+      ambiguous: false
+      provider_ids:
+        tmdb: '12345'
+        imdb: tt1234567
+    - title: Night Hour
+      year: 2020
+      ambiguous: false
+      provider_ids:
+        tmdb: '23456'
+        imdb: tt2345678
+
+- name: subtitles match a video by its stem in any extension case, never by a longer stem, a prefix, an image or a folder
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Lantern.mkv
+    - Lantern.srt
+    - Lantern.en.forced.SRT
+    - LanternExtra.srt
+    - Lantern.jpg
+    - Lantern.part2.mkv
+    - Lantern.part2.fr.ass
+    - Other.vtt
+    - Lantern.de.srt/
+  expect:
+    video_subtitles:
+      Lantern.mkv:
+      - path: Lantern.en.forced.SRT
+        language: en
+        flags:
+        - forced
+      - path: Lantern.srt
+
+- name: only the subtitles named for a second-part video are attached to it
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Harbor.mkv
+    - Harbor.srt
+    - Harbor.en.forced.SRT
+    - HarborExtra.srt
+    - Harbor.jpg
+    - Harbor.part2.mkv
+    - Harbor.part2.fr.ass
+    - Other.vtt
+    - Harbor.de.srt/
+  expect:
+    video_subtitles:
+      Harbor.part2.mkv:
+      - path: Harbor.part2.fr.ass
+
+- name: a movie's own sidecars in any letter case, bitmap subtitles, and language-only files in Subs and Subtitles folders are attached to it, and none are attached to its trailer
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Ember (2020)/Ember.mkv
+    - Ember (2020)/Ember-trailer.mkv
+    - Ember (2020)/Ember-sample.mkv
+    - Ember (2020)/ember.en.srt
+    - Ember (2020)/Ember.idx
+    - Ember (2020)/Ember.sub
+    - Ember (2020)/Ember.sup
+    - Ember (2020)/Subs/English.srt
+    - Ember (2020)/Subs/2_French.sdh.srt
+    - Ember (2020)/Subs/Other Movie.en.srt
+    - Ember (2020)/Subs/2012.srt
+    - Ember (2020)/Subtitles/Ember.de.srt
+  expect:
+    video_subtitles:
+      Ember (2020)/Ember.mkv:
+      - path: Ember (2020)/Ember.idx
+      - path: Ember (2020)/Ember.sup
+      - path: Ember (2020)/Subs/2_French.sdh.srt
+        language: fr
+        flags:
+        - hearing_impaired
+      - path: Ember (2020)/Subs/English.srt
+        language: en
+      - path: Ember (2020)/Subtitles/Ember.de.srt
+        language: de
+      - path: Ember (2020)/ember.en.srt
+        language: en
+      Ember (2020)/Ember-trailer.mkv: []
+
+- name: with two versions in a folder, a language-only Subs file applies to neither, and a Subs file named for one version applies to that version only
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Tide Line (2021)/Tide Line - 1080p.mkv
+    - Tide Line (2021)/Tide Line - 2160p.mkv
+    - Tide Line (2021)/Subs/English.srt
+    - Tide Line (2021)/Subs/Tide Line - 2160p.fr.srt
+  expect:
+    video_subtitles:
+      Tide Line (2021)/Tide Line - 1080p.mkv: []
+      Tide Line (2021)/Tide Line - 2160p.mkv:
+      - path: Tide Line (2021)/Subs/Tide Line - 2160p.fr.srt
+        language: fr
+
+- name: when videos differ only in case, a sidecar named for the other spelling does not apply, and the exactly named sidecar does
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Harp/Harp.mkv
+    - Harp/harp.mkv
+    - Harp/harp.en.srt
+    - Harp/HARP.de.srt
+  expect:
+    video_subtitles:
+      Harp/Harp.mkv: []
+      Harp/harp.mkv:
+      - path: Harp/harp.en.srt
+        language: en
+
+- name: a theme file at the library root is a theme song without an owner, and a file in a theme-music folder without a movie is no item
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - theme.mp3
+    - theme-music/main-title.mp3
+  expect:
+    items:
+    - kind: extra
+      extra: theme_song
+      paths:
+      - theme.mp3
+      ambiguous: false
+
+- name: a movie in a dated folder resolves to the folder's title and year and is rooted at that folder
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Solar Winds (2016)/Solar.Winds.2016.1080p.mkv
+  expect:
+    items:
+    - kind: movie
+      title: Solar Winds
+      year: 2016
+      path: Solar Winds (2016)
+
+- name: a folder with an IMDb tag and no year resolves to the title without a year
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Small Hare [imdbid-tt1254207]/Small Hare.mp4
+  expect:
+    items:
+    - kind: movie
+      title: Small Hare
+      year: null
+
+- name: a 1080p tag in a file name is a resolution, never a year
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Rising Sun (2020)/Rising.Sun.1080p.BluRay.mkv
+  expect:
+    items:
+    - kind: movie
+      title: Rising Sun
+      year: 2020
+
+- name: a numeric year folder never owns a loose movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - 2019/Quiet.Cabin.mkv
+  expect:
+    items:
+    - kind: movie
+      path: null
+      title: Quiet Cabin
+      year: null
+
+- name: a movie is rooted at its parent folder even when the folder and file names differ only in punctuation
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Robo Dreams {imdb-tt0910970}/Robo-Dreams.mkv
+  expect:
+    items:
+    - kind: movie
+      path: Robo Dreams {imdb-tt0910970}
+
+- name: season-folder episode files are misplaced series files in a movie library, whatever the case, dot style or Specials folder
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Dune Tales/season 2/Dune Tales s02e05.mkv
+    - anime-dub/Coral Reef/Season 01/Coral Reef S01E01 - Pilot.mkv
+    - anime-dub/Iron Garden/Season 01/Iron.Garden.s01.e01.mkv
+    - anime/Lantern Tales/Specials/Lantern Tales S00E02 - OVA.mkv
+  expect:
+    items:
+    - kind: movie
+      misplaced_series: true
+    - kind: movie
+      misplaced_series: true
+    - kind: movie
+      misplaced_series: true
+    - kind: movie
+      misplaced_series: true
+
+- name: an episode code inside a Title (Year) folder is not a misplaced series file, whatever show title it contains, and a plain movie is not either
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - alt-cuts/1080p/Inglourious Basterds (2009)/Our.Planet.S01E09-E10.One.Planet.1080p.mkv
+    - alt-cuts/1080p/Dead Poets Society (1989)/Death.Note.S01E43.Puppet.1080p.mkv
+    - anime/Harbor Tales Movie 1 (2018) {tmdb-483452}/Harbor Tales (2012) - S00E05 - Blaze.mkv
+    - 00s/Ghost Ship (2002) {tmdb-949}/Ghost Ship (2002).mkv
+  expect:
+    items:
+    - misplaced_series: false
+    - misplaced_series: false
+    - misplaced_series: false
+    - misplaced_series: false
+
+- name: a loose episode-coded file with no season folder is not misplaced series content
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - anime/Odd Thing S01E02.mkv
+  expect:
+    items:
+    - misplaced_series: false
+
+- name: a bracketed year repeated beside a release year agrees with the folder
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Copper Harbor (2008)/Copper.Harbor.2008.[2008].HDTV.mkv
+  expect:
+    items:
+    - kind: movie
+      title: Copper Harbor
+      year: 2008
+      ambiguous: false
+
+- name: an entry an ignore rule matches is reported as excluded
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Junk/Lost Cabin (1999).mkv
+    - Iron Lantern (1995)/Iron Lantern (1995).mkv
+    - .hidden.mkv
+    ignore_files:
+    - path: .ignore
+      contents: 'Junk/
+
+        '
+  expect:
+    items:
+    - kind: movie
+      title: Iron Lantern
+    excluded_entries:
+    - path: .hidden.mkv
+      reason: hidden_entry
+      matched_path: .hidden.mkv
+    - path: Junk/Lost Cabin (1999).mkv
+      reason: rule
+      matched_path: Junk
+      rule_file: .ignore
+
+- name: entries under an unreadable rule file are undecided, not interpreted or excluded
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Old/Lost Cabin (1999).mkv
+    - Last Orchard (1995)/Last Orchard (1995).mkv
+    ignore_files:
+    - path: Old/.ignore
+  expect:
+    items:
+    - kind: movie
+      title: Last Orchard
+    excluded_entries: []
+    undecided_entries:
+    - path: Old/Lost Cabin (1999).mkv
+      unreadable_rule_files:
+      - Old/.ignore
+
+- name: a path that is absolute, escapes the root or repeats is invalid input, reported separately
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - /library/Lost Cabin (1999).mkv
+    - Movies/../Lost Cabin (1999).mkv
+    - North Quay (1995).mkv
+    - North Quay (1995).mkv
+  expect:
+    items:
+    - kind: movie
+      title: North Quay
+      versions:
+      - paths:
+        - North Quay (1995).mkv
+    invalid_entries:
+    - path: /library/Lost Cabin (1999).mkv
+      reason: not_root_relative
+    - path: Movies/../Lost Cabin (1999).mkv
+      reason: invalid_component
+    - path: North Quay (1995).mkv
+      reason: duplicate
+
+- name: a file that no item claims is reported as unclaimed, and a video's NFO is attached
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Glass Cabin (1999)/Glass Cabin (1999).mkv
+    - Glass Cabin (1999)/Glass Cabin (1999).nfo
+    - Glass Cabin (1999)/notes.txt
+    - Lost Cabin (1999).srt
+  expect:
+    items:
+    - kind: movie
+      nfo: Glass Cabin (1999)/Glass Cabin (1999).nfo
+    unclaimed_files:
+    - Glass Cabin (1999)/notes.txt
+    - Lost Cabin (1999).srt
+
+- name: a bare episode token or a bare number in a movie library is a movie titled by it, and only the episode token is ambiguous
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - E02.mkv
+    - 02.mkv
+  expect:
+    items:
+    - kind: movie
+      title: '02'
+      path: null
+      ambiguous: false
+    - kind: movie
+      title: E02
+      path: null
+      ambiguous: true
+      ambiguity_reasons:
+      - episode_token_in_movie_library
+
+- name: the title ends before a dash and a short number in a movie library, with or without a bracketed release group, and the movie is resolved
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Quiet Dash - 12.mkv
+    - '[Group] Night Dash - 12 [720p].mkv'
+  expect:
+    items:
+    - kind: movie
+      title: Quiet Dash
+      ambiguous: false
+    - kind: movie
+      title: Night Dash
+      ambiguous: false
+
+- name: tags added to the folder's name are not part of the version label, and the edition is reported as a fact
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Glass Garden (2021)/Glass Garden (2021) {tmdb-5501} {edition-Director's Cut} - 2160p.mkv
+    - Glass Garden (2021)/Glass Garden (2021) - 1080p.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - paths:
+        - Glass Garden (2021)/Glass Garden (2021) {tmdb-5501} {edition-Director's Cut} - 2160p.mkv
+        label: 2160p
+        edition: Director's Cut
+      - paths:
+        - Glass Garden (2021)/Glass Garden (2021) - 1080p.mkv
+        label: 1080p
+        edition: null
+
+- name: a version whose name adds only tags has no label
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Quiet Harbor (2020)/Quiet Harbor (2020) {edition-Extended}.mkv
+    - Quiet Harbor (2020)/Quiet Harbor (2020) - 720p.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - label: 720p
+        edition: null
+      - label: null
+        edition: Extended
+
+- name: each version has its own edition hint and 3D layout
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Quiet Harbor (2020)/Quiet.Harbor.2020.Extended.1080p.mkv
+    - Quiet Harbor (2020)/Quiet Harbor (2020) - 3D.HSBS.mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - paths:
+        - Quiet Harbor (2020)/Quiet Harbor (2020) - 3D.HSBS.mkv
+        edition_hint: null
+        format_3d: half_side_by_side
+      - paths:
+        - Quiet Harbor (2020)/Quiet.Harbor.2020.Extended.1080p.mkv
+        edition: null
+        edition_hint: Extended
+        format_3d: null
+
+- name: a version with no tag of its own inherits its folder's edition and 3D layout
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Night Lamp (2020) {edition-Extended} 3D/Night Lamp (2020).mkv
+  expect:
+    items:
+    - kind: movie
+      versions:
+      - edition: Extended
+        format_3d: unspecified
+
+- name: an NFO named after a stack's shared name belongs to that movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Night Lamp (2020)/Night Lamp (2020)-cd1.mkv
+    - Night Lamp (2020)/Night Lamp (2020)-cd2.mkv
+    - Night Lamp (2020)/Night Lamp (2020).nfo
+  expect:
+    items:
+    - kind: movie
+      nfo: Night Lamp (2020)/Night Lamp (2020).nfo
+    unclaimed_files: []
+
+- name: a generic movie NFO belongs to its folder's only movie, and an NFO named after the video takes precedence over it
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Stone Ridge (1995)/Stone Ridge (1995).mkv
+    - Stone Ridge (1995)/movie.nfo
+    - Iron Ridge (2004)/Iron Ridge (2004).mkv
+    - Iron Ridge (2004)/Iron Ridge (2004).nfo
+    - Iron Ridge (2004)/MOVIE.NFO
+  expect:
+    items:
+    - kind: movie
+      title: Iron Ridge
+      nfo: Iron Ridge (2004)/Iron Ridge (2004).nfo
+    - kind: movie
+      title: Stone Ridge
+      nfo: Stone Ridge (1995)/movie.nfo
+    unclaimed_files:
+    - Iron Ridge (2004)/MOVIE.NFO
+
+- name: each version has the NFO named after its video, and the movie has its primary version's NFO
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Silver Quay (2020)/Silver Quay (2020) - 1080p.mkv
+    - Silver Quay (2020)/Silver Quay (2020) - 1080p.nfo
+    - Silver Quay (2020)/Silver Quay (2020) - 2160p.mkv
+    - Silver Quay (2020)/Silver Quay (2020) - 2160p.nfo
+    - Silver Quay (2020)/movie.nfo
+  expect:
+    items:
+    - kind: movie
+      nfo: Silver Quay (2020)/Silver Quay (2020) - 2160p.nfo
+      versions:
+      - paths:
+        - Silver Quay (2020)/Silver Quay (2020) - 2160p.mkv
+        nfo: Silver Quay (2020)/Silver Quay (2020) - 2160p.nfo
+      - paths:
+        - Silver Quay (2020)/Silver Quay (2020) - 1080p.mkv
+        nfo: Silver Quay (2020)/Silver Quay (2020) - 1080p.nfo
+    unclaimed_files:
+    - Silver Quay (2020)/movie.nfo
+
+- name: a movie whose primary version has no NFO of its own has the generic one, and the other version has its own
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Lunar Quay (2020)/Lunar Quay (2020) - 1080p.mkv
+    - Lunar Quay (2020)/Lunar Quay (2020) - 1080p.nfo
+    - Lunar Quay (2020)/Lunar Quay (2020) - 2160p.mkv
+    - Lunar Quay (2020)/movie.nfo
+  expect:
+    items:
+    - kind: movie
+      nfo: Lunar Quay (2020)/movie.nfo
+      versions:
+      - label: 2160p
+        nfo: null
+      - label: 1080p
+        nfo: Lunar Quay (2020)/Lunar Quay (2020) - 1080p.nfo
+    unclaimed_files: []
+
+- name: a generic movie NFO in a folder of several movies, or at the library root, is not attached to any movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Collection/Dune Harbor (1998).mkv
+    - Collection/Night Wind (2004).mkv
+    - Collection/movie.nfo
+    - The Truman Show Harbor (1998).mkv
+    - movie.nfo
+  expect:
+    items:
+    - kind: movie
+      nfo: null
+    - kind: movie
+      nfo: null
+    - kind: movie
+      nfo: null
+    unclaimed_files:
+    - Collection/movie.nfo
+    - movie.nfo
+
+- name: a series or season NFO in a movie library is not a movie's NFO
+  operation: interpret
+  input:
+    library: movies
+    paths:
+    - Quiet Ridge (1995)/Quiet Ridge (1995).mkv
+    - Quiet Ridge (1995)/tvshow.nfo
+  expect:
+    items:
+    - kind: movie
+      nfo: null
+    unclaimed_files:
+    - Quiet Ridge (1995)/tvshow.nfo

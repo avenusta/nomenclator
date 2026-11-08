@@ -1,0 +1,37 @@
+# Language pack `es`: the words a library in this language uses. Applied when a
+# caller declares its languages; see decision X11.
+name: language-es
+season_words:
+  add: ["temporada"]
+series_season_words:
+  add: ["serie"]
+leading_articles:
+  add: ["el", "la", "los", "las", "un", "una"]
+number_words:
+  add:
+    "uno": 1
+    "dos": 2
+    "tres": 3
+    "cuatro": 4
+    "cinco": 5
+    "seis": 6
+    "siete": 7
+    "ocho": 8
+    "nueve": 9
+    "diez": 10
+    "once": 11
+    "doce": 12
+    "trece": 13
+    "catorce": 14
+    "quince": 15
+    "dieciséis": 16
+    "diecisiete": 17
+    "dieciocho": 18
+    "diecinueve": 19
+    "veinte": 20
+ordinal_suffixes:
+  add: ["ª", "º"]
+languages:
+  add: { es: ["español", "espanol", "castellano"] }
+artwork_roles:
+  add: { "cartel": poster, "portada": poster, "caratula": poster, "fondo": backdrop }

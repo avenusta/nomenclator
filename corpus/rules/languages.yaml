@@ -1,0 +1,135 @@
+# Language packs (decision X11): a case's `languages` lists the library's
+# languages. The rules then contain the shared base and the words of exactly those languages;
+# without a declaration the built-in rules contain the words of every language.
+
+- name: without declared languages a German season word is read
+  operation: parse_season_folder
+  input: { name: Staffel 2 }
+  expect:
+    season: 2
+
+- name: an English-only library does not read a German season word
+  languages: [en]
+  operation: parse_season_folder
+  input: { name: Staffel 2 }
+  expect:
+    season: null
+
+- name: a German library reads its season word with its ordinal
+  languages: [de]
+  operation: parse_season_folder
+  input: { name: 3. Staffel }
+  expect:
+    season: 3
+
+- name: the shared season word is read whatever the declared languages
+  languages: [de]
+  operation: parse_season_folder
+  input: { name: Season 4 }
+  expect:
+    season: 4
+
+- name: an English ordinal is not read when English is not declared
+  languages: [de]
+  operation: parse_season_folder
+  input: { name: 2nd Season }
+  expect:
+    season: null
+
+- name: an English library reads an English ordinal
+  languages: [en]
+  operation: parse_season_folder
+  input: { name: 2nd Season }
+  expect:
+    season: 2
+
+- name: a French library reads a French ordinal
+  languages: [fr]
+  operation: parse_season_folder
+  input: { name: 2ème saison }
+  expect:
+    season: 2
+
+- name: a German library reads the German name of its language in a sidecar
+  languages: [de, en]
+  operation: parse_sidecar
+  input: { name: Movie.deutsch.srt, video_name: Movie.mkv, kind: subtitle }
+  expect:
+    language: de
+    title: null
+
+- name: without declared languages a German article is dropped from a title being matched
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Die Hard, year: 1988 }
+    candidates: [{ handle: hard, kind: movie, title: Hard, year: 1988 }]
+  expect:
+    outcome: selected
+
+- name: an English-only library keeps a German article in a title being matched
+  languages: [en]
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Die Hard, year: 1988 }
+    candidates: [{ handle: hard, kind: movie, title: Hard, year: 1988 }]
+  expect:
+    outcome: no_match
+
+- name: a German library reads German spelled numbers in titles being matched
+  languages: [de]
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Nordpassage Teil Zwei, year: 2021 }
+    candidates: [{ handle: two, kind: movie, title: Nordpassage Teil 2, year: 2021 }]
+  expect:
+    outcome: selected
+    reason: best_score
+
+- name: an overlay keeps a word that the declared languages would drop
+  languages: [en]
+  overlays:
+    - |
+      name: also-staffel
+      season_words:
+        add: [staffel]
+  operation: parse_season_folder
+  input: { name: Staffel 2 }
+  expect:
+    season: 2
+
+- name: an overlay adds spelled numbers without declaring a language
+  overlays:
+    - |
+      name: german-numbers
+      number_words:
+        add: { zwei: 2 }
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Nordpassage Teil Zwei, year: 2021 }
+    candidates: [{ handle: two, kind: movie, title: Nordpassage Teil 2, year: 2021 }]
+  expect:
+    outcome: selected
+
+- name: the rules identity lists the declared languages in order
+  operation: build_rules
+  input:
+    languages: [en, de]
+  expect:
+    identity: { languages: [de, en], overlays: [] }
+    diagnostics: []
+
+- name: without declared languages the identity lists no language
+  operation: build_rules
+  input:
+    overlays: []
+  expect:
+    identity: { languages: null }
+
+- name: a language without a pack returns a diagnostic
+  operation: build_rules
+  input:
+    languages: [en, xx]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: unknown_language, entry: xx }

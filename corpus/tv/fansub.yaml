@@ -1,0 +1,118 @@
+# Fansub grammar (decision X20): leading group brackets, ` - NN` numbers,
+# `vN` revisions, `END`, `OVA`, `OAD` and `ONA` specials, decimal recap episodes, and
+# `S2 - NN` seasons.
+
+- name: a fansub name with a group, a dash number, a resolution and a checksum resolves to the episode
+  operation: parse_episode_name
+  input: { path: "Quiet Hours/[Lantern] Quiet Hours - 12 (1080p) [A1B2C3D4].mkv" }
+  expect:
+    series_name: Quiet Hours
+    episodes: [12]
+    episode_title: null
+    release_version: null
+    is_final: false
+
+- name: a revision after the episode number is the release version
+  operation: parse_episode_name
+  input: { path: "Quiet Hours/[Lantern] Quiet Hours - 12v2 [1080p].mkv" }
+  expect:
+    episodes: [12]
+    release_version: 2
+
+- name: END after the episode number marks the final episode and is not the episode title
+  operation: parse_episode_name
+  input: { path: "Quiet Hours/[Lantern] Quiet Hours - 24 END [1080p].mkv" }
+  expect:
+    episodes: [24]
+    is_final: true
+    episode_title: null
+
+- name: an OVA marker is a season 0 special without episode numbers
+  operation: parse_episode_name
+  input: { path: "Quiet Hours/[Lantern] Quiet Hours - OVA [1080p].mkv" }
+  expect:
+    series_name: Quiet Hours
+    season: { status: resolved, value: 0, evidence: { rule: special_marker } }
+    episodes: null
+    special: { kind: ova, number: null }
+    presentation_kind: special
+    is_episode: true
+
+- name: a numbered OVA keeps its number as written
+  operation: parse_episode_name
+  input: { path: "Quiet Hours/[Lantern] Quiet Hours - OVA 2 [1080p].mkv" }
+  expect:
+    series_name: Quiet Hours
+    special: { kind: ova, number: "2" }
+
+- name: an OAD and an ONA are specials of their own kinds
+  operation: parse_episode_name
+  input: { path: "Quiet Hours/[Lantern] Quiet Hours - OAD 01.mkv" }
+  expect:
+    special: { kind: oad, number: "1" }
+
+- name: an ONA is a special of its own kind
+  operation: parse_episode_name
+  input: { path: "Quiet Hours/Quiet Hours ONA 3 [720p].mkv" }
+  expect:
+    series_name: Quiet Hours
+    special: { kind: ona, number: "3" }
+
+- name: a decimal episode number is a season 0 recap special
+  operation: parse_episode_name
+  input: { path: "Quiet Hours/[Lantern] Quiet Hours - 12.5 [1080p].mkv" }
+  expect:
+    season: 0
+    episodes: null
+    special: { kind: recap, number: "12.5" }
+    episode_title: null
+
+- name: a word that contains a special marker is not a special
+  operation: parse_episode_name
+  input: { path: Nova/Nova.S01E02.mkv }
+  expect:
+    series_name: Nova
+    season: 1
+    episodes: [2]
+    special: null
+
+- name: an explicit episode token takes precedence over a special marker
+  operation: parse_episode_name
+  input: { path: "Quiet Hours/Quiet Hours S00E03 OVA.mkv" }
+  expect:
+    season: 0
+    episodes: [3]
+    special: null
+
+- name: a season token before a dash number gives the season and episode
+  operation: parse_episode_name
+  input: { path: "Quiet Hours/[Lantern] Quiet Hours S2 - 03 [1080p].mkv" }
+  expect:
+    series_name: Quiet Hours
+    season: 2
+    episodes: [3]
+
+- name: specials of a batch folder are episodes of season 0 apart from the numbered episodes
+  operation: interpret
+  input:
+    library: tv
+    paths:
+      - "[Lantern] Quiet Hours (01-12) [1080p]/[Lantern] Quiet Hours - 01 [1080p].mkv"
+      - "[Lantern] Quiet Hours (01-12) [1080p]/[Lantern] Quiet Hours - OVA [1080p].mkv"
+      - "[Lantern] Quiet Hours (01-12) [1080p]/[Lantern] Quiet Hours - 12.5 [1080p].mkv"
+  expect:
+    items:
+      - { kind: series, title: Quiet Hours, path: "[Lantern] Quiet Hours (01-12) [1080p]" }
+      - { kind: season, season: 0 }
+      - { kind: episode, season: 0, episodes: null, special: { kind: ova } }
+      - { kind: episode, season: 0, episodes: null, special: { kind: recap, number: "12.5" } }
+      - { kind: episode, episodes: [1], special: null }
+
+- name: a special without an episode number is not renamed
+  operation: plan_renames
+  input:
+    library: tv
+    paths: ["Quiet Hours/[Lantern] Quiet Hours - OVA [1080p].mkv"]
+  expect:
+    proposals: []
+    blocked: [{ from: "Quiet Hours/[Lantern] Quiet Hours - OVA [1080p].mkv", reasons: [missing_episode_reference] }]

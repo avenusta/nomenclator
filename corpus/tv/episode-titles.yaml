@@ -1,0 +1,33 @@
+# Episode titles include their own punctuation and numbering (T19).
+
+- name: an episode title includes a leading ellipsis
+  operation: parse_episode_name
+  input:
+    path: Lost (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Lost (2004) - S02E05 - ...And Found (1080p BluRay x265 Simmers).mkv
+  expect:
+    episodes: [5]
+    episode_title: ...And Found
+
+- name: an episode title that is a dotted acronym includes its final dot
+  operation: parse_episode_name
+  input:
+    path: Lost (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Lost (2004) - S02E19 - S.O.S. (1080p BluRay x265 Simmers).mkv
+  expect:
+    episodes: [19]
+    episode_title: S.O.S.
+
+- name: the titles of the parts of a two-part episode include their part numbers
+  operation: parse_episode_name
+  input:
+    path: Lost (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Lost (2004) - S02E23 - Live Together, Die Alone (1) (1080p BluRay x265 Simmers).mkv
+  expect:
+    episodes: [23]
+    episode_title: Live Together, Die Alone (1)
+
+- name: a parenthesised alias in an episode title is part of the title
+  operation: parse_episode_name
+  input:
+    path: Lost (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Lost (2004) - S02E08 - Collision (a.k.a. Old Habits) (1080p BluRay x265 Simmers).mkv
+  expect:
+    episodes: [8]
+    episode_title: Collision (a.k.a. Old Habits)

@@ -1,0 +1,97 @@
+- name: a dotted release name with a year-first air date resolves to the series title before the date and no season or episode
+  operation: parse_episode_name
+  input:
+    path: The.Daily.Show.with.Jon.Stewart.2019.06.14.720p.HDTV.x264-SYNCOPY.mkv
+  expect:
+    series_name: The Daily Show with Jon Stewart
+    season: null
+    episodes: null
+    date: '2019-06-14'
+
+- name: a year-first air date joined by dashes after an underscore ends the series title
+  operation: parse_episode_name
+  input:
+    path: Newsnight_2019-03-07.mp4
+  expect:
+    series_name: Newsnight
+    season: null
+    episodes: null
+    date: '2019-03-07'
+
+- name: an air date written as space-separated year, month and day resolves to the date and no episode
+  operation: parse_episode_name
+  input:
+    path: Antiques Roadshow 2023 07 14 HDTV x264 AC3.mkv
+  expect:
+    series_name: Antiques Roadshow
+    season: null
+    episodes: null
+    date: '2023-07-14'
+
+- name: a day-first air date whose day is above twelve is a date, not a month
+  operation: parse_episode_name
+  input:
+    path: Panorama_14.11.1996.mp4
+  expect:
+    series_name: Panorama
+    season: null
+    episodes: null
+    date: '1996-11-14'
+
+- name: a recording timestamp after a space-separated air date is ignored, and the date is resolved
+  operation: parse_episode_name
+  input:
+    path: Nightline 2018_03_24_19_00_00.mkv
+  expect:
+    series_name: Nightline
+    season: null
+    episodes: null
+    date: '2018-03-24'
+
+- name: a parenthesised air date between dashes resolves to the date, and the text after it is the episode title
+  operation: parse_episode_name
+  input:
+    path: The Graham Norton Show - (2015-01-15) - Guest Interview - [720p].mkv
+  expect:
+    series_name: The Graham Norton Show
+    season: null
+    episodes: null
+    date: '2015-01-15'
+    episode_title: Guest Interview
+
+- name: a channel tag joined by underscores to a title with a hyphen is not part of the series name, and the date is resolved
+  operation: parse_episode_name
+  input:
+    path: Hawaii Five-0_WXYZ_2018_05_25_01_28_00.wtv
+  expect:
+    series_name: Hawaii Five-0
+    season: null
+    episodes: null
+    date: '2018-05-25'
+
+- name: an underscore-joined title separated from its date by a space includes its underscore
+  operation: parse_episode_name
+  input:
+    path: Brooklyn_Nine-Nine 2016-03-02.mkv
+  expect:
+    series_name: Brooklyn_Nine-Nine
+    date: '2016-03-02'
+
+- name: an NxM inside a dated episode title is title text, and the season folder and air date identify the episode
+  operation: parse_episode_name
+  input:
+    path: Taskmaster (2015) {tvdb-12345}/Season 21/Taskmaster (2015) - 2016-10-25 - Rock Hard 2x4 Vandalism - [HDTV-1080p].mkv
+  expect:
+    season: 21
+    episodes: null
+    first_episode: null
+    date: '2016-10-25'
+
+- name: an episode code directly after the air date is the episode, with the season from its folder
+  operation: parse_episode_name
+  input:
+    path: Question Time (2005) {tvdb-12345}/Season 04/Question Time (2005) - 2024-09-18 - 4x221 - [WEBDL-480p].mkv
+  expect:
+    season: 4
+    first_episode: 221
+    date: '2024-09-18'

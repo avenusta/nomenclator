@@ -1,0 +1,37 @@
+[package]
+name = "nomenclator"
+version.workspace = true
+description = "Media-naming conventions for movie and TV libraries: names in, structured naming facts out, with explicit ambiguity"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+# The tests read the corpus at the repository root, which the package does not contain.
+exclude = ["tests/"]
+categories = ["parser-implementations", "multimedia::video"]
+
+[lints]
+workspace = true
+
+# Turns the `[Unreleased]` section of the one changelog into the released version, and
+# opens a new empty `[Unreleased]` section above it. Only this crate does it, because all
+# crates share the changelog and the version.
+[package.metadata.release]
+pre-release-replacements = [
+    { file = "../../CHANGELOG.md", search = "## \\[Unreleased\\]", replace = "## [Unreleased]\n\n## [{{version}}] - {{date}}", exactly = 1 },
+]
+
+[features]
+# Derives `clap::ValueEnum` for the enums that a command line takes, so a CLI uses the
+# library's own value names.
+clap = ["dep:clap"]
+
+[dependencies]
+clap = { version = "4.6", features = ["derive"], optional = true }
+regex = "1.13.1"
+serde = { version = "1.0.229", features = ["derive"] }
+serde-saphyr = { version = "2.1", default-features = false, features = ["deserialize"] }
+serde_json = "1.0.154"
+unicode-normalization = "0.1.26"

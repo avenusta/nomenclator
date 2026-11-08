@@ -1,0 +1,134 @@
+- name: 'a dated show folder with one release-named episode and its subtitle in a season folder: the episode is S03E09, the subtitle attaches and moves with it, and the hidden file is excluded'
+  operation: end_to_end
+  input:
+    library: tv
+    paths:
+    - One Punch Man (2015)/
+    - One Punch Man (2015)/.DS_Store
+    - One Punch Man (2015)/Season 03/
+    - One Punch Man (2015)/Season 03/S3E09 (REPACK) [1080p CR WEB-DL AVC AAC][MultiSub][2C979EE6].en.srt
+    - One Punch Man (2015)/Season 03/S3E09 (REPACK) [1080p CR WEB-DL AVC AAC][MultiSub][2C979EE6].mkv
+  expect:
+    interpretation:
+      items:
+      - kind: series
+        title: One Punch Man
+        year: 2015
+        path: One Punch Man (2015)
+        provider_ids: {}
+        extras: []
+        artwork: []
+        nfo: null
+      - kind: season
+        series_name: One Punch Man
+        series_path: One Punch Man (2015)
+        season: 3
+        path: One Punch Man (2015)/Season 03
+        provider_ids: {}
+        extras: []
+        artwork: []
+        nfo: null
+      - kind: episode
+        series_name: One Punch Man
+        series_year: 2015
+        series_path: One Punch Man (2015)
+        season:
+          status: resolved
+          value: 3
+          evidence:
+            rule: episode_token
+            span:
+            - 0
+            - 5
+        episodes:
+        - 9
+        first_episode: 9
+        absolute: null
+        date:
+          status: unknown
+        episode_title: null
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - One Punch Man (2015)/Season 03/S3E09 (REPACK) [1080p CR WEB-DL AVC AAC][MultiSub][2C979EE6].mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles:
+        - path: One Punch Man (2015)/Season 03/S3E09 (REPACK) [1080p CR WEB-DL AVC AAC][MultiSub][2C979EE6].en.srt
+          language:
+            status: resolved
+            value: en
+            evidence:
+              rule: language_token
+              span:
+              - 61
+              - 63
+          flags: []
+          title:
+            status: unknown
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      extras_of: {}
+      video_subtitles:
+        One Punch Man (2015)/Season 03/S3E09 (REPACK) [1080p CR WEB-DL AVC AAC][MultiSub][2C979EE6].mkv:
+        - path: One Punch Man (2015)/Season 03/S3E09 (REPACK) [1080p CR WEB-DL AVC AAC][MultiSub][2C979EE6].en.srt
+          language:
+            status: resolved
+            value: en
+            evidence:
+              rule: language_token
+              span:
+              - 61
+              - 63
+          flags: []
+          title:
+            status: unknown
+      excluded_entries:
+      - path: One Punch Man (2015)/.DS_Store
+        reason: hidden_entry
+        matched_path: One Punch Man (2015)/.DS_Store
+        rule_file: null
+      undecided_entries: []
+      invalid_entries: []
+      unclaimed_files: []
+      rule_diagnostics: []
+    plan:
+      proposals:
+      - from: One Punch Man (2015)/Season 03/S3E09 (REPACK) [1080p CR WEB-DL AVC AAC][MultiSub][2C979EE6].en.srt
+        to: One Punch Man (2015)/Season 03/One Punch Man (2015) - S03E09.en.srt
+        case_only: false
+        requires_temporary_step: false
+        moves_with: One Punch Man (2015)/Season 03/S3E09 (REPACK) [1080p CR WEB-DL AVC AAC][MultiSub][2C979EE6].mkv
+      - from: One Punch Man (2015)/Season 03/S3E09 (REPACK) [1080p CR WEB-DL AVC AAC][MultiSub][2C979EE6].mkv
+        to: One Punch Man (2015)/Season 03/One Punch Man (2015) - S03E09.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      blocked: []
+    validation:
+      diagnostics:
+      - rule: missing_provider_id
+        paths:
+        - 'One Punch Man (2015)'
+      - rule: profile_violation
+        paths:
+        - One Punch Man (2015)/Season 03/S3E09 (REPACK) [1080p CR WEB-DL AVC AAC][MultiSub][2C979EE6].en.srt
+        reason: null
+        proposed_path: One Punch Man (2015)/Season 03/One Punch Man (2015) - S03E09.en.srt
+      - rule: missing_episode_title
+        paths:
+        - 'One Punch Man (2015)/Season 03/S3E09 (REPACK) [1080p CR WEB-DL AVC AAC][MultiSub][2C979EE6].mkv'
+      - rule: profile_violation
+        paths:
+        - One Punch Man (2015)/Season 03/S3E09 (REPACK) [1080p CR WEB-DL AVC AAC][MultiSub][2C979EE6].mkv
+        reason: null
+        proposed_path: One Punch Man (2015)/Season 03/One Punch Man (2015) - S03E09.mkv

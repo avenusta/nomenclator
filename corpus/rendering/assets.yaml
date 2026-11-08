@@ -1,0 +1,140 @@
+# Asset rendering (decision R19): NFO, artwork and theme file names for every
+# item kind.
+
+- name: a movie poster is written in the movie folder
+  operation: render_names
+  input:
+    facts: { library: movies, title: Arrival, year: 2016, provider_ids: { tmdb: "329865" }, asset: { role: poster, extension: JPG } }
+  expect:
+    path: "Arrival (2016) {tmdb-329865}/poster.jpg"
+
+- name: a movie backdrop is written as fanart
+  operation: render_names
+  input:
+    facts: { library: movies, title: Arrival, year: 2016, asset: { role: backdrop, extension: jpg } }
+  expect:
+    path: Arrival (2016)/fanart.jpg
+
+- name: a movie logo is written as clearlogo
+  operation: render_names
+  input:
+    facts: { library: movies, title: Arrival, year: 2016, asset: { role: logo, extension: png } }
+  expect:
+    path: Arrival (2016)/clearlogo.png
+
+- name: a movie thumb is written as landscape
+  operation: render_names
+  input:
+    facts: { library: movies, title: Arrival, year: 2016, asset: { role: thumb, extension: jpg } }
+  expect:
+    path: Arrival (2016)/landscape.jpg
+
+- name: a movie NFO is written as movie.nfo
+  operation: render_names
+  input:
+    facts: { library: movies, title: Arrival, year: 2016, asset: { role: nfo, extension: nfo } }
+  expect:
+    path: Arrival (2016)/movie.nfo
+
+- name: a movie asset keeps the movie folder in a flat layout
+  operation: render_names
+  input:
+    facts: { library: movies, title: Arrival, year: 2016, asset: { role: poster, extension: jpg } }
+    profile: { movie_layout: flat }
+  expect:
+    path: Arrival (2016)/poster.jpg
+
+- name: a movie theme song is written as theme in the movie folder
+  operation: render_names
+  input:
+    facts: { library: movies, title: Arrival, year: 2016, asset: { role: theme_song, extension: mp3 } }
+  expect:
+    path: Arrival (2016)/theme.mp3
+
+- name: a theme video is written as theme in the theme video folder
+  operation: render_names
+  input:
+    facts: { library: tv, title: Quiet Hours, year: 2019, asset: { role: theme_video, extension: mp4 } }
+  expect:
+    path: Quiet Hours (2019)/Backdrops/theme.mp4
+
+- name: a series poster and NFO are written in the series folder
+  operation: render_names
+  input:
+    facts: { library: tv, title: Quiet Hours, year: 2019, provider_ids: { tvdb: "81189" }, asset: { role: nfo, extension: nfo } }
+  expect:
+    path: "Quiet Hours (2019) {tvdb-81189}/tvshow.nfo"
+
+- name: a season poster is written in the season folder
+  operation: render_names
+  input:
+    facts: { library: tv, title: Quiet Hours, season: 2, asset: { role: poster, extension: jpg } }
+  expect:
+    path: Quiet Hours/Season 02/poster.jpg
+
+- name: a season NFO is written as season.nfo in the season folder
+  operation: render_names
+  input:
+    facts: { library: tv, title: Quiet Hours, season: 0, asset: { role: nfo, extension: nfo } }
+  expect:
+    path: Quiet Hours/Season 00/season.nfo
+
+- name: an episode still is written after the episode stem with the thumb suffix
+  operation: render_names
+  input:
+    facts: { library: tv, title: Quiet Hours, season: 2, episodes: [5], episode_title: Low Tide, asset: { role: episode_still, extension: jpg } }
+  expect:
+    path: Quiet Hours/Season 02/Quiet Hours - S02E05 - Low Tide-thumb.jpg
+
+- name: an episode NFO is named after the episode stem
+  operation: render_names
+  input:
+    facts: { library: tv, title: Quiet Hours, season: 2, episodes: [5], asset: { role: nfo, extension: nfo } }
+  expect:
+    path: Quiet Hours/Season 02/Quiet Hours - S02E05.nfo
+
+- name: an episode thumb is the episode still
+  operation: render_names
+  input:
+    facts: { library: tv, title: Quiet Hours, season: 2, episodes: [5], asset: { role: thumb, extension: jpg } }
+  expect:
+    path: Quiet Hours/Season 02/Quiet Hours - S02E05-thumb.jpg
+
+- name: an episode poster is named after the episode stem with the role suffix
+  operation: render_names
+  input:
+    facts: { library: tv, title: Quiet Hours, season: 2, episodes: [5], asset: { role: poster, extension: jpg } }
+  expect:
+    path: Quiet Hours/Season 02/Quiet Hours - S02E05-poster.jpg
+
+- name: an episode still of a movie is blocked as a role that the item cannot have
+  operation: render_names
+  input:
+    facts: { library: movies, title: Arrival, year: 2016, asset: { role: episode_still, extension: jpg } }
+  expect:
+    path: null
+    blocked_reasons: [asset_role_not_for_item]
+
+- name: a theme song of an episode is blocked as a role that the item cannot have
+  operation: render_names
+  input:
+    facts: { library: tv, title: Quiet Hours, season: 2, episodes: [5], asset: { role: theme_song, extension: mp3 } }
+  expect:
+    path: null
+    blocked_reasons: [asset_role_not_for_item]
+
+- name: an asset without an extension is blocked
+  operation: render_names
+  input:
+    facts: { library: movies, title: Arrival, year: 2016, asset: { role: poster } }
+  expect:
+    path: null
+    blocked_reasons: [missing_extension]
+
+- name: a rendered season poster is read as the season's poster
+  operation: interpret
+  input:
+    library: tv
+    paths: [Quiet Hours/Season 02/Quiet Hours - S02E05.mkv, Quiet Hours/Season 02/poster.jpg, Quiet Hours/Season 02/Quiet Hours - S02E05-thumb.jpg, Quiet Hours/fanart.jpg, Quiet Hours/clearlogo.png]
+  expect:
+    unclaimed_files: []

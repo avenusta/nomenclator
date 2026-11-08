@@ -1,0 +1,248 @@
+# Files whose names disagree with the folders that contain them (R8).
+
+- name: a movie whose title and year contradict its folder is reported once per contradicting fact
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Northern Passage (2021)/Southern Gate (2019).mkv
+  expect:
+    diagnostics:
+    - rule: ambiguous_identity
+      paths: [Northern Passage (2021)/Southern Gate (2019).mkv]
+      reason: contradicts_owning_folder
+    - rule: folder_mismatch
+      paths: [Northern Passage (2021)/Southern Gate (2019).mkv]
+      reason: title
+    - rule: folder_mismatch
+      paths: [Northern Passage (2021)/Southern Gate (2019).mkv]
+      reason: year
+
+- name: a movie whose year alone contradicts its folder is reported for the year
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Northern Passage (2021)/Northern Passage (2020).mkv
+  expect:
+    diagnostics:
+    - rule: ambiguous_identity
+      paths: [Northern Passage (2021)/Northern Passage (2020).mkv]
+      reason: contradicts_owning_folder
+    - rule: folder_mismatch
+      paths: [Northern Passage (2021)/Northern Passage (2020).mkv]
+      reason: year
+
+- name: a file title that differs from the folder title is reported and the folder title is the identity
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Northern Passage (2021)/Southern Gate.mkv
+  expect:
+    diagnostics:
+    - rule: folder_mismatch
+      paths: [Northern Passage (2021)/Southern Gate.mkv]
+      reason: title
+    - rule: missing_provider_id
+      paths:
+      - 'Northern Passage (2021)/Southern Gate.mkv'
+    - rule: profile_violation
+      paths: [Northern Passage (2021)/Southern Gate.mkv]
+      proposed_path: Northern Passage (2021)/Northern Passage (2021).mkv
+
+- name: a file under a provider-anchored folder with another title and year is reported
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Northern Passage (2021) {tmdb-5}/Southern Gate (2019).mkv
+  expect:
+    diagnostics:
+    - rule: folder_mismatch
+      paths: ['Northern Passage (2021) {tmdb-5}/Southern Gate (2019).mkv']
+      reason: title
+    - rule: folder_mismatch
+      paths: ['Northern Passage (2021) {tmdb-5}/Southern Gate (2019).mkv']
+      reason: year
+    - rule: profile_violation
+      paths: ['Northern Passage (2021) {tmdb-5}/Southern Gate (2019).mkv']
+      proposed_path: Northern Passage (2021) {tmdb-5}/Northern Passage (2021) {tmdb-5}.mkv
+
+- name: an edition tag that differs from its folder's is reported
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Northern Passage (2021) {edition-Extended}/Northern Passage (2021) {edition-Theatrical}.mkv
+  expect:
+    diagnostics:
+    - rule: folder_mismatch
+      paths: ['Northern Passage (2021) {edition-Extended}/Northern Passage (2021) {edition-Theatrical}.mkv']
+      reason: edition
+    - rule: missing_provider_id
+      paths:
+      - 'Northern Passage (2021) {edition-Extended}/Northern Passage (2021) {edition-Theatrical}.mkv'
+    - rule: profile_violation
+      paths: ['Northern Passage (2021) {edition-Extended}/Northern Passage (2021) {edition-Theatrical}.mkv']
+      proposed_path: Northern Passage (2021)/Northern Passage (2021) {edition-Theatrical}.mkv
+
+- name: a file title that equals its folder title in comparison form is not a mismatch
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Northern Passage (2021)/The Northern Passage.mkv
+  expect:
+    diagnostics:
+    - rule: missing_provider_id
+      paths:
+      - 'Northern Passage (2021)/The Northern Passage.mkv'
+    - rule: profile_violation
+      paths: [Northern Passage (2021)/The Northern Passage.mkv]
+      proposed_path: Northern Passage (2021)/Northern Passage (2021).mkv
+
+- name: a fact that the file name omits is not a mismatch
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Northern Passage (2021) {edition-Extended}/Northern Passage.mkv
+    - Quiet Harbor (2020)/title00.mkv
+  expect:
+    diagnostics:
+    - rule: missing_provider_id
+      paths:
+      - 'Northern Passage (2021) {edition-Extended}/Northern Passage.mkv'
+    - rule: profile_violation
+      paths: ['Northern Passage (2021) {edition-Extended}/Northern Passage.mkv']
+      proposed_path: Northern Passage (2021)/Northern Passage (2021) {edition-Extended}.mkv
+    - rule: missing_provider_id
+      paths:
+      - 'Quiet Harbor (2020)/title00.mkv'
+    - rule: profile_violation
+      paths: [Quiet Harbor (2020)/title00.mkv]
+      proposed_path: Quiet Harbor (2020)/Quiet Harbor (2020).mkv
+
+- name: an episode whose season differs from its season folder's is reported
+  operation: validate
+  input:
+    library: tv
+    paths:
+    - Harbor Lights/Season 02/Harbor Lights S03E01.mkv
+  expect:
+    diagnostics:
+    - rule: missing_series_year
+      paths:
+      - 'Harbor Lights'
+    - rule: missing_provider_id
+      paths:
+      - 'Harbor Lights'
+    - rule: folder_mismatch
+      paths: [Harbor Lights/Season 02/Harbor Lights S03E01.mkv]
+      reason: season
+    - rule: missing_episode_title
+      paths:
+      - 'Harbor Lights/Season 02/Harbor Lights S03E01.mkv'
+    - rule: profile_violation
+      paths: [Harbor Lights/Season 02/Harbor Lights S03E01.mkv]
+      proposed_path: Harbor Lights/Season 03/Harbor Lights - S03E01.mkv
+
+- name: an episode whose series year differs from its series folder's is reported
+  operation: validate
+  input:
+    library: tv
+    paths:
+    - Harbor Lights (2019)/Season 01/Harbor Lights (2005) S01E01.mkv
+  expect:
+    diagnostics:
+    - rule: missing_provider_id
+      paths:
+      - 'Harbor Lights (2019)'
+    - rule: folder_mismatch
+      paths: [Harbor Lights (2019)/Season 01/Harbor Lights (2005) S01E01.mkv]
+      reason: series_year
+    - rule: missing_episode_title
+      paths:
+      - 'Harbor Lights (2019)/Season 01/Harbor Lights (2005) S01E01.mkv'
+    - rule: profile_violation
+      paths: [Harbor Lights (2019)/Season 01/Harbor Lights (2005) S01E01.mkv]
+      proposed_path: Harbor Lights (2019)/Season 01/Harbor Lights (2019) - S01E01.mkv
+
+- name: episodes with a series title other than their series folder's are each reported
+  operation: validate
+  input:
+    library: tv
+    paths:
+    - Harbor Lights (2019)/Season 01/Low Tide S01E01.mkv
+    - Harbor Lights (2019)/Season 01/Low Tide S01E02.mkv
+  expect:
+    diagnostics:
+    - rule: missing_provider_id
+      paths:
+      - 'Harbor Lights (2019)'
+    - rule: folder_mismatch
+      paths: [Harbor Lights (2019)/Season 01/Low Tide S01E01.mkv]
+      reason: series_title
+    - rule: missing_episode_title
+      paths:
+      - 'Harbor Lights (2019)/Season 01/Low Tide S01E01.mkv'
+    - rule: profile_violation
+      paths: [Harbor Lights (2019)/Season 01/Low Tide S01E01.mkv]
+      proposed_path: Harbor Lights (2019)/Season 01/Harbor Lights (2019) - S01E01.mkv
+    - rule: folder_mismatch
+      paths: [Harbor Lights (2019)/Season 01/Low Tide S01E02.mkv]
+      reason: series_title
+    - rule: missing_episode_title
+      paths:
+      - 'Harbor Lights (2019)/Season 01/Low Tide S01E02.mkv'
+    - rule: profile_violation
+      paths: [Harbor Lights (2019)/Season 01/Low Tide S01E02.mkv]
+      proposed_path: Harbor Lights (2019)/Season 01/Harbor Lights (2019) - S01E02.mkv
+
+- name: the text before the code of a single episode is its title and not a mismatch
+  operation: validate
+  input:
+    library: tv
+    paths:
+    - Harbor Lights (2019)/Season 01/Low Tide S01E01.mkv
+  expect:
+    diagnostics:
+    - rule: missing_provider_id
+      paths:
+      - 'Harbor Lights (2019)'
+    - rule: profile_violation
+      paths: [Harbor Lights (2019)/Season 01/Low Tide S01E01.mkv]
+      proposed_path: Harbor Lights (2019)/Season 01/Harbor Lights (2019) - S01E01 - Low Tide.mkv
+
+- name: episodes whose coverages overlap but are not equal are reported together
+  operation: validate
+  input:
+    library: tv
+    paths:
+    - Harbor Lights/Season 01/Harbor Lights S01E02-E03.mkv
+    - Harbor Lights/Season 01/Harbor Lights S01E03.mkv
+  expect:
+    diagnostics:
+    - rule: missing_series_year
+      paths:
+      - 'Harbor Lights'
+    - rule: missing_provider_id
+      paths:
+      - 'Harbor Lights'
+    - rule: overlapping_episodes
+      paths:
+      - Harbor Lights/Season 01/Harbor Lights S01E02-E03.mkv
+      - Harbor Lights/Season 01/Harbor Lights S01E03.mkv
+    - rule: missing_episode_title
+      paths:
+      - 'Harbor Lights/Season 01/Harbor Lights S01E02-E03.mkv'
+    - rule: profile_violation
+      paths: [Harbor Lights/Season 01/Harbor Lights S01E02-E03.mkv]
+      proposed_path: Harbor Lights/Season 01/Harbor Lights - S01E02-E03.mkv
+    - rule: missing_episode_title
+      paths:
+      - 'Harbor Lights/Season 01/Harbor Lights S01E03.mkv'
+    - rule: profile_violation
+      paths: [Harbor Lights/Season 01/Harbor Lights S01E03.mkv]
+      proposed_path: Harbor Lights/Season 01/Harbor Lights - S01E03.mkv

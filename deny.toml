@@ -1,0 +1,32 @@
+# Dependency checks that `cargo deny check` runs (CODING_STANDARDS.md, "Dependencies").
+
+[graph]
+all-features = true
+
+[advisories]
+# Fails on a security advisory or a yanked version of any dependency.
+yanked = "deny"
+
+[licenses]
+# Permissive licenses only, because the crates are MIT. A crate with several licenses
+# passes if one of them is listed.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-3-Clause",
+    "BSL-1.0",
+    "Unicode-3.0",
+    "Unlicense",
+    "Zlib",
+]
+confidence-threshold = 0.9
+
+[bans]
+multiple-versions = "allow"
+wildcards = "deny"
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

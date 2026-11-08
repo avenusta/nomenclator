@@ -1,0 +1,475 @@
+- name: an imdbid tag in square brackets with = resolves to the imdb id (The Matrix [imdbid=tt0133093])
+  operation: parse_provider_ids
+  input:
+    text: 'The Matrix [imdbid=tt0133093]'
+  expect:
+    provider_ids:
+      imdb: tt0133093
+
+- name: an imdb tag in braces with - resolves to the imdb id (The Usual Suspects {imdb-tt0113277})
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects {imdb-tt0113277}'
+  expect:
+    provider_ids:
+      imdb: tt0113277
+
+- name: an imdbid tag in parentheses with - resolves to the imdb id (Fight Club (imdbid-tt0137523))
+  operation: parse_provider_ids
+  input:
+    text: 'Fight Club (imdbid-tt0137523)'
+  expect:
+    provider_ids:
+      imdb: tt0137523
+
+- name: a numbered key like imdbid1 is ignored and the plain imdb tag is read (The Usual Suspects [imdbid1=tt1111111][imdb=tt0113277])
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects [imdbid1=tt1111111][imdb=tt0113277]'
+  expect:
+    provider_ids:
+      imdb: tt0113277
+
+- name: a title with no ids has no provider ids (The Usual Suspects)
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects'
+  expect:
+    provider_ids: null
+
+- name: a bare unbracketed tt id that is the final word resolves to the imdb id (The Usual Suspects - tt0113277)
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects - tt0113277'
+  expect:
+    provider_ids:
+      imdb: tt0113277
+
+- name: a bare tt id that is not the final word is not read as an imdb id (The Usual Suspects - tt0113277 [imdbid1=tt11])
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects - tt0113277 [imdbid1=tt11]'
+  expect:
+    provider_ids: null
+
+- name: a tmdbid tag with = in square brackets resolves to the tmdb id (The Usual Suspects [tmdbid=949])
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects [tmdbid=949]'
+  expect:
+    provider_ids:
+      tmdb: '949'
+
+- name: a tmdb tag with - in braces resolves to the tmdb id (The Usual Suspects {tmdb-949})
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects {tmdb-949}'
+  expect:
+    provider_ids:
+      tmdb: '949'
+
+- name: a tmdbid tag with - in parentheses resolves to the tmdb id (The Usual Suspects (tmdbid-949))
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects (tmdbid-949)'
+  expect:
+    provider_ids:
+      tmdb: '949'
+
+- name: a provider tag key is case-insensitive (The Usual Suspects (1995) [TMDB-949])
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects (1995) [TMDB-949]'
+  expect:
+    provider_ids:
+      tmdb: '949'
+
+- name: a lone tmdb tag in braces is read (The Matrix {tmdb-603})
+  operation: parse_provider_ids
+  input:
+    text: '{tmdb-603}'
+  expect:
+    provider_ids:
+      tmdb: '603'
+
+- name: a bare tmdb tag with no brackets around it is not read as a tmdb id (tmdbid=949)
+  operation: parse_provider_ids
+  input:
+    text: 'tmdbid=949'
+  expect:
+    provider_ids:
+      tmdb: null
+
+- name: a tmdb tag with mismatched brackets is not read as a tmdb id (The Usual Suspects {tmdbid-949))
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects {tmdbid-949)'
+  expect:
+    provider_ids:
+      tmdb: null
+
+- name: a tmdb tag with no closing bracket is not read as a tmdb id (The Usual Suspects [tmdbid=949)
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects [tmdbid=949'
+  expect:
+    provider_ids:
+      tmdb: null
+
+- name: a tmdb tag with an empty value is skipped and a later tmdb tag is read ([tmdbid=  ][tmdbid=223344])
+  operation: parse_provider_ids
+  input:
+    text: '[tmdbid=  ][tmdbid=223344]'
+  expect:
+    provider_ids:
+      tmdb: '223344'
+
+- name: an empty tmdb tag beside an imdb tag resolves to no tmdb id (The Usual Suspects [tmdbid=][imdbid=tt0113277])
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects [tmdbid=][imdbid=tt0113277]'
+  expect:
+    provider_ids:
+      tmdb: null
+      imdb: tt0113277
+
+- name: two tmdb tags with different values are ambiguous (The Usual Suspects [tmdb-949][tmdbid=1234567])
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects [tmdb-949][tmdbid=1234567]'
+  expect:
+    provider_ids:
+      tmdb:
+        status: ambiguous
+
+- name: two tmdb tags in braces with different values are ambiguous (The Matrix {tmdbid-603}{tmdb=12345})
+  operation: parse_provider_ids
+  input:
+    text: 'The Matrix {tmdbid-603}{tmdb=12345}'
+  expect:
+    provider_ids:
+      tmdb:
+        status: ambiguous
+
+- name: a tmdb tag and an imdb tag after the title resolve to both ids (Shutter Island [tmdbid=27205][imdbid=tt1375666])
+  operation: parse_provider_ids
+  input:
+    text: 'Shutter Island [tmdbid=27205][imdbid=tt1375666]'
+  expect:
+    provider_ids:
+      tmdb: '27205'
+      imdb: tt1375666
+
+- name: a tvdbid tag with = in square brackets resolves to the tvdb id (Mad Men [tvdbid=81189])
+  operation: parse_provider_ids
+  input:
+    text: 'Mad Men [tvdbid=81189]'
+  expect:
+    provider_ids:
+      tvdb: '81189'
+
+- name: a tvdb tag with - in braces resolves to the tvdb id (Lost {tvdb-73739})
+  operation: parse_provider_ids
+  input:
+    text: 'Lost {tvdb-73739}'
+  expect:
+    provider_ids:
+      tvdb: '73739'
+
+- name: a tvdbid= tag in parentheses gives the tvdb id (House (2004) (tvdbid=73255))
+  operation: parse_provider_ids
+  input:
+    text: 'House (2004) (tvdbid=73255)'
+  expect:
+    provider_ids:
+      tvdb: '73255'
+
+- name: a tvdbid tag after a title and year is read (Mad Men (2008) [tvdbid-81189])
+  operation: parse_provider_ids
+  input:
+    text: 'Mad Men (2008) [tvdbid-81189]'
+  expect:
+    provider_ids:
+      tvdb: '81189'
+
+- name: a tvdb tag and a trailing bare imdb id are both read (Mad Men (2008) [tvdbid-81189] tt0903747)
+  operation: parse_provider_ids
+  input:
+    text: 'Mad Men (2008) [tvdbid-81189] tt0903747'
+  expect:
+    provider_ids:
+      tvdb: '81189'
+      imdb: tt0903747
+
+- name: a tvdb tag with = in an episode file name resolves to the episode's tvdb id (Mad Men S01E01 [tvdbid=81189].mkv)
+  operation: parse_provider_ids
+  input:
+    text: 'Mad Men S01E01 [tvdbid=81189].mkv'
+  expect:
+    provider_ids:
+      tvdb: '81189'
+
+- name: a tvmaze tag with = in an episode file name resolves to the episode's tvmaze id (Lost S02E03 [tvmazeid=67890].mkv)
+  operation: parse_provider_ids
+  input:
+    text: 'Lost S02E03 [tvmazeid=67890].mkv'
+  expect:
+    provider_ids:
+      tvmaze: '67890'
+
+- name: a tmdb tag with = in an episode file name resolves to the episode's tmdb id (The Leftovers S03E04 [tmdbid=99999].mkv)
+  operation: parse_provider_ids
+  input:
+    text: 'The Leftovers S03E04 [tmdbid=99999].mkv'
+  expect:
+    provider_ids:
+      tmdb: '99999'
+
+- name: an imdb tag with - in an episode file name resolves to the episode's imdb id (The Crown S04E05 [imdbid-tt1234567].mkv)
+  operation: parse_provider_ids
+  input:
+    text: 'The Crown S04E05 [imdbid-tt1234567].mkv'
+  expect:
+    provider_ids:
+      imdb: tt1234567
+
+- name: several provider tags in an episode file name are all read (Mad Men S01E01 [tvdbid=81189][tmdbid=99999].mkv)
+  operation: parse_provider_ids
+  input:
+    text: 'Mad Men S01E01 [tvdbid=81189][tmdbid=99999].mkv'
+  expect:
+    provider_ids:
+      tvdb: '81189'
+      tmdb: '99999'
+
+- name: a season folder name with a tvdbid= tag gives the tvdb id of the season (Season 03 [tvdbid=54321])
+  operation: parse_provider_ids
+  input:
+    text: 'Season 03 [tvdbid=54321]'
+  expect:
+    provider_ids:
+      tvdb: '54321'
+
+- name: a season folder name with a tvmazeid- tag gives the tvmaze id of the season (Season 05 [tvmazeid-24680])
+  operation: parse_provider_ids
+  input:
+    text: 'Season 05 [tvmazeid-24680]'
+  expect:
+    provider_ids:
+      tvmaze: '24680'
+
+- name: every provider tag in a season folder name is read (Season 04 [tvdbid=13579][tmdbid=86420])
+  operation: parse_provider_ids
+  input:
+    text: 'Season 04 [tvdbid=13579][tmdbid=86420]'
+  expect:
+    provider_ids:
+      tvdb: '13579'
+      tmdb: '86420'
+
+- name: a season folder without tags has no provider ids (Season 03)
+  operation: parse_provider_ids
+  input:
+    text: 'Season 03'
+  expect:
+    provider_ids: null
+
+- name: a bare number is not a provider id (21)
+  operation: parse_provider_ids
+  input:
+    text: '21'
+  expect:
+    provider_ids: null
+
+- name: a number after a title is not a provider id (Predator 2)
+  operation: parse_provider_ids
+  input:
+    text: 'Predator 2'
+  expect:
+    provider_ids: null
+
+- name: a five-digit number after a title is not a provider id (Pacific Heights 90268)
+  operation: parse_provider_ids
+  input:
+    text: 'Pacific Heights 90268'
+  expect:
+    provider_ids: null
+
+- name: a season number in a title is not a provider id (Ted Lasso 3)
+  operation: parse_provider_ids
+  input:
+    text: 'Ted Lasso 3'
+  expect:
+    provider_ids: null
+
+- name: a non-Latin title with a trailing number is not a provider id (もののけ姫 73210)
+  operation: parse_provider_ids
+  input:
+    text: 'もののけ姫 73210'
+  expect:
+    provider_ids: null
+
+- name: a trailing bare imdb id is read (Shutter Island (2010) tt1375666)
+  operation: parse_provider_ids
+  input:
+    text: 'Shutter Island (2010) tt1375666'
+  expect:
+    provider_ids:
+      imdb: tt1375666
+
+- name: a structured imdb tag takes precedence over a trailing bare imdb id (Shutter Island [imdb-tt1111111] tt1375666)
+  operation: parse_provider_ids
+  input:
+    text: 'Shutter Island [imdb-tt1111111] tt1375666'
+  expect:
+    provider_ids:
+      imdb: tt1111111
+
+- name: a bare imdb id in square brackets is read (The Usual Suspects (1995) [tt0113277])
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects (1995) [tt0113277]'
+  expect:
+    provider_ids:
+      imdb: tt0113277
+
+- name: a bare imdb id in curly braces is read (Fight Club {tt0137523})
+  operation: parse_provider_ids
+  input:
+    text: 'Fight Club {tt0137523}'
+  expect:
+    provider_ids:
+      imdb: tt0137523
+
+- name: a 10-digit bare imdb id is read (Dune Part Two (2024) [tt1234567890])
+  operation: parse_provider_ids
+  input:
+    text: 'Dune Part Two (2024) [tt1234567890]'
+  expect:
+    provider_ids:
+      imdb: tt1234567890
+
+- name: a bare imdb id in parentheses before release tags is read (Oblivion (2013) (tt1483013) [WEBDL-1080p].mp4)
+  operation: parse_provider_ids
+  input:
+    text: 'Oblivion (2013) (tt1483013) [WEBDL-1080p].mp4'
+  expect:
+    provider_ids:
+      imdb: tt1483013
+
+- name: a bracketed tag without tt is not a provider id (Hugo (2011) [BB])
+  operation: parse_provider_ids
+  input:
+    text: 'Hugo (2011) [BB]'
+  expect:
+    provider_ids: null
+
+- name: a parenthesized imdb tag is read (Shutter Island (imdb-tt1375666))
+  operation: parse_provider_ids
+  input:
+    text: 'Shutter Island (imdb-tt1375666)'
+  expect:
+    provider_ids:
+      imdb: tt1375666
+
+- name: a parenthesized tvdb tag is read (Mad Men (tvdbid-81189))
+  operation: parse_provider_ids
+  input:
+    text: 'Mad Men (tvdbid-81189)'
+  expect:
+    provider_ids:
+      tvdb: '81189'
+
+- name: an imdb id with too few digits is not read (The Usual Suspects (tt123))
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects (tt123)'
+  expect:
+    provider_ids: null
+
+- name: an imdb id with too many digits is not read (The Usual Suspects (tt12345678901))
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects (tt12345678901)'
+  expect:
+    provider_ids: null
+
+- name: a non-numeric tmdb id in parentheses is not read (The Usual Suspects (tmdb-12x))
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects (tmdb-12x)'
+  expect:
+    provider_ids: null
+
+- name: an imdb id without tt in parentheses is not read (The Usual Suspects (imdb-1234567))
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects (imdb-1234567)'
+  expect:
+    provider_ids: null
+
+- name: a tmdb tag with mismatched brackets is not read (The Usual Suspects [tmdb-123))
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects [tmdb-123)'
+  expect:
+    provider_ids: null
+
+- name: an all-zero imdb id is not read (The Usual Suspects (tt0000000))
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects (tt0000000)'
+  expect:
+    provider_ids: null
+
+- name: a zero tmdb id is not a provider id (Apocalypse Now [tmdbid=0])
+  operation: parse_provider_ids
+  input:
+    text: 'Apocalypse Now [tmdbid=0]'
+  expect:
+    provider_ids: null
+
+- name: a negative tvdb id is not a provider id (Apocalypse Now [tvdbid=-123])
+  operation: parse_provider_ids
+  input:
+    text: 'Apocalypse Now [tvdbid=-123]'
+  expect:
+    provider_ids: null
+
+- name: an imdb id without tt is not a provider id (Apocalypse Now [imdbid=1234567])
+  operation: parse_provider_ids
+  input:
+    text: 'Apocalypse Now [imdbid=1234567]'
+  expect:
+    provider_ids: null
+
+- name: a non-numeric tmdb id is not a provider id (Apocalypse Now [tmdbid=abc])
+  operation: parse_provider_ids
+  input:
+    text: 'Apocalypse Now [tmdbid=abc]'
+  expect:
+    provider_ids: null
+
+- name: an unsupported provider key is ignored (The Usual Suspects [traktid-5])
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects [traktid-5]'
+  expect:
+    provider_ids: null
+
+- name: a tmdb tag beside a tmdb key with a numeric suffix resolves to the plain tag's id only (The Usual Suspects [tmdb=949][tmdbid1=1])
+  operation: parse_provider_ids
+  input:
+    text: 'The Usual Suspects [tmdb=949][tmdbid1=1]'
+  expect:
+    provider_ids:
+      tmdb: '949'
+
+- name: a tmdb tag and a bare imdb id after the title are both read (Sunset Boulevard {tmdb-12345} [tt7654321])
+  operation: parse_provider_ids
+  input:
+    text: 'Sunset Boulevard {tmdb-12345} [tt7654321]'
+  expect:
+    provider_ids:
+      tmdb: '12345'
+      imdb: tt7654321

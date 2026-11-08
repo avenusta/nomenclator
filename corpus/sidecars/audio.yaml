@@ -1,0 +1,64 @@
+- name: an empty string is no audio sidecar
+  operation: parse_sidecar
+  input:
+    name: ''
+    video_name: The Usual Suspects (1995).mkv
+    kind: audio
+  expect:
+    matches: false
+
+- name: a srt subtitle beside the video is not an audio sidecar
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects (1995).srt
+    video_name: The Usual Suspects (1995).mkv
+    kind: audio
+  expect:
+    matches: false
+
+- name: an m4v video beside the video is not an audio sidecar
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects (1995).m4v
+    video_name: The Usual Suspects (1995).mkv
+    kind: audio
+  expect:
+    matches: false
+
+- name: an mp3 file with the video's stem is an audio sidecar
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects (1995).mp3
+    video_name: The Usual Suspects (1995).mkv
+    kind: audio
+  expect:
+    matches: true
+
+- name: a .flac file named after the video stem is a sidecar of the audio kind
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects (1995).flac
+    video_name: The Usual Suspects (1995).mkv
+    kind: audio
+  expect:
+    matches: true
+
+- name: an m4a file with the video's stem is an audio sidecar
+  operation: parse_sidecar
+  input:
+    name: The Usual Suspects (1995).m4a
+    video_name: The Usual Suspects (1995).mkv
+    kind: audio
+  expect:
+    matches: true
+
+- name: an external audio track gives its language and no flags
+  operation: parse_sidecar
+  input:
+    name: Casablanca (1942).ja.ac3
+    video_name: Casablanca (1942).mkv
+    kind: audio
+  expect:
+    matches: true
+    language: ja
+    flags: []

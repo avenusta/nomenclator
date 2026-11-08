@@ -1,0 +1,78 @@
+# Search queries (decision P7): the queries that a caller sends to a provider,
+# most specific first.
+
+- name: a provider ID comes first, then the title with the year, then the title alone
+  operation: search_queries
+  input:
+    facts: { kind: movie, title: Arrival, year: 2016, provider_ids: { imdb: tt2543164 } }
+  expect:
+    queries:
+      - { reason: provider_id, kind: movie, provider: imdb, id: tt2543164, title: null, year: null }
+      - { reason: title_with_year, kind: movie, title: Arrival, year: 2016 }
+      - { reason: title, kind: movie, title: Arrival, year: null }
+
+- name: alternate titles follow the title, first with the year and then without it
+  operation: search_queries
+  input:
+    facts: { kind: movie, title: Stalker, alternate_titles: [Zona], year: 1979 }
+  expect:
+    queries:
+      - { reason: title_with_year, title: Stalker, year: 1979 }
+      - { reason: alternate_title_with_year, title: Zona, year: 1979 }
+      - { reason: title, title: Stalker, year: null }
+      - { reason: alternate_title, title: Zona, year: null }
+
+- name: a title with a subtitle adds its main title last
+  operation: search_queries
+  input:
+    facts: { kind: movie, title: "Mission: Impossible - Dead Reckoning", year: 2023 }
+  expect:
+    queries:
+      - { reason: title_with_year, title: "Mission: Impossible - Dead Reckoning", year: 2023 }
+      - { reason: title, title: "Mission: Impossible - Dead Reckoning", year: null }
+      - { reason: main_title, title: "Mission: Impossible", year: 2023 }
+
+- name: an alternate title with the comparison key of the title is left out
+  operation: search_queries
+  input:
+    facts: { kind: series, title: Quiet Hours, alternate_titles: [quiet hours, Quiet-Hours] }
+  expect:
+    queries:
+      - { reason: title, kind: series, title: Quiet Hours, year: null }
+
+- name: the year of an air date is the year of the queries
+  operation: search_queries
+  input:
+    facts: { kind: series, title: Quiet Hours, date: 2019-03-04 }
+  expect:
+    queries:
+      - { reason: title_with_year, title: Quiet Hours, year: 2019 }
+      - { reason: title, title: Quiet Hours, year: null }
+
+- name: facts without a title or a provider ID give no queries
+  operation: search_queries
+  input:
+    facts: { kind: episode, season: 2, episodes: [5] }
+  expect:
+    queries: []
+
+- name: the match facts of an interpreted movie carry its title, alternates, year and IDs
+  operation: match_facts
+  input:
+    library: movies
+    paths: ["Stalker (Zona) (1979) {imdb-tt0079944}/Stalker (Zona) (1979) {imdb-tt0079944}.mkv"]
+  expect:
+    facts:
+      - { kind: movie, title: Stalker, alternate_titles: [Zona], year: 1979, provider_ids: { imdb: tt0079944 } }
+
+- name: the match facts of an interpreted episode carry its coordinates and order, and its series has facts of its own
+  operation: match_facts
+  input:
+    library: tv
+    paths: [Quiet Hours (2019)/Season 02/Quiet Hours (2019) - S02E05 - Low Tide.mkv]
+    inputs:
+      series: [{ series: Quiet Hours (2019), order: dvd }]
+  expect:
+    facts:
+      - { kind: series, title: Quiet Hours, year: 2019 }
+      - { kind: episode, title: Low Tide, season: 2, episodes: [5], order: dvd }

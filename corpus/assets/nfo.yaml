@@ -1,0 +1,110 @@
+- name: an NFO named after a video is attached to that video's item
+  operation: classify_nfo
+  input:
+    path: Northern Passage (2021)/Northern Passage (2021).nfo
+    video_paths:
+    - Northern Passage (2021)/Northern Passage (2021).mkv
+  expect:
+    role: video
+
+- name: an NFO named after a video in another letter case is attached to that video
+  operation: classify_nfo
+  input:
+    path: Quiet Harbour/quiet harbour.nfo
+    video_paths:
+    - Quiet Harbour/Quiet Harbour.mkv
+  expect:
+    role: video
+
+- name: an NFO named after a video in another folder has no role
+  operation: classify_nfo
+  input:
+    path: Extras/Quiet Harbour.nfo
+    video_paths:
+    - Quiet Harbour/Quiet Harbour.mkv
+  expect:
+    role: null
+
+- name: an NFO named after the shared name of stacked parts is attached to their movie
+  operation: classify_nfo
+  input:
+    path: Long Voyage (1998)/Long Voyage (1998).nfo
+    video_paths:
+    - Long Voyage (1998)/Long Voyage (1998)-cd1.mkv
+    - Long Voyage (1998)/Long Voyage (1998)-cd2.mkv
+  expect:
+    role: movie
+
+- name: an NFO named movie is attached to the movie of its folder
+  operation: classify_nfo
+  input:
+    path: Long Voyage (1998)/movie.nfo
+    video_paths:
+    - Long Voyage (1998)/Long Voyage (1998).mkv
+  expect:
+    role: movie
+
+- name: a generic NFO name is matched ignoring case
+  operation: classify_nfo
+  input:
+    path: Long Voyage (1998)/Movie.NFO
+  expect:
+    role: movie
+
+- name: an NFO named tvshow is attached to its series folder
+  operation: classify_nfo
+  input:
+    path: Harbour Lights/tvshow.nfo
+  expect:
+    role: tvshow
+
+- name: an NFO named season is attached to its season folder
+  operation: classify_nfo
+  input:
+    path: Harbour Lights/Season 01/season.nfo
+  expect:
+    role: season
+
+- name: an NFO named after an episode video is attached to that episode
+  operation: classify_nfo
+  input:
+    path: Harbour Lights/Season 01/Harbour Lights S01E02.nfo
+    video_paths:
+    - Harbour Lights/Season 01/Harbour Lights S01E01.mkv
+    - Harbour Lights/Season 01/Harbour Lights S01E02.mkv
+  expect:
+    role: video
+
+- name: an NFO named after a video named movie has the video role, not the generic movie role
+  operation: classify_nfo
+  input:
+    path: Collection/movie.nfo
+    video_paths:
+    - Collection/movie.mkv
+  expect:
+    role: video
+
+- name: an NFO whose name matches no video and no generic name has no role
+  operation: classify_nfo
+  input:
+    path: Long Voyage (1998)/info.nfo
+    video_paths:
+    - Long Voyage (1998)/Long Voyage (1998).mkv
+  expect:
+    role: null
+
+- name: an NFO named after a video stem plus more text has no role
+  operation: classify_nfo
+  input:
+    path: Long Voyage (1998)/Long Voyage (1998)-extended.nfo
+    video_paths:
+    - Long Voyage (1998)/Long Voyage (1998).mkv
+  expect:
+    role: null
+
+- name: a file that is not an NFO has no NFO role
+  operation: classify_nfo
+  input:
+    path: Long Voyage (1998)/movie.txt
+  expect:
+    role: null

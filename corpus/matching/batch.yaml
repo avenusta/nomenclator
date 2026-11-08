@@ -1,0 +1,30 @@
+# Batch ranking (decision P9): many items against their candidate sets in one
+# call, with results keyed by the caller's handle.
+
+- name: a batch returns one ranking per query sorted by handle
+  operation: rank_batch
+  input:
+    queries:
+      - handle: b-arrival
+        facts: { kind: movie, title: Arrival, year: 2016 }
+        candidates: [{ handle: "329865", kind: movie, title: Arrival, year: 2016 }]
+      - handle: a-the usual suspects
+        facts: { kind: movie, title: The Usual Suspects, year: 1995 }
+        candidates: [{ handle: "949", kind: movie, title: The Usual Suspects, year: 1995 }, { handle: "4146", kind: movie, title: The Usual Suspects, year: 1986 }]
+  expect:
+    results:
+      - { handle: a-the usual suspects, ranking: { outcome: selected, selected: "949" } }
+      - { handle: b-arrival, ranking: { outcome: selected, selected: "329865" } }
+
+- name: queries with the same handle are invalid input
+  operation: rank_batch
+  input:
+    queries:
+      - { handle: same, facts: { title: Arrival }, candidates: [] }
+      - { handle: same, facts: { title: The Usual Suspects }, candidates: [] }
+      - { handle: other, facts: { title: The Usual Suspects }, candidates: [] }
+  expect:
+    results:
+      - { handle: other, ranking: { outcome: no_match, reason: no_candidates } }
+      - { handle: same, ranking: { outcome: invalid_input, reason: duplicate_query_handle } }
+      - { handle: same, ranking: { outcome: invalid_input, reason: duplicate_query_handle } }

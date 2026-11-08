@@ -1,0 +1,77 @@
+# Release junk (decision X22): tracker notes and ads, shortcuts, executables,
+# and screenshot and bitrate images. Junk is classified, not excluded: it stays an
+# unclaimed file, is listed as `release_junk`, and validation reports it as `release_junk`.
+
+- name: a tracker note is release junk
+  operation: is_release_junk
+  input: { path: Arrival (2016)/RARBG.txt }
+  expect:
+    result: true
+
+- name: a downloaded-from note is release junk whatever follows its prefix
+  operation: is_release_junk
+  input: { path: "Arrival (2016)/Torrent Downloaded From www.example.com.txt" }
+  expect:
+    result: true
+
+- name: a shortcut and an executable are release junk
+  operation: is_release_junk
+  input: { path: Arrival (2016)/Visit Our Site.url }
+  expect:
+    result: true
+
+- name: an executable is release junk
+  operation: is_release_junk
+  input: { path: Arrival (2016)/Setup.exe }
+  expect:
+    result: true
+
+- name: a numbered screenshot image is release junk
+  operation: is_release_junk
+  input: { path: Arrival (2016)/Screens/screen1.jpg }
+  expect:
+    result: true
+
+- name: a bitrate image is release junk
+  operation: is_release_junk
+  input: { path: Arrival (2016)/bitrate.png }
+  expect:
+    result: true
+
+- name: an artwork image is not release junk
+  operation: is_release_junk
+  input: { path: Arrival (2016)/poster.jpg }
+  expect:
+    result: false
+
+- name: a text file that is not a release note is not release junk
+  operation: is_release_junk
+  input: { path: Arrival (2016)/notes.txt }
+  expect:
+    result: false
+
+- name: interpretation lists release junk and keeps it unclaimed
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv, Arrival (2016)/RARBG.txt, Arrival (2016)/screen01.png, Arrival (2016)/notes.txt]
+  expect:
+    unclaimed_files: [Arrival (2016)/RARBG.txt, Arrival (2016)/notes.txt, Arrival (2016)/screen01.png]
+    release_junk: [Arrival (2016)/RARBG.txt, Arrival (2016)/screen01.png]
+
+- name: validation reports release junk as release junk instead of an unclaimed file
+  operation: validate
+  input:
+    library: movies
+    paths: ['Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.mkv', 'Arrival (2016) {tmdb-329865}/RARBG.txt']
+  expect:
+    diagnostics:
+      - { rule: release_junk, severity: info, paths: ['Arrival (2016) {tmdb-329865}/RARBG.txt'] }
+
+- name: an overlay adds a release junk name
+  overlays:
+    - "name: more-junk\nrelease_junk_names:\n  add: [WWW.EXAMPLE.ORG.txt]\n"
+  operation: is_release_junk
+  input: { path: Arrival (2016)/www.example.org.txt }
+  expect:
+    result: true

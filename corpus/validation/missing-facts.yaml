@@ -1,0 +1,178 @@
+# Optional facts that a name omits (R9) and diagnostic severities (R7).
+
+- name: a movie without a year or provider ID is reported once per fact, at its severity
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - The Thing.mkv
+  expect:
+    diagnostics:
+    - rule: missing_year
+      severity: warning
+      paths: [The Thing.mkv]
+    - rule: missing_provider_id
+      severity: info
+      paths: [The Thing.mkv]
+    - rule: profile_violation
+      severity: warning
+      paths: [The Thing.mkv]
+      proposed_path: The Thing/The Thing.mkv
+
+- name: a movie identified by its provider ID is reported as missing its year
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Arrival {tmdb-329865}/Arrival {tmdb-329865}.mkv
+  expect:
+    diagnostics:
+    - rule: missing_year
+      severity: warning
+      paths: ['Arrival {tmdb-329865}/Arrival {tmdb-329865}.mkv']
+
+- name: a movie with several versions is reported in one missing-fact diagnostic that lists all its videos
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Arrival (2016)/Arrival (2016) - 1080p.mkv
+    - Arrival (2016)/Arrival (2016) - 2160p.mkv
+  expect:
+    diagnostics:
+    - rule: missing_provider_id
+      severity: info
+      paths:
+      - Arrival (2016)/Arrival (2016) - 2160p.mkv
+      - Arrival (2016)/Arrival (2016) - 1080p.mkv
+
+- name: an item with an error has no missing-fact diagnostics
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - title00.mkv
+    - Quiet Harbor (2020)/Loud Harbor (1999).mkv
+  expect:
+    diagnostics:
+    - rule: ambiguous_identity
+      severity: error
+      paths: [Quiet Harbor (2020)/Loud Harbor (1999).mkv]
+      reason: contradicts_owning_folder
+    - rule: folder_mismatch
+      severity: warning
+      paths: [Quiet Harbor (2020)/Loud Harbor (1999).mkv]
+      reason: title
+    - rule: folder_mismatch
+      severity: warning
+      paths: [Quiet Harbor (2020)/Loud Harbor (1999).mkv]
+      reason: year
+    - rule: insufficient_facts
+      severity: error
+      paths: [title00.mkv]
+      reason: missing_title
+
+- name: extras have no missing-fact diagnostics
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.mkv
+    - Arrival (2016) {tmdb-329865}/Featurettes/Making Of.mkv
+  expect:
+    diagnostics: []
+
+- name: a series without a year or provider ID is reported on its folder, an episode without a title on its video
+  operation: validate
+  input:
+    library: tv
+    paths:
+    - Harbor Lights/Season 01/Harbor Lights - S01E01.mkv
+  expect:
+    diagnostics:
+    - rule: missing_series_year
+      severity: warning
+      paths: [Harbor Lights]
+    - rule: missing_provider_id
+      severity: info
+      paths: [Harbor Lights]
+    - rule: missing_episode_title
+      severity: info
+      paths: [Harbor Lights/Season 01/Harbor Lights - S01E01.mkv]
+
+- name: a series at the library root is reported for its missing facts on its episodes' videos
+  operation: validate
+  input:
+    library: tv
+    paths:
+    - Harbor Lights S01E01 Low Tide.mkv
+    - Harbor Lights S01E02 High Tide.mkv
+  expect:
+    diagnostics:
+    - rule: missing_series_year
+      severity: warning
+      paths: [Harbor Lights S01E01 Low Tide.mkv, Harbor Lights S01E02 High Tide.mkv]
+    - rule: missing_provider_id
+      severity: info
+      paths: [Harbor Lights S01E01 Low Tide.mkv, Harbor Lights S01E02 High Tide.mkv]
+    - rule: profile_violation
+      severity: warning
+      paths: [Harbor Lights S01E01 Low Tide.mkv]
+      proposed_path: Harbor Lights/Season 01/Harbor Lights - S01E01 - Low Tide.mkv
+    - rule: profile_violation
+      severity: warning
+      paths: [Harbor Lights S01E02 High Tide.mkv]
+      proposed_path: Harbor Lights/Season 01/Harbor Lights - S01E02 - High Tide.mkv
+
+- name: a severity override changes a rule's severity or disables the rule
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - The Thing.mkv
+    profile:
+      severity: { missing_year: error, missing_provider_id: off }
+  expect:
+    diagnostics:
+    - rule: missing_year
+      severity: error
+      paths: [The Thing.mkv]
+    - rule: profile_violation
+      severity: warning
+      paths: [The Thing.mkv]
+
+- name: a severity override never changes what a plan blocks
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Quiet Harbor (2020)/Loud Harbor (1999).mkv
+    profile:
+      severity: { ambiguous_identity: off }
+  expect:
+    proposals: []
+    blocked:
+    - from: Quiet Harbor (2020)/Loud Harbor (1999).mkv
+      reasons: [ambiguous_identity]
+
+- name: error, warning and info severities are set by the rule
+  operation: validate
+  input:
+    library: movies
+    paths:
+    - Con.mkv
+    - Quiet Harbor (2020) {tmdb-1}/Quiet Harbor (2020) {tmdb-2}.mkv
+    - Quiet Harbor (2020) {tmdb-1}/notes.txt
+  expect:
+    diagnostics:
+    - rule: invalid_name_under_profile
+      severity: error
+      paths: [Con.mkv]
+      reason: reserved_name
+    - rule: conflicting_provider_ids
+      severity: error
+      paths: ['Quiet Harbor (2020) {tmdb-1}/Quiet Harbor (2020) {tmdb-2}.mkv']
+      reason: tmdb
+    - rule: unclaimed_file
+      severity: warning
+      paths: ['Quiet Harbor (2020) {tmdb-1}/notes.txt']

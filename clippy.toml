@@ -1,0 +1,6 @@
+# Proper names that `clippy::doc_markdown` would otherwise ask to put in backticks. `..`
+# keeps clippy's default list.
+doc-valid-idents = ["IMDb", "TMDB", "TVDB", "TVmaze", "AniDB", "AniList", "aniSearch", "NFOs", ".."]
+
+# Tests may unwrap; library code may not (CODING_STANDARDS.md).
+allow-unwrap-in-tests = true

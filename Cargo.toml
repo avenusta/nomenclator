@@ -1,0 +1,30 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+# The one version of every crate and every platform package (CHANGELOG.md).
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+license = "MIT"
+repository = "https://github.com/avenusta/nomenclator"
+readme = "README.md"
+keywords = ["media", "naming", "parser", "movies", "tv"]
+
+[workspace.dependencies]
+nomenclator = { version = "0.1.0", path = "crates/nomenclator" }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+# Lints that tooling enforces in every crate (CODING_STANDARDS.md). The core crate adds the
+# purity lints in its `lib.rs`.
+[workspace.lints.clippy]
+dbg_macro = "warn"
+todo = "warn"
+unimplemented = "warn"
+must_use_candidate = "warn"
+doc_markdown = "warn"
+semicolon_if_nothing_returned = "warn"

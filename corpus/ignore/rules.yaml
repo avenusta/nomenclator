@@ -1,0 +1,1809 @@
+- name: a behind-the-scenes folder at the library root is classified, not ignored
+  operation: evaluate_ignore
+  input:
+    path: Behind The Scenes
+    kind: directory
+  expect:
+    excluded: false
+
+- name: an extras folder inside a movie folder is classified, not ignored
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/extras
+    kind: directory
+  expect:
+    excluded: false
+
+- name: an extras folder below a collection folder is classified, not ignored
+  operation: evaluate_ignore
+  input:
+    path: Collections/Ghostbusters/extras
+    kind: directory
+  expect:
+    excluded: false
+
+- name: an ordinary jpg image is not excluded
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/poster.jpg
+    kind: file
+  expect:
+    excluded: false
+
+- name: a theme.mp3 beside a movie is classified, not ignored
+  operation: evaluate_ignore
+  input:
+    path: Spirited Away (2001)/theme.mp3
+    kind: file
+  expect:
+    excluded: false
+
+- name: an audio file that is not a theme is not excluded
+  operation: evaluate_ignore
+  input:
+    path: Spirited Away (2001)/intro.mp3
+    kind: file
+  expect:
+    excluded: false
+
+- name: a glob excludes matching files at any depth
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/Season 01/Shogun S01E01.nfo
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '*.nfo'
+  expect:
+    excluded: true
+    exclusion:
+      path: Shogun (2024)/Season 01/Shogun S01E01.nfo
+      reason: rule
+      rule_file: .ignore
+      line: 1
+
+- name: a glob does not exclude files with another extension
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/Season 01/Shogun S01E01.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '*.nfo'
+  expect:
+    excluded: false
+
+- name: a glob matches an upper-case extension
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/SHOGUN.NFO
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '*.nfo'
+  expect:
+    excluded: true
+
+- name: a bare name excludes a folder at any depth
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Screenshots/shot_0001.png
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: Screenshots
+  expect:
+    excluded: true
+    exclusion:
+      path: Arrival (2016)/Screenshots
+      reason: rule
+      rule_file: .ignore
+      line: 1
+
+- name: a bare name matches a folder ignoring case
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/SCREENSHOTS/shot_0001.png
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: screenshots
+  expect:
+    excluded: true
+
+- name: a bare name does not match a longer folder name
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Screenshots Gallery/shot_0001.png
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: Screenshots
+  expect:
+    excluded: false
+
+- name: a rule that ends in a slash excludes the folder with that name
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Scans
+    kind: directory
+    ignore_files:
+      - path: .ignore
+        contents: 'Scans/'
+  expect:
+    excluded: true
+    exclusion:
+      path: Arrival (2016)/Scans
+      reason: rule
+
+- name: a trailing-slash rule does not exclude a file of that name
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Scans
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: 'Scans/'
+  expect:
+    excluded: false
+
+- name: a pattern with a leading slash is relative to the folder of its rule file
+  operation: evaluate_ignore
+  input:
+    path: Trailers/Arrival teaser.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '/Trailers'
+  expect:
+    excluded: true
+    exclusion:
+      path: Trailers
+      reason: rule
+
+- name: a pattern with a leading slash does not match a deeper folder
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Trailers/teaser.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '/Trailers'
+  expect:
+    excluded: false
+
+- name: a pattern with a middle slash is relative to its rule file folder
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Scans/shot_0001.png
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: Arrival (2016)/Scans
+  expect:
+    excluded: true
+
+- name: a pattern with a middle slash does not match a deeper copy of the folder
+  operation: evaluate_ignore
+  input:
+    path: Collection/Arrival (2016)/Scans/shot_0001.png
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: Arrival (2016)/Scans
+  expect:
+    excluded: false
+
+- name: a leading double star matches a folder at any depth
+  operation: evaluate_ignore
+  input:
+    path: Collection/Arrival (2016)/Scans/shot_0001.png
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '**/Scans'
+  expect:
+    excluded: true
+
+- name: a trailing double star matches everything inside a folder
+  operation: evaluate_ignore
+  input:
+    path: Rips/Oldboy (2003)/Oldboy (2003).mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: 'Rips/**'
+  expect:
+    excluded: true
+
+- name: a trailing double star does not match the folder itself
+  operation: evaluate_ignore
+  input:
+    path: Rips
+    kind: directory
+    ignore_files:
+      - path: .ignore
+        contents: 'Rips/**'
+  expect:
+    excluded: false
+
+- name: a middle double star matches zero folders
+  operation: evaluate_ignore
+  input:
+    path: Rips/x.nfo
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: 'Rips/**/x.nfo'
+  expect:
+    excluded: true
+
+- name: a middle double star matches several folders
+  operation: evaluate_ignore
+  input:
+    path: Rips/Season 01/Disc 1/x.nfo
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: 'Rips/**/x.nfo'
+  expect:
+    excluded: true
+
+- name: a middle double star matches only below the leading folder
+  operation: evaluate_ignore
+  input:
+    path: Other/x.nfo
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: 'Rips/**/x.nfo'
+  expect:
+    excluded: false
+
+- name: a star does not cross folder separators
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Extras/x.nfo
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: 'Arrival (2016)/*.nfo'
+  expect:
+    excluded: false
+
+- name: a later negation re-includes the file that it matches
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003).mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: |
+          *.mkv
+          !Oldboy (2003).mkv
+  expect:
+    excluded: false
+
+- name: a negation that matches one file leaves other files of the same pattern excluded
+  operation: evaluate_ignore
+  input:
+    path: Ghostbusters (1984)/Ghostbusters (1984).mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: |
+          *.mkv
+          !Oldboy (2003).mkv
+  expect:
+    excluded: true
+    exclusion:
+      path: Ghostbusters (1984)/Ghostbusters (1984).mkv
+      reason: rule
+      rule_file: .ignore
+      line: 1
+
+- name: a later pattern overrides an earlier negation of the same file
+  operation: evaluate_ignore
+  input:
+    path: Parasite (2019)/Parasite.mkv
+    kind: file
+    ignore_files:
+      - path: Parasite (2019)/.ignore
+        contents: |
+          # the feature is listed first
+          !Parasite.mkv
+          *.mkv
+  expect:
+    excluded: true
+    exclusion:
+      path: Parasite (2019)/Parasite.mkv
+      reason: rule
+      rule_file: Parasite (2019)/.ignore
+      line: 3
+
+- name: a negation that matches another file leaves the files of an excluded folder excluded
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Scans/shot_0001.png
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: |
+          Scans/
+          !cover.jpg
+  expect:
+    excluded: true
+    exclusion:
+      path: Oldboy (2003)/Scans
+      reason: rule
+      rule_file: .ignore
+      line: 1
+
+- name: a negated file name cannot re-include a file inside an excluded folder
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Scans/cover.jpg
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: |
+          Scans/
+          !cover.jpg
+  expect:
+    excluded: true
+    exclusion:
+      path: Oldboy (2003)/Scans
+      reason: rule
+      rule_file: .ignore
+      line: 1
+
+- name: a backslash before a hash makes a literal pattern that matches a folder starting with a hash
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/#Archive/notes.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '\#Archive'
+  expect:
+    excluded: true
+
+- name: a backslash before a bracket makes a literal bracket in the pattern
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/[Preview] Oldboy.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '\[Preview\]*.mkv'
+  expect:
+    excluded: true
+
+- name: a literal bracket pattern does not exclude a file without the bracket
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '\[Preview\]*.mkv'
+  expect:
+    excluded: false
+
+- name: valid rules apply beside lines of escaped literals
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/readme.txt
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: |
+          \#notes
+          *.txt
+  expect:
+    excluded: true
+
+- name: a file that matches no rule is not excluded beside lines of escaped literals
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/tvshow.nfo
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: |
+          \*.nfo
+          \#notes
+  expect:
+    excluded: false
+
+- name: an escaped star pattern matches only a file whose name starts with a literal star
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/*.nfo
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '\*.nfo'
+  expect:
+    excluded: true
+
+- name: a backslash in a name is an ordinary character, so a backslash path is one name
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)\Scans\shot_0001.png
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: Scans
+  expect:
+    excluded: false
+
+- name: a rule file at the root also covers files below subfolders
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003).nfo
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '*.nfo'
+  expect:
+    excluded: true
+
+- name: a root rule file does not exclude a non-matching file in a subfolder
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003).mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '*.nfo'
+  expect:
+    excluded: false
+
+- name: a rule file in a folder applies one folder down
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003).nfo
+    kind: file
+    ignore_files:
+      - path: Oldboy (2003)/.ignore
+        contents: '*.nfo'
+  expect:
+    excluded: true
+
+- name: a rule file in a folder applies two folders down
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Disc 1/Extra/x.nfo
+    kind: file
+    ignore_files:
+      - path: Oldboy (2003)/.ignore
+        contents: '*.nfo'
+  expect:
+    excluded: true
+
+- name: a rule file in a folder does not exclude a non-matching file in that folder
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003).mkv
+    kind: file
+    ignore_files:
+      - path: Oldboy (2003)/.ignore
+        contents: '*.nfo'
+  expect:
+    excluded: false
+
+- name: a rule file with no content excludes every entry beside it
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003).mkv
+    kind: file
+    ignore_files:
+      - path: Oldboy (2003)/.ignore
+        contents: ''
+  expect:
+    excluded: true
+    exclusion:
+      path: Oldboy (2003)
+      reason: empty_rule_file
+      rule_file: Oldboy (2003)/.ignore
+      line: null
+
+- name: a rule file with only whitespace excludes every entry beside it
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003).mkv
+    kind: file
+    ignore_files:
+      - path: Oldboy (2003)/.ignore
+        contents: "   \n\n"
+  expect:
+    excluded: true
+    exclusion:
+      path: Oldboy (2003)
+      reason: empty_rule_file
+      rule_file: Oldboy (2003)/.ignore
+
+- name: no entry is excluded when no rule file exists
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003).mkv
+    kind: file
+  expect:
+    excluded: false
+
+- name: a file is excluded while its rule file contains a pattern that matches it
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/poster.jpg
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '*.jpg'
+  expect:
+    excluded: true
+
+- name: a file is not excluded after its pattern is removed from the rule file
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/poster.jpg
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '*.png'
+  expect:
+    excluded: false
+
+- name: a realistic ignore file does not exclude the video beside scanner leftovers
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003) - 1080p.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: |
+          # scanner leftovers
+          *.url
+          *.txt
+          *.db
+  expect:
+    excluded: false
+
+- name: a realistic ignore file excludes a link file beside the video
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003).url
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: |
+          # scanner leftovers
+          *.url
+          *.txt
+          *.db
+  expect:
+    excluded: true
+    exclusion:
+      path: Oldboy (2003)/Oldboy (2003).url
+      reason: rule
+      rule_file: .ignore
+      line: 2
+
+- name: an ignore file saved with Windows line endings applies every line
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Scans/shot_0001.png
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: "*.url\r\nScans/\r\n"
+  expect:
+    excluded: true
+    exclusion:
+      path: Oldboy (2003)/Scans
+      reason: rule
+      rule_file: .ignore
+      line: 2
+
+- name: a UTF-8 byte order mark at the start of an ignore file does not invalidate its first pattern
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003).url
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: "﻿*.url\n"
+  expect:
+    excluded: true
+
+- name: a jpg artwork name beside a movie is not excluded, so it reaches classification
+  operation: evaluate_ignore
+  input:
+    path: Spirited Away (2001)/small.jpg
+    kind: file
+  expect:
+    excluded: false
+
+- name: a sample infix in a release name is not excluded
+  operation: evaluate_ignore
+  input:
+    path: Oldboy.2003.1080p.sample.mkv
+    kind: file
+  expect:
+    excluded: false
+
+- name: a file named sample is not excluded
+  operation: evaluate_ignore
+  input:
+    path: Ghostbusters (1984)/sample.mkv
+    kind: file
+  expect:
+    excluded: false
+
+- name: a video in a Sample folder is not excluded, so it reaches classification
+  operation: evaluate_ignore
+  input:
+    path: Paddington 2 (2017)/Sample/paddington2-sample.mkv
+    kind: file
+  expect:
+    excluded: false
+
+- name: a video two levels below a Sample folder is not excluded
+  operation: evaluate_ignore
+  input:
+    path: Paddington 2 (2017)/Sample/Clips/cut-02.mkv
+    kind: file
+  expect:
+    excluded: false
+
+- name: sample as a word inside a longer title is not excluded
+  operation: evaluate_ignore
+  input:
+    path: Examples and Samplers (2009)/Examples and Samplers (2009).mkv
+    kind: file
+  expect:
+    excluded: false
+
+- name: a title that begins with the word Samples is not excluded
+  operation: evaluate_ignore
+  input:
+    path: Samples from the Deep (2014)/Samples from the Deep (2014).mkv
+    kind: file
+  expect:
+    excluded: false
+
+- name: a file inside a hash-named recycle folder is excluded whatever its case
+  operation: evaluate_ignore
+  input:
+    path: '#Recycle/Ghostbusters (1984)/Ghostbusters (1984).mkv'
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      path: '#Recycle'
+      reason: system_junk
+      rule_file: null
+
+- name: a recycle folder is excluded when it is named with a trailing separator
+  operation: evaluate_ignore
+  input:
+    path: 'Oldboy (2003)/#recycle/'
+    kind: directory
+  expect:
+    excluded: true
+    exclusion:
+      path: 'Oldboy (2003)/#recycle'
+      reason: system_junk
+
+- name: a Thumbs.db file beside a movie is excluded as system junk
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/Thumbs.db
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      path: Shogun (2024)/Thumbs.db
+      reason: system_junk
+      rule_file: null
+
+- name: an ordinary episode file in a season folder is not excluded
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/Season 01/Shogun S01E01.mkv
+    kind: file
+  expect:
+    excluded: false
+
+- name: a visible video inside a hidden trash folder is excluded with that folder
+  operation: evaluate_ignore
+  input:
+    path: .Trashes/501/Ghostbusters (1984).mkv
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      path: .Trashes
+      reason: hidden_entry
+      rule_file: null
+
+- name: a macOS .DS_Store file is excluded as a hidden entry
+  operation: evaluate_ignore
+  input:
+    path: Apocalypse Now (1979)/.DS_Store
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      path: Apocalypse Now (1979)/.DS_Store
+      reason: hidden_entry
+
+- name: a macOS AppleDouble resource-fork file is excluded as a hidden entry
+  operation: evaluate_ignore
+  input:
+    path: Apocalypse Now (1979)/._Alien (1979).mkv
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      reason: hidden_entry
+
+- name: an @-named index folder is excluded with the thumbnails inside it
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/@eaDir/Arrival (2016) - 1080p.mkv@SynoEAStream
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      path: Arrival (2016)/@eaDir
+      reason: system_junk
+      rule_file: null
+
+- name: a NAS index folder name written in capitals is excluded as system junk
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/@EADIR/poster.jpg
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      path: Arrival (2016)/@EADIR
+      reason: system_junk
+
+- name: an @Recycle folder is excluded with its contents
+  operation: evaluate_ignore
+  input:
+    path: '@Recycle/Shogun (2024)/Shogun S01E01.mkv'
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      path: '@Recycle'
+      reason: system_junk
+
+- name: a dot-named thumbnail cache folder is system junk, not a hidden entry
+  operation: evaluate_ignore
+  input:
+    path: 'Mr Robot/.@__thumb/Mr Robot S01E01.jpg'
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      path: 'Mr Robot/.@__thumb'
+      reason: system_junk
+
+- name: a ZFS snapshot folder is excluded with everything inside it
+  operation: evaluate_ignore
+  input:
+    path: Movies/.zfs/snapshot/daily-2026-10-01/Paddington 2 (2017).mkv
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      path: Movies/.zfs
+      reason: system_junk
+
+- name: a folder whose name ends in a dot is not excluded
+  operation: evaluate_ignore
+  input:
+    path: Ghostbusters (1984)./Ghostbusters (1984).mkv
+    kind: file
+  expect:
+    excluded: false
+
+- name: a folder of dotted initials is not excluded
+  operation: evaluate_ignore
+  input:
+    path: S.H.I.E.L.D./Season 01/S.H.I.E.L.D. S01E01.mkv
+    kind: file
+  expect:
+    excluded: false
+
+- name: a hidden actors folder is excluded as generated metadata, not as a hidden entry
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/.actors
+    kind: directory
+  expect:
+    excluded: true
+    exclusion:
+      path: Arrival (2016)/.actors
+      reason: generated_metadata
+
+- name: a Windows recycle bin folder in capitals is excluded with its contents
+  operation: evaluate_ignore
+  input:
+    path: '$RECYCLE.BIN/S-1-5-21-1004/$R7K2X9.mkv'
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      path: $RECYCLE.BIN
+      reason: system_junk
+
+- name: a partial download ending in .part is excluded
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003) - 1080p.mkv.part
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      path: Oldboy (2003)/Oldboy (2003) - 1080p.mkv.part
+      reason: partial_download
+      rule_file: null
+
+- name: a qBittorrent download ending in .!qB is excluded
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/Shogun S01E01.mkv.!qB
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      reason: partial_download
+
+- name: a Chrome download ending in .crdownload is excluded
+  operation: evaluate_ignore
+  input:
+    path: Spirited Away (2001)/Spirited Away (2001).mkv.crdownload
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      reason: partial_download
+
+- name: a hidden partial download is excluded with the partial download reason, not the hidden entry reason
+  operation: evaluate_ignore
+  input:
+    path: Apocalypse Now (1979)/.Apocalypse Now (1979).mkv.part
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      reason: partial_download
+
+- name: a partial download ending in capitals is excluded
+  operation: evaluate_ignore
+  input:
+    path: Paddington 2 (2017)/Paddington 2 (2017).MKV.PART
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      reason: partial_download
+
+- name: a finished video beside its partial copy is kept
+  operation: evaluate_ignore
+  input:
+    path: Paddington 2 (2017)/Paddington 2 (2017).mkv
+    kind: file
+  expect:
+    excluded: false
+
+- name: a film file numbered part1 is not a partial download
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003) - part1.mkv
+    kind: file
+  expect:
+    excluded: false
+
+- name: a -sample video is classified as a sample, not ignored
+  operation: evaluate_ignore
+  input:
+    path: Ghostbusters (1984)/Ghostbusters (1984)-sample.mkv
+    kind: file
+  expect:
+    excluded: false
+
+- name: a Sample folder beside a movie is classified, not ignored
+  operation: evaluate_ignore
+  input:
+    path: Paddington 2 (2017)/Sample
+    kind: directory
+  expect:
+    excluded: false
+
+- name: a DVD VIDEO_TS folder is a disc structure, not ignored
+  operation: evaluate_ignore
+  input:
+    path: The Lighthouse (2019)/VIDEO_TS
+    kind: directory
+  expect:
+    excluded: false
+
+- name: a Blu-ray BDMV folder is a disc structure, not ignored
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/BDMV
+    kind: directory
+  expect:
+    excluded: false
+
+- name: a trickplay preview folder is excluded as generated metadata
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Arrival (2016) - 1080p.trickplay
+    kind: directory
+  expect:
+    excluded: true
+    exclusion:
+      reason: generated_metadata
+
+- name: a plain movie file passes the ignore rules
+  operation: evaluate_ignore
+  input:
+    path: Ghostbusters (1984)/Ghostbusters (1984) - 1080p.mkv
+    kind: file
+  expect:
+    excluded: false
+
+- name: a season folder passes the ignore rules
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/Season 01
+    kind: directory
+  expect:
+    excluded: false
+
+- name: a metadata folder beside a series is excluded as generated
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/metadata
+    kind: directory
+  expect:
+    excluded: true
+    exclusion:
+      reason: generated_metadata
+
+- name: a file named metadata is not excluded
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/metadata
+    kind: file
+  expect:
+    excluded: false
+
+- name: an empty ignore file excludes the folders below it
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/Season 01/Shogun S01E01.mkv
+    kind: file
+    ignore_files:
+      - path: Shogun (2024)/.ignore
+        contents: ''
+  expect:
+    excluded: true
+    exclusion:
+      path: Shogun (2024)
+      reason: empty_rule_file
+      rule_file: Shogun (2024)/.ignore
+
+- name: an empty ignore file in one folder does not exclude files elsewhere
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/poster.jpg
+    kind: file
+    ignore_files:
+      - path: Shogun (2024)/.ignore
+        contents: ''
+  expect:
+    excluded: false
+
+- name: a no-media marker at the library root excludes everything below it
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/Season 01/Shogun S01E01.mkv
+    kind: file
+    ignore_files:
+      - path: .nomedia
+        contents: ''
+  expect:
+    excluded: true
+    exclusion:
+      reason: no_media_marker
+      rule_file: .nomedia
+
+- name: a root pattern naming a show folder excludes a file deep below it
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/Season 01/Shogun S01E01.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: Shogun (2024)
+  expect:
+    excluded: true
+    exclusion:
+      path: Shogun (2024)
+      reason: rule
+      rule_file: .ignore
+      line: 1
+
+- name: a file that no stacked pattern matches is not excluded
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Arrival (2016).mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: Shogun (2024)
+      - path: Arrival (2016)/.ignore
+        contents: '*.nfo'
+  expect:
+    excluded: false
+
+- name: a parent folder rule file excludes a matching file in its subfolder
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/Season 01/notes.txt
+    kind: file
+    ignore_files:
+      - path: Shogun (2024)/.ignore
+        contents: '*.txt'
+  expect:
+    excluded: true
+    exclusion:
+      path: Shogun (2024)/Season 01/notes.txt
+      reason: rule
+      rule_file: Shogun (2024)/.ignore
+      line: 1
+
+- name: an empty nomedia marker excludes its whole folder
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Arrival (2016).mkv
+    kind: file
+    ignore_files:
+      - path: Arrival (2016)/.nomedia
+        contents: ''
+  expect:
+    excluded: true
+    exclusion:
+      path: Arrival (2016)
+      reason: no_media_marker
+      rule_file: Arrival (2016)/.nomedia
+      line: null
+
+- name: an empty nomedia marker in one folder does not exclude a file at the root
+  operation: evaluate_ignore
+  input:
+    path: Oldboy.mkv
+    kind: file
+    ignore_files:
+      - path: Arrival (2016)/.nomedia
+        contents: ''
+  expect:
+    excluded: false
+
+- name: an empty nomedia marker in one folder does not exclude a file in a sibling folder
+  operation: evaluate_ignore
+  input:
+    path: Ghostbusters (1984)/Ghostbusters (1984).mkv
+    kind: file
+    ignore_files:
+      - path: Arrival (2016)/.nomedia
+        contents: ''
+  expect:
+    excluded: false
+
+- name: a no-media marker with text excludes its whole folder
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Arrival (2016).mkv
+    kind: file
+    ignore_files:
+      - path: Arrival (2016)/.nomedia
+        contents: |
+          Created for the library scanner
+          *.nfo
+  expect:
+    excluded: true
+    exclusion:
+      path: Arrival (2016)
+      reason: no_media_marker
+      rule_file: Arrival (2016)/.nomedia
+      line: null
+
+- name: a no-media marker in one folder does not exclude a file at the root
+  operation: evaluate_ignore
+  input:
+    path: Oldboy.mkv
+    kind: file
+    ignore_files:
+      - path: Arrival (2016)/.nomedia
+        contents: |
+          Created for the library scanner
+          *.nfo
+  expect:
+    excluded: false
+
+- name: a comment-only ignore file excludes its folder as an empty one does
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003).mkv
+    kind: file
+    ignore_files:
+      - path: Oldboy (2003)/.ignore
+        contents: |
+          # keep notes here
+          # nothing to ignore yet
+  expect:
+    excluded: true
+    exclusion:
+      path: Oldboy (2003)
+      reason: empty_rule_file
+      rule_file: Oldboy (2003)/.ignore
+
+- name: an ignore file with only a malformed pattern is not empty, so its folder is not excluded
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003).mkv
+    kind: file
+    ignore_files:
+      - path: Oldboy (2003)/.ignore
+        contents: '['
+  expect:
+    excluded: false
+    rule_diagnostics:
+      - rule_file: Oldboy (2003)/.ignore
+        line: 1
+        reason: unclosed_bracket
+
+- name: a root ignore file that lists folder names does not exclude media outside those folders
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Arrival (2016) - 1080p.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: |
+          Screenshots/
+          Scans/
+          Featurettes/
+  expect:
+    excluded: false
+
+- name: a root ignore file that lists folder names excludes files inside a listed folder
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Featurettes/Making Arrival.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: |
+          Screenshots/
+          Scans/
+          Featurettes/
+  expect:
+    excluded: true
+    exclusion:
+      path: Arrival (2016)/Featurettes
+      reason: rule
+      rule_file: .ignore
+      line: 3
+
+- name: a root ignore file with patterns does not exclude the library root itself
+  operation: evaluate_ignore
+  input:
+    path: ''
+    kind: directory
+    ignore_files:
+      - path: .ignore
+        contents: |
+          Screenshots/
+          *.nfo
+  expect:
+    excluded: false
+
+- name: a rule file with no content at the library root excludes the whole library
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/poster.jpg
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: ''
+  expect:
+    excluded: true
+    exclusion:
+      reason: empty_rule_file
+      rule_file: .ignore
+
+- name: a bang at the start of a bracket class matches any character that the class does not list
+  operation: evaluate_ignore
+  input:
+    path: Ponyo (2008)/Ponyo.cdq.mkv
+    kind: file
+    ignore_files:
+      - path: Ponyo (2008)/.ignore
+        contents: '*.cd[!0-9].mkv'
+  expect:
+    excluded: true
+
+- name: a bracket class negated with a bang rejects a character inside its set
+  operation: evaluate_ignore
+  input:
+    path: Arrival.cd1.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: 'Arrival.cd[!0-9].mkv'
+  expect:
+    excluded: false
+
+- name: a bracket class negated with a caret rejects a character inside its set
+  operation: evaluate_ignore
+  input:
+    path: Arrival.cd1.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: 'Arrival.cd[^0-9].mkv'
+  expect:
+    excluded: false
+
+- name: a digit range in a bracket class matches a digit
+  operation: evaluate_ignore
+  input:
+    path: Arrival.cd2.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: 'Arrival.cd[0-9].mkv'
+  expect:
+    excluded: true
+
+- name: a letter does not match a bracket class with a digit range
+  operation: evaluate_ignore
+  input:
+    path: Ponyo (2008)/Ponyo.cdq.mkv
+    kind: file
+    ignore_files:
+      - path: Ponyo (2008)/.ignore
+        contents: '*.cd[3-7].mkv'
+  expect:
+    excluded: false
+
+- name: combined upper-case and digit classes match a digit
+  operation: evaluate_ignore
+  input:
+    path: Arrival.cd2.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: 'Arrival.cd[[:upper:][:digit:]].mkv'
+  expect:
+    excluded: true
+
+- name: a lowercase letter matches neither the upper nor the digit class of one bracket
+  operation: evaluate_ignore
+  input:
+    path: Ponyo (2008)/Ponyo.cdq.mkv
+    kind: file
+    ignore_files:
+      - path: Ponyo (2008)/.ignore
+        contents: '*.cd[[:digit:][:upper:]].mkv'
+  expect:
+    excluded: false
+
+- name: a punctuation class matches a hash at the start of a folder name
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/#archive/notes.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '[[:punct:]]archive'
+  expect:
+    excluded: true
+
+- name: a closing bracket first in a class is a literal character
+  operation: evaluate_ignore
+  input:
+    path: Arrival].mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: 'Arrival[]].mkv'
+  expect:
+    excluded: true
+
+- name: a dash at the end of a bracket class matches a dash
+  operation: evaluate_ignore
+  input:
+    path: Parasite (2019)/Parasite-x.mkv
+    kind: file
+    ignore_files:
+      - path: Parasite (2019)/.ignore
+        contents: 'Parasite[bc-]x.mkv'
+  expect:
+    excluded: true
+
+- name: a dash at the start of a bracket class matches a dash
+  operation: evaluate_ignore
+  input:
+    path: Parasite (2019)/Parasite-x.mkv
+    kind: file
+    ignore_files:
+      - path: Parasite (2019)/.ignore
+        contents: 'Parasite[-bc]x.mkv'
+  expect:
+    excluded: true
+
+- name: a line with an unknown character class matches nothing and returns a diagnostic
+  operation: evaluate_ignore
+  input:
+    path: notes.nfo
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '[[:wrong:]].nfo'
+  expect:
+    excluded: false
+    rule_diagnostics:
+      - rule_file: .ignore
+        line: 1
+        reason: unknown_character_class
+
+- name: a nested rule file negation re-includes a file that the parent excluded
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003).mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '*.mkv'
+      - path: Oldboy (2003)/.ignore
+        contents: '!Oldboy (2003).mkv'
+  expect:
+    excluded: false
+
+- name: a parent glob excludes nested files that the child rule file does not re-include
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003) - extras.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '*.mkv'
+      - path: Oldboy (2003)/.ignore
+        contents: '!Oldboy (2003).mkv'
+  expect:
+    excluded: true
+    exclusion:
+      path: Oldboy (2003)/Oldboy (2003) - extras.mkv
+      reason: rule
+      rule_file: .ignore
+      line: 1
+
+- name: a rule line with surrounding blanks matches its file
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003).url
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: "   Oldboy (2003).url   \n"
+  expect:
+    excluded: true
+    exclusion:
+      path: Oldboy (2003)/Oldboy (2003).url
+      reason: rule
+      rule_file: .ignore
+      line: 1
+
+- name: a folder glob in a root rule file excludes the files of matching folders
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Behind The Scenes/making-of.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: 'Behind*'
+  expect:
+    excluded: true
+    exclusion:
+      path: Arrival (2016)/Behind The Scenes
+      reason: rule
+      rule_file: .ignore
+      line: 1
+
+- name: a nested rule file does not exclude sibling folders that it does not match
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/Season 02/Shogun S02E01.mkv
+    kind: file
+    ignore_files:
+      - path: Shogun (2024)/.ignore
+        contents: 'Season 01/'
+  expect:
+    excluded: false
+
+- name: a nested rule file excludes its listed subfolder in addition to an inherited rule
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/Specials/Shogun S00E01.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '*.nfo'
+      - path: Shogun (2024)/.ignore
+        contents: 'Specials/'
+  expect:
+    excluded: true
+    exclusion:
+      path: Shogun (2024)/Specials
+      reason: rule
+      rule_file: Shogun (2024)/.ignore
+      line: 1
+
+- name: a folder called .ignore counts as hidden and is excluded
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/.ignore
+    kind: directory
+  expect:
+    excluded: true
+    exclusion:
+      path: Oldboy (2003)/.ignore
+      reason: hidden_entry
+
+- name: a Resilio .sync folder inside a title folder is excluded as hidden
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/.sync/Archive/Oldboy (2003).mkv
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      path: Oldboy (2003)/.sync
+      reason: hidden_entry
+
+- name: a Behind The Scenes folder inside a movie folder is not excluded, so it reaches classification
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Behind The Scenes
+    kind: directory
+  expect:
+    excluded: false
+
+- name: a Season 1 folder inside a movie folder is not excluded, so it reaches classification
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Season 1
+    kind: directory
+  expect:
+    excluded: false
+
+- name: a theme song listed in an ignore file in the theme music folder is excluded
+  operation: evaluate_ignore
+  input:
+    path: Theme Music/theme.mp3
+    kind: file
+    ignore_files:
+      - path: Theme Music/.ignore
+        contents: 'theme.mp3'
+  expect:
+    excluded: true
+    exclusion:
+      path: Theme Music/theme.mp3
+      reason: rule
+      rule_file: Theme Music/.ignore
+      line: 1
+
+- name: a no-media marker in a title folder excludes its theme songs
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/theme.mp3
+    kind: file
+    ignore_files:
+      - path: Oldboy (2003)/.nomedia
+        contents: ''
+  expect:
+    excluded: true
+    exclusion:
+      path: Oldboy (2003)
+      reason: no_media_marker
+      rule_file: Oldboy (2003)/.nomedia
+
+- name: an unclosed bracket returns a diagnostic for its line and later lines apply
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003).nfo
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: |
+          [
+          *.nfo
+  expect:
+    excluded: true
+    exclusion:
+      path: Oldboy (2003)/Oldboy (2003).nfo
+      reason: rule
+      rule_file: .ignore
+      line: 2
+    rule_diagnostics:
+      - rule_file: .ignore
+        line: 1
+        reason: unclosed_bracket
+
+- name: a line ending in a lone backslash returns a diagnostic and matches no entry
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/tvshow.nfo
+    kind: file
+    ignore_files:
+      - path: Shogun (2024)/.ignore
+        contents: 'tvshow.nfo\'
+  expect:
+    excluded: false
+    rule_diagnostics:
+      - rule_file: Shogun (2024)/.ignore
+        line: 1
+        reason: trailing_backslash
+
+- name: a lone negation mark returns a diagnostic and matches no entry
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/poster.jpg
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '!'
+  expect:
+    excluded: false
+    rule_diagnostics:
+      - rule_file: .ignore
+        line: 1
+        reason: empty_pattern
+
+- name: a lone slash returns a diagnostic and matches no entry
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/poster.jpg
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '/'
+  expect:
+    excluded: false
+    rule_diagnostics:
+      - rule_file: .ignore
+        line: 1
+        reason: empty_pattern
+
+- name: an unreadable ignore file leaves entries below its folder undecided
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003).mkv
+    kind: file
+    ignore_files:
+      - path: Oldboy (2003)/.ignore
+  expect:
+    excluded: null
+    unreadable_rule_files:
+      - Oldboy (2003)/.ignore
+
+- name: an unreadable ignore file leaves its own folder undecided
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)
+    kind: directory
+    ignore_files:
+      - path: Oldboy (2003)/.ignore
+  expect:
+    excluded: null
+    unreadable_rule_files:
+      - Oldboy (2003)/.ignore
+
+- name: an unreadable ignore file does not affect a sibling folder
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/poster.jpg
+    kind: file
+    ignore_files:
+      - path: Oldboy (2003)/.ignore
+  expect:
+    excluded: false
+    unreadable_rule_files: []
+
+- name: a hidden folder below an unreadable ignore file is excluded
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/.hidden/x.mkv
+    kind: file
+    ignore_files:
+      - path: Oldboy (2003)/.ignore
+  expect:
+    excluded: true
+    exclusion:
+      path: Oldboy (2003)/.hidden
+      reason: hidden_entry
+
+- name: an unreadable ignore file below an excluded folder does not change the exclusion
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Scans/shot_0001.png
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: 'Scans/'
+      - path: Arrival (2016)/Scans/.ignore
+  expect:
+    excluded: true
+    exclusion:
+      path: Arrival (2016)/Scans
+      reason: rule
+      rule_file: .ignore
+      line: 1
+
+- name: an ignore file above the library root is not applied and returns a diagnostic
+  operation: evaluate_ignore
+  input:
+    path: Oldboy.mkv
+    kind: file
+    ignore_files:
+      - path: ../.ignore
+        contents: '*.mkv'
+  expect:
+    excluded: false
+    rule_diagnostics:
+      - rule_file: ../.ignore
+        line: null
+        reason: outside_library_root
+
+- name: a negation cannot re-include a hidden folder
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/.hidden/x.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '!.hidden'
+  expect:
+    excluded: true
+    exclusion:
+      path: Oldboy (2003)/.hidden
+      reason: hidden_entry
+
+- name: a negation cannot re-include NAS junk
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/@eaDir/x.mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: '!@eaDir'
+  expect:
+    excluded: true
+    exclusion:
+      path: Oldboy (2003)/@eaDir
+      reason: system_junk
+
+- name: a sync-tool temporary file is excluded
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003).mkv.bts
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      reason: system_junk
+
+- name: a title pattern with accented letters matches the same title in capitals
+  operation: evaluate_ignore
+  input:
+    path: AMÉLIE (2001)/AMÉLIE (2001).mkv
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: 'amélie (2001)'
+  expect:
+    excluded: true
+
+- name: a leading slash in a nested ignore file makes the pattern relative to that folder
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/Specials/Shogun S00E01.mkv
+    kind: file
+    ignore_files:
+      - path: Shogun (2024)/.ignore
+        contents: '/Specials'
+  expect:
+    excluded: true
+    exclusion:
+      path: Shogun (2024)/Specials
+      reason: rule
+      rule_file: Shogun (2024)/.ignore
+      line: 1
+
+- name: a leading slash in a nested ignore file does not match a deeper folder
+  operation: evaluate_ignore
+  input:
+    path: Shogun (2024)/Extras/Specials/Shogun S00E01.mkv
+    kind: file
+    ignore_files:
+      - path: Shogun (2024)/.ignore
+        contents: '/Specials'
+  expect:
+    excluded: false
+
+- name: a nested ignore file never applies above its folder
+  operation: evaluate_ignore
+  input:
+    path: tvshow.nfo
+    kind: file
+    ignore_files:
+      - path: Shogun (2024)/.ignore
+        contents: '*.nfo'
+  expect:
+    excluded: false
+
+- name: an escaped trailing space is part of the pattern
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Scans /shot_0001.png
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: 'Scans\ '
+  expect:
+    excluded: true
+
+- name: an escaped trailing space does not match a folder without that space
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Scans/shot_0001.png
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: 'Scans\ '
+  expect:
+    excluded: false
+
+- name: unescaped trailing spaces are trimmed from a pattern
+  operation: evaluate_ignore
+  input:
+    path: Arrival (2016)/Scans/shot_0001.png
+    kind: file
+    ignore_files:
+      - path: .ignore
+        contents: 'Scans     '
+  expect:
+    excluded: true
+
+- name: a desktop.ini file in a folder is excluded as system junk
+  operation: evaluate_ignore
+  input:
+    path: The Holdovers (2023)/desktop.ini
+    kind: file
+  expect:
+    excluded: true
+    exclusion:
+      path: The Holdovers (2023)/desktop.ini
+      reason: system_junk
+      rule_file: null

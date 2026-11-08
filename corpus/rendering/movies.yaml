@@ -1,0 +1,124 @@
+- name: a movie with title, year and a TMDB ID renders to a folder and a file of the same name
+  operation: render_names
+  input:
+    facts: { library: movies, title: Northern Passage, year: 2021, provider_ids: { tmdb: '550' }, container: mkv }
+  expect:
+    path: Northern Passage (2021) {tmdb-550}/Northern Passage (2021) {tmdb-550}.mkv
+    blocked_reasons: []
+
+- name: a version label is written after the name with a dash
+  operation: render_names
+  input:
+    facts: { library: movies, title: Northern Passage, year: 2021, provider_ids: { tmdb: '550' }, version_label: 2160p, container: mkv }
+  expect:
+    path: Northern Passage (2021) {tmdb-550}/Northern Passage (2021) {tmdb-550} - 2160p.mkv
+
+- name: the edition goes in the file name as a tag and never in the folder
+  operation: render_names
+  input:
+    facts: { library: movies, title: Apocalypse Now, year: 1979, provider_ids: { tmdb: '28' }, edition: Final Cut, container: mkv }
+  expect:
+    path: Apocalypse Now (1979) {tmdb-28}/Apocalypse Now (1979) {tmdb-28} {edition-Final Cut}.mkv
+
+- name: a part number is written as a lowercase part marker
+  operation: render_names
+  input:
+    facts: { library: movies, title: Northern Passage, year: 2021, provider_ids: { tmdb: '550' }, part: 1, container: mkv }
+  expect:
+    path: Northern Passage (2021) {tmdb-550}/Northern Passage (2021) {tmdb-550} - part1.mkv
+
+- name: edition, version label and part are written in that order
+  operation: render_names
+  input:
+    facts: { library: movies, title: Northern Passage, year: 2021, provider_ids: { tmdb: '550' }, edition: Extended, version_label: 1080p, part: 2, container: mkv }
+  expect:
+    path: Northern Passage (2021) {tmdb-550}/Northern Passage (2021) {tmdb-550} {edition-Extended} - 1080p - part2.mkv
+
+- name: a movie without provider IDs is rendered without a provider tag
+  operation: render_names
+  input:
+    facts: { library: movies, title: Northern Passage, year: 2021, container: mkv }
+  expect:
+    path: Northern Passage (2021)/Northern Passage (2021).mkv
+
+- name: a movie without a year is rendered without a year
+  operation: render_names
+  input:
+    facts: { library: movies, title: Northern Passage, provider_ids: { tmdb: '550' }, container: mkv }
+  expect:
+    path: Northern Passage {tmdb-550}/Northern Passage {tmdb-550}.mkv
+
+- name: a movie with only an IMDb ID writes the IMDb tag
+  operation: render_names
+  input:
+    facts: { library: movies, title: Northern Passage, year: 2021, provider_ids: { imdb: tt0137523 }, container: mkv }
+  expect:
+    path: Northern Passage (2021) {imdb-tt0137523}/Northern Passage (2021) {imdb-tt0137523}.mkv
+
+- name: a movie with TMDB and IMDb IDs writes only the TMDB tag
+  operation: render_names
+  input:
+    facts: { library: movies, title: Northern Passage, year: 2021, provider_ids: { imdb: tt0137523, tmdb: '550' }, container: mkv }
+  expect:
+    path: Northern Passage (2021) {tmdb-550}/Northern Passage (2021) {tmdb-550}.mkv
+
+- name: a profile preferring IMDb writes the IMDb tag
+  operation: render_names
+  input:
+    facts: { library: movies, title: Northern Passage, year: 2021, provider_ids: { imdb: tt0137523, tmdb: '550' }, container: mkv }
+    profile: { movie_provider_order: [imdb, tmdb] }
+  expect:
+    path: Northern Passage (2021) {imdb-tt0137523}/Northern Passage (2021) {imdb-tt0137523}.mkv
+
+- name: a provider outside the profile's order is not written
+  operation: render_names
+  input:
+    facts: { library: movies, title: Northern Passage, year: 2021, provider_ids: { anidb: '42' }, container: mkv }
+  expect:
+    path: Northern Passage (2021)/Northern Passage (2021).mkv
+
+- name: the extension is written in lowercase
+  operation: render_names
+  input:
+    facts: { library: movies, title: Northern Passage, year: 2021, container: MKV }
+  expect:
+    path: Northern Passage (2021)/Northern Passage (2021).mkv
+
+- name: a movie without a title is blocked
+  operation: render_names
+  input:
+    facts: { library: movies, year: 2021, provider_ids: { tmdb: '550' }, container: mkv }
+  expect:
+    path: null
+    blocked_reasons: [missing_title]
+
+- name: a movie without an extension is blocked
+  operation: render_names
+  input:
+    facts: { library: movies, title: Northern Passage, year: 2021 }
+  expect:
+    path: null
+    blocked_reasons: [missing_extension]
+
+- name: every missing required fact is reported
+  operation: render_names
+  input:
+    facts: { library: movies }
+  expect:
+    path: null
+    blocked_reasons: [missing_title, missing_extension]
+
+- name: a provider ID that the reader would not read back is not written
+  operation: render_names
+  input:
+    facts: { library: movies, title: Arrival, year: 2016, provider_ids: { tmdb: abc, imdb: tt2543164 }, container: mkv }
+  expect:
+    path: "Arrival (2016) {imdb-tt2543164}/Arrival (2016) {imdb-tt2543164}.mkv"
+
+- name: a provider that the rules do not know is not written
+  operation: render_names
+  input:
+    facts: { library: movies, title: Arrival, year: 2016, provider_ids: { foo: "1" }, container: mkv }
+    profile: { movie_provider_order: [foo, tmdb] }
+  expect:
+    path: Arrival (2016)/Arrival (2016).mkv

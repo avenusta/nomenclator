@@ -1,0 +1,758 @@
+- name: a bracketed year ends the title of a name that has a number before it (Toy Story 3 (2010).mkv)
+  operation: parse_movie_name
+  input:
+    name: Toy Story 3 (2010).mkv
+    kind: file
+  expect:
+    title: Toy Story 3
+    year: 2010
+
+- name: a year-like number before the bracketed year is part of the title (Death Race 2000 (1975).mkv)
+  operation: parse_movie_name
+  input:
+    name: Death Race 2000 (1975).mkv
+    kind: file
+  expect:
+    title: Death Race 2000
+    year: 1975
+
+- name: a dash and number before the bracketed year are part of the title (Kung Fu Panda - 2 (2011).mkv)
+  operation: parse_movie_name
+  input:
+    name: Kung Fu Panda - 2 (2011).mkv
+    kind: file
+  expect:
+    title: Kung Fu Panda - 2
+    year: 2011
+
+- name: a bracketed year ends the title of a folder (Ocean's Eleven (2001))
+  operation: parse_movie_name
+  input:
+    name: Ocean's Eleven (2001)
+    kind: directory
+  expect:
+    title: Ocean's Eleven
+    year: 2001
+
+- name: a title that starts with a number includes the number (12 Years a Slave (2013).mkv)
+  operation: parse_movie_name
+  input:
+    name: 12 Years a Slave (2013).mkv
+    kind: file
+  expect:
+    title: 12 Years a Slave
+    year: 2013
+
+- name: the title of a number-only name with a bracketed year is the number (21 (2008).mkv)
+  operation: parse_movie_name
+  input:
+    name: 21 (2008).mkv
+    kind: file
+  expect:
+    title: '21'
+    year: 2008
+
+- name: the title of a number-only folder is the number and its year is read (1917 (2019))
+  operation: parse_movie_name
+  input:
+    name: 1917 (2019)
+    kind: directory
+  expect:
+    title: '1917'
+    year: 2019
+
+- name: a bare leading year-like number is the title and the second number is the year (1984.1956.720p.mkv)
+  operation: parse_movie_name
+  input:
+    name: 1984.1956.720p.mkv
+    kind: file
+  expect:
+    title: '1984'
+    year: 1956
+
+- name: a dotted title that starts with a number includes the number (8.Mile.2002.720p.BluRay.x264.mkv)
+  operation: parse_movie_name
+  input:
+    name: 8.Mile.2002.720p.BluRay.x264.mkv
+    kind: file
+  expect:
+    title: 8 Mile
+    year: 2002
+
+- name: the title of a dotted release folder ends at its year and its dots are read as spaces (The.Gentlemen.2019.1080p.BluRay.x264-GRP)
+  operation: parse_movie_name
+  input:
+    name: The.Gentlemen.2019.1080p.BluRay.x264-GRP
+    kind: directory
+  expect:
+    title: The Gentlemen
+    year: 2019
+
+- name: the year and release words after the title are removed (Gravity.2013.2160p.Blu-Ray.HEVC.mkv)
+  operation: parse_movie_name
+  input:
+    name: Gravity.2013.2160p.Blu-Ray.HEVC.mkv
+    kind: file
+  expect:
+    title: Gravity
+    year: 2013
+
+- name: a bare year at the end of a name is the year (Sicario 2015.mp4)
+  operation: parse_movie_name
+  input:
+    name: Sicario 2015.mp4
+    kind: file
+  expect:
+    title: Sicario
+    year: 2015
+
+- name: a bare year followed by a resolution is the year (Hidden Figures 2016 1080p.mkv)
+  operation: parse_movie_name
+  input:
+    name: Hidden Figures 2016 1080p.mkv
+    kind: file
+  expect:
+    title: Hidden Figures
+    year: 2016
+
+- name: a bracketed year followed by a resolution is the year (Dune (2021) 1080p.mkv)
+  operation: parse_movie_name
+  input:
+    name: Dune (2021) 1080p.mkv
+    kind: file
+  expect:
+    title: Dune
+    year: 2021
+
+- name: a year between dashes before release words is the year (Hidden Figures - 2016 - WEBDL-1080p - x264 AC3.mkv)
+  operation: parse_movie_name
+  input:
+    name: Hidden Figures - 2016 - WEBDL-1080p - x264 AC3.mkv
+    kind: file
+  expect:
+    title: Hidden Figures
+    year: 2016
+
+- name: a bare year before a remaster word and release tags is the year (Cinema Paradiso 1988 REMASTERED 1080p BluRay x264 AAC - GRP.mp4)
+  operation: parse_movie_name
+  input:
+    name: Cinema Paradiso 1988 REMASTERED 1080p BluRay x264 AAC - GRP.mp4
+    kind: file
+  expect:
+    title: Cinema Paradiso
+    year: 1988
+    container: mp4
+
+- name: the title of a dotted release name is the text before the year (Saving.Private.Ryan.1998.1080p.BluRay.mkv)
+  operation: parse_movie_name
+  input:
+    name: Saving.Private.Ryan.1998.1080p.BluRay.mkv
+    kind: file
+  expect:
+    title: Saving Private Ryan
+    year: 1998
+
+- name: a metadata bracket before a bracketed year is removed (Mulan [Multi-Subs] [2020].mkv)
+  operation: parse_movie_name
+  input:
+    name: Mulan [Multi-Subs] [2020].mkv
+    kind: file
+  expect:
+    title: Mulan
+    year: 2020
+
+- name: a bracketed year is the year when a release group has a later bare year (Gravity (2013) - SomeGroup 2019.mp4)
+  operation: parse_movie_name
+  input:
+    name: Gravity (2013) - SomeGroup 2019.mp4
+    kind: file
+  expect:
+    title: Gravity
+    year: 2013
+
+- name: a date-shaped dotted number is not read as a year (Concert Live 2013.12.09)
+  operation: parse_movie_name
+  input:
+    name: Concert Live 2013.12.09
+    kind: directory
+  expect:
+    title: Concert Live 2013.12.09
+    year: null
+
+- name: a date-shaped compact number is not read as a year (Concert Live 20131209)
+  operation: parse_movie_name
+  input:
+    name: Concert Live 20131209
+    kind: directory
+  expect:
+    title: Concert Live 20131209
+    year: null
+
+- name: a full date with dashes stays in the title and is no year (Recital.Tour.2015-06-21.mkv)
+  operation: parse_movie_name
+  input:
+    name: Recital.Tour.2015-06-21.mkv
+    kind: file
+  expect:
+    title: Recital Tour 2015-06-21
+    year: null
+
+- name: a trailing year after a full date is the year and the date is part of the title (Concert Live 2013-12-09 2013)
+  operation: parse_movie_name
+  input:
+    name: Concert Live 2013-12-09 2013
+    kind: directory
+  expect:
+    title: Concert Live 2013-12-09
+    year: 2013
+
+- name: a blank name has no title, year or container
+  operation: parse_movie_name
+  input:
+    name: '   '
+    kind: file
+  expect:
+    title: null
+    year: null
+    container: null
+
+- name: a resolution token and everything after it is cut from the title (Brazil 480p.mp4)
+  operation: parse_movie_name
+  input:
+    name: Brazil 480p.mp4
+    kind: file
+  expect:
+    title: Brazil
+
+- name: a bracketed resolution is cut from the title (Brazil [480p].mp4)
+  operation: parse_movie_name
+  input:
+    name: Brazil [480p].mp4
+    kind: file
+  expect:
+    title: Brazil
+
+- name: a year after a resolution token is not the year, and the year before it is (Solaris 480p 2002.mp4)
+  operation: parse_movie_name
+  input:
+    name: Solaris 480p 2002.mp4
+    kind: file
+  expect:
+    title: Solaris
+    year: null
+
+- name: a bare year before release tags is the year when a later year follows (Tenet 2020 1080p 2001.mkv)
+  operation: parse_movie_name
+  input:
+    name: Tenet 2020 1080p 2001.mkv
+    kind: file
+  expect:
+    title: Tenet
+    year: 2020
+
+- name: a bracketed year after a bracketed resolution is not read as the year (Gattaca [1080p] (2001).mkv)
+  operation: parse_movie_name
+  input:
+    name: Gattaca [1080p] (2001).mkv
+    kind: file
+  expect:
+    title: Gattaca
+    year: null
+
+- name: a bare year after bracketed release words is not read as the year (Gattaca [Remastered 1080p] 2001.mkv)
+  operation: parse_movie_name
+  input:
+    name: Gattaca [Remastered 1080p] 2001.mkv
+    kind: file
+  expect:
+    title: Gattaca
+    year: null
+
+- name: a leading number that looks like a resolution is part of the title before a provider tag (1408 [tmdbid=12345].mp4)
+  operation: parse_movie_name
+  input:
+    name: 1408 [tmdbid=12345].mp4
+    kind: file
+  expect:
+    title: '1408'
+
+- name: a 4k token is cut from a dotted title (Mad.Max.Fury.Road.4k.mkv)
+  operation: parse_movie_name
+  input:
+    name: Mad.Max.Fury.Road.4k.mkv
+    kind: file
+  expect:
+    title: Mad Max Fury Road
+
+- name: an HDR token is cut from a dotted title (The.Revenant.HDR.mkv)
+  operation: parse_movie_name
+  input:
+    name: The.Revenant.HDR.mkv
+    kind: file
+  expect:
+    title: The Revenant
+
+- name: a hyphen-attached release group is cut from a dotted title (Moon-HDC.mkv)
+  operation: parse_movie_name
+  input:
+    name: Moon-HDC.mkv
+    kind: file
+  expect:
+    title: Moon
+
+- name: a BDrip source token is cut from a dotted title (Hugo.BDrip.mkv)
+  operation: parse_movie_name
+  input:
+    name: Hugo.BDrip.mkv
+    kind: file
+  expect:
+    title: Hugo
+
+- name: a run of quality, source and group tokens is cut from a dotted title (Mad.Max.Fury.Road.4K.UltraHD.HDR.BDrip-HDC.mkv)
+  operation: parse_movie_name
+  input:
+    name: Mad.Max.Fury.Road.4K.UltraHD.HDR.BDrip-HDC.mkv
+    kind: file
+  expect:
+    title: Mad Max Fury Road
+
+- name: a WEB-DL source token and resolution are cut from a dotted folder name (Gone.Girl.WEB-DL.1080p)
+  operation: parse_movie_name
+  input:
+    name: Gone.Girl.WEB-DL.1080p
+    kind: directory
+  expect:
+    title: Gone Girl
+
+- name: a resolution with a trailing remaster word is cut from a space-separated name (Speed 2160p Remastered.mkv)
+  operation: parse_movie_name
+  input:
+    name: Speed 2160p Remastered.mkv
+    kind: file
+  expect:
+    title: Speed
+
+- name: a WEB-DL source token is cut from a dotted name (Sunset.Boulevard.WEB-DL.Remastered.mkv)
+  operation: parse_movie_name
+  input:
+    name: Sunset.Boulevard.WEB-DL.Remastered.mkv
+    kind: file
+  expect:
+    title: Sunset Boulevard
+
+- name: a codec token is cut from a space-separated name (The Leftovers x265 Remastered.mkv)
+  operation: parse_movie_name
+  input:
+    name: The Leftovers x265 Remastered.mkv
+    kind: file
+  expect:
+    title: The Leftovers
+
+- name: the title ends before the release tag HDR10+ (Shutter Island.HDR10+.Remastered.mkv)
+  operation: parse_movie_name
+  input:
+    name: Shutter Island.HDR10+.Remastered.mkv
+    kind: file
+  expect:
+    title: Shutter Island
+
+- name: the title ends before the release tag DTS-HD.5.1 (Apocalypse Now.DTS-HD.5.1.Remastered.mkv)
+  operation: parse_movie_name
+  input:
+    name: Apocalypse Now.DTS-HD.5.1.Remastered.mkv
+    kind: file
+  expect:
+    title: Apocalypse Now
+
+- name: the title ends before the release tag REPACK (Coco.REPACK.Remastered.mkv)
+  operation: parse_movie_name
+  input:
+    name: Coco.REPACK.Remastered.mkv
+    kind: file
+  expect:
+    title: Coco
+
+- name: the title ends before the release tag 3D (Gravity.3D.Remastered.mkv)
+  operation: parse_movie_name
+  input:
+    name: Gravity.3D.Remastered.mkv
+    kind: file
+  expect:
+    title: Gravity
+
+- name: a leading release group, episode number and bracketed resolution are removed ([Vaporsub] Attack on Titan - 03 [720p][Multiple Subtitle].mkv)
+  operation: parse_movie_name
+  input:
+    name: '[Vaporsub] Attack on Titan - 03 [720p][Multiple Subtitle].mkv'
+    kind: file
+  expect:
+    title: Attack on Titan
+
+- name: a leading group and a trailing bracketed technical group are removed ([Hanabi] Kimi no Na wa [BDRip h264 1920x1080 FLAC])
+  operation: parse_movie_name
+  input:
+    name: '[Hanabi] Kimi no Na wa [BDRip h264 1920x1080 FLAC]'
+    kind: directory
+  expect:
+    title: Kimi no Na wa
+
+- name: a channel tag and an episode range with a dot are cut from a Korean title ([tvN] 미생.E01-E16.720p-NEXT)
+  operation: parse_movie_name
+  input:
+    name: '[tvN] 미생.E01-E16.720p-NEXT'
+    kind: directory
+  expect:
+    title: 미생
+
+- name: a channel tag and a tilde episode range with release words are cut from a Korean title ([JTBC] SKY 캐슬 E01~E20 END HDTV.H264.720p-WITH)
+  operation: parse_movie_name
+  input:
+    name: '[JTBC] SKY 캐슬 E01~E20 END HDTV.H264.720p-WITH'
+    kind: directory
+  expect:
+    title: SKY 캐슬
+
+- name: a timestamped broadcast name keeps its inner brackets and the trailing bracket group is removed (2026年02月03日21時00分00秒-[新]葬送のフリーレン[字].mp4)
+  operation: parse_movie_name
+  input:
+    name: 2026年02月03日21時00分00秒-[新]葬送のフリーレン[字].mp4
+    kind: file
+  expect:
+    title: 2026年02月03日21時00分00秒-[新]葬送のフリーレン
+
+- name: nothing is cut from a broadcast name with a full-width bracket and number sign (2026年02月04日01時10分00秒-[新]ゆるキャン△【ＮＨＫ】＃３.mp4)
+  operation: parse_movie_name
+  input:
+    name: 2026年02月04日01時10分00秒-[新]ゆるキャン△【ＮＨＫ】＃３.mp4
+    kind: file
+  expect:
+    title: 2026年02月04日01時10分00秒-[新]ゆるキャン△【ＮＨＫ】＃３
+
+- name: a trailing dash and bracketed number group is removed from the title (Before Sunrise - [0004].mkv)
+  operation: parse_movie_name
+  input:
+    name: Before Sunrise - [0004].mkv
+    kind: file
+  expect:
+    title: Before Sunrise
+
+- name: a leading bracket that is part of the title is kept with the year after it ([REC] 2 (2009).mkv)
+  operation: parse_movie_name
+  input:
+    name: '[REC] 2 (2009).mkv'
+    kind: file
+  expect:
+    title: '[REC] 2'
+    year: 2009
+
+- name: a title made only of a bracket group is kept ([ringu].mkv)
+  operation: parse_movie_name
+  input:
+    name: '[ringu].mkv'
+    kind: file
+  expect:
+    title: '[ringu]'
+
+- name: a leading release group is removed and the lowercase words of the title are unchanged ([Kanade] the godfather part ii [1080p] (1974).mkv)
+  operation: parse_movie_name
+  input:
+    name: '[Kanade] the godfather part ii [1080p] (1974).mkv'
+    kind: file
+  expect:
+    title: the godfather part ii
+
+- name: a bracketed year glued to the title ends it (The Usual Suspects(1995).mp4)
+  operation: parse_movie_name
+  input:
+    name: The Usual Suspects(1995).mp4
+    kind: file
+  expect:
+    title: The Usual Suspects
+    year: 1995
+
+- name: a bracketed year does not remove an Opus word from the title (Mr. Holland's Opus (1995).mkv)
+  operation: parse_movie_name
+  input:
+    name: Mr. Holland's Opus (1995).mkv
+    kind: file
+  expect:
+    title: Mr. Holland's Opus
+    year:
+      status: resolved
+
+- name: a dotted name keeps a Mr abbreviation as a word and its year is read (Mr.Holland's.Opus.1995.mkv)
+  operation: parse_movie_name
+  input:
+    name: Mr.Holland's.Opus.1995.mkv
+    kind: file
+  expect:
+    title: Mr Holland's Opus
+    year:
+      status: resolved
+
+- name: the title of a name made only of release tags is those tags (1080p.BluRay.x264.mkv)
+  operation: parse_movie_name
+  input:
+    name: 1080p.BluRay.x264.mkv
+    kind: file
+  expect:
+    title: 1080p BluRay x264
+
+- name: a dotted lowercase title is spaced and its letter case is unchanged (amelie.2001.mkv)
+  operation: parse_movie_name
+  input:
+    name: amelie.2001.mkv
+    kind: file
+  expect:
+    title: amelie
+
+- name: an all-caps title is unchanged in letter case (JFK (1991).mkv)
+  operation: parse_movie_name
+  input:
+    name: JFK (1991).mkv
+    kind: file
+  expect:
+    title: JFK
+    year: 1991
+
+- name: a release-named movie with a year and group resolves to its title (Spider-Man.Into.the.Spider-Verse.2018.1080p.BluRay.x264-GRP.mkv)
+  operation: parse_movie_name
+  input:
+    name: Spider-Man.Into.the.Spider-Verse.2018.1080p.BluRay.x264-GRP.mkv
+    kind: file
+  expect:
+    title: Spider-Man Into the Spider-Verse
+    year: 2018
+
+- name: a 4K and HDR release name with a year after the tags resolves to the title without that year (Knives.Out.4K.HDR.2160p.2019.mkv)
+  operation: parse_movie_name
+  input:
+    name: Knives.Out.4K.HDR.2160p.2019.mkv
+    kind: file
+  expect:
+    title: Knives Out
+
+- name: a release name with the year before the tags resolves to the title and year (Tenet.2020.1080p.BluRay.x264-GROUP.mkv)
+  operation: parse_movie_name
+  input:
+    name: Tenet.2020.1080p.BluRay.x264-GROUP.mkv
+    kind: file
+  expect:
+    title: Tenet
+    year: 2020
+
+- name: a release name without a year resolves to the title and no year (Warrior.1080p.BluRay.x264-GROUP.mkv)
+  operation: parse_movie_name
+  input:
+    name: Warrior.1080p.BluRay.x264-GROUP.mkv
+    kind: file
+  expect:
+    title: Warrior
+    year: null
+
+- name: a bracketed quality release name resolves to the title without a year (Memento [1080p] [BluRay].mkv)
+  operation: parse_movie_name
+  input:
+    name: Memento [1080p] [BluRay].mkv
+    kind: file
+  expect:
+    title: Memento
+    year: null
+
+- name: a source release name with underscores and a group resolves to the title without a year (Seven_DVDRip_XviD-GROUP.avi)
+  operation: parse_movie_name
+  input:
+    name: Seven_DVDRip_XviD-GROUP.avi
+    kind: file
+  expect:
+    title: Seven
+    year: null
+
+- name: a numeric title before a release tag is the number and has no year (1917.1080p.BluRay.mkv)
+  operation: parse_movie_name
+  input:
+    name: 1917.1080p.BluRay.mkv
+    kind: file
+  expect:
+    title: '1917'
+    year: null
+
+- name: a bracketed year before quality words resolves to the title and year (There Will Be Blood [2007] 720p 6ch.mkv)
+  operation: parse_movie_name
+  input:
+    name: There Will Be Blood [2007] 720p 6ch.mkv
+    kind: file
+  expect:
+    title: There Will Be Blood
+    year: 2007
+
+- name: a scene DVDRip release name resolves to the title and year (Moonrise.Kingdom.2012.DVDRip.XviD-SCENE.avi)
+  operation: parse_movie_name
+  input:
+    name: Moonrise.Kingdom.2012.DVDRip.XviD-SCENE.avi
+    kind: file
+  expect:
+    title: Moonrise Kingdom
+    year: 2012
+
+- name: a folder title with a bracketed year includes a technical word and is trusted (Mr. Holland's Opus (1995))
+  operation: parse_movie_name
+  input:
+    name: Mr. Holland's Opus (1995)
+    kind: directory
+  expect:
+    title: Mr. Holland's Opus
+    year: 1995
+    trusted: true
+
+- name: a folder title with a bracketed year and a provider tag includes a technical word and is trusted (The Hi-Lo Country (1998) {tmdb-12345})
+  operation: parse_movie_name
+  input:
+    name: The Hi-Lo Country (1998) {tmdb-12345}
+    kind: directory
+  expect:
+    title: The Hi-Lo Country
+    year: 1998
+    trusted: true
+
+- name: a title number equal to the bracketed year is part of the title (1984 (1984) HDTV.mkv)
+  operation: parse_movie_name
+  input:
+    name: 1984 (1984) HDTV.mkv
+    kind: file
+  expect:
+    title: '1984'
+    year: 1984
+
+- name: a title number before a release tag and a bracketed year is part of the title (Death Race 2000 (2017) HDTV.mkv)
+  operation: parse_movie_name
+  input:
+    name: Death Race 2000 (2017) HDTV.mkv
+    kind: file
+  expect:
+    title: Death Race 2000
+    year: 2017
+
+- name: a bracketed year is the year when the title contains a number (12 Monkeys (1995) [Remux-1080p 8-bit AVC FLAC 2.0]-GRP.mkv)
+  operation: parse_movie_name
+  input:
+    name: 12 Monkeys (1995) [Remux-1080p 8-bit AVC FLAC 2.0]-GRP.mkv
+    kind: file
+  expect:
+    title: 12 Monkeys
+    year: 1995
+
+- name: a square-bracketed year is the year when the title contains a number (Ocean's 8 [2018] [Remux-1080p AVC DTS-HD MA 2.0]-GRP.mkv)
+  operation: parse_movie_name
+  input:
+    name: Ocean's 8 [2018] [Remux-1080p AVC DTS-HD MA 2.0]-GRP.mkv
+    kind: file
+  expect:
+    title: Ocean's 8
+    year: 2018
+
+- name: the edition of an accented edition tag is its raw text (Amélie (2001) {edition-Dérive}.mkv)
+  operation: parse_movie_name
+  input:
+    name: Amélie (2001) {edition-Dérive}.mkv
+    kind: file
+  expect:
+    edition: Dérive
+
+- name: an edition tag in a folder name resolves to the edition as written (Death Race (1982) {edition-Final Cut})
+  operation: parse_movie_name
+  input:
+    name: Death Race (1982) {edition-Final Cut}
+    kind: directory
+  expect:
+    title: Death Race
+    year: 1982
+    edition: Final Cut
+    edition_hint: null
+
+- name: edition words after the year resolve to one edition hint, never an edition (Aliens (1986) Extended Directors Cut Fan Edit 1080p.mkv)
+  operation: parse_movie_name
+  input:
+    name: Aliens (1986) Extended Directors Cut Fan Edit 1080p.mkv
+    kind: file
+  expect:
+    edition: null
+    edition_hint: Extended Directors Cut Fan Edit
+
+- name: unrated and director's cut words in a release stem resolve to one edition hint (Gladiator.2000.Unrated.Directors.Cut.BluRay.1080p.DTS-HD.MA.5.1.AVC.REMUX-GRP.mkv)
+  operation: parse_movie_name
+  input:
+    name: Gladiator.2000.Unrated.Directors.Cut.BluRay.1080p.DTS-HD.MA.5.1.AVC.REMUX-GRP.mkv
+    kind: file
+  expect:
+    edition: null
+    edition_hint: Unrated Directors Cut
+
+- name: a subtitle before the year belongs to the title, not an edition (Logan.Noir.2021.2160p.HMAX.WEB-DL.DDP5.1.Atmos.HDR.HEVC-GRP.mkv)
+  operation: parse_movie_name
+  input:
+    name: Logan.Noir.2021.2160p.HMAX.WEB-DL.DDP5.1.Atmos.HDR.HEVC-GRP.mkv
+    kind: file
+  expect:
+    title: Logan Noir
+    edition: null
+    edition_hint: null
+
+- name: Final Cut before the year belongs to the title, not an edition (Das Boot Final Cut (2000) 1080p BluRay x264.mkv)
+  operation: parse_movie_name
+  input:
+    name: Das Boot Final Cut (2000) 1080p BluRay x264.mkv
+    kind: file
+  expect:
+    title: Das Boot Final Cut
+    edition: null
+    edition_hint: null
+
+- name: a title that ends in Grey is not read as a Gray edition suffix (The Grey)
+  operation: parse_movie_name
+  input:
+    name: The Grey
+    kind: directory
+  expect:
+    title: The Grey
+
+- name: a square-bracketed edition tag resolves to the edition and its span (Apocalypse Now (1979) [edition-Director's Cut] 1080p.mkv)
+  operation: parse_movie_name
+  input:
+    name: Apocalypse Now (1979) [edition-Director's Cut] 1080p.mkv
+    kind: file
+  expect:
+    title: Apocalypse Now
+    edition:
+      status: resolved
+      value: Director's Cut
+      evidence:
+        rule: edition_tag
+        span:
+        - 31
+        - 45
+    edition_hint: null
+
+- name: a folder name has no container (Iron Sky)
+  operation: parse_movie_name
+  input:
+    name: Iron Sky
+    kind: directory
+  expect:
+    container: null
+
+- name: a blank folder name has no title
+  operation: parse_movie_name
+  input:
+    name: ' '
+    kind: directory
+  expect:
+    title: null
+
+- name: a leading bracket with release words after it is a release group and is removed ([Grp] Movie Title [1080p].mkv)
+  operation: parse_movie_name
+  input:
+    name: '[Grp] Movie Title [1080p].mkv'
+    kind: file
+  expect:
+    title: Movie Title

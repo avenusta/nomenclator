@@ -1,0 +1,334 @@
+# Hints (decision T20): caller-supplied facts per path, in `inputs.hints`.
+# A hint fills a fact that the names leave out and agrees with one that they state. A hint
+# that contradicts a name makes the item ambiguous, unless it is authoritative and overrides the name.
+# Every hinted fact is recorded on its item with its outcome.
+
+- name: a year hint fills a year the names leave out
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival/Arrival.mkv]
+    inputs:
+      hints: [{ path: Arrival, year: 2016 }]
+  expect:
+    items:
+      - kind: movie
+        title: Arrival
+        year: 2016
+        ambiguous: false
+        hints: [{ path: Arrival, fact: year, value: "2016", outcome: filled, name_value: null }]
+    input_diagnostics: []
+
+- name: a hint that repeats a name agrees with it
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv]
+    inputs:
+      hints: [{ path: Arrival (2016), year: 2016, title: arrival }]
+  expect:
+    items:
+      - kind: movie
+        title: Arrival
+        year: 2016
+        ambiguous: false
+        hints:
+          - { fact: title, outcome: agreed }
+          - { fact: year, outcome: agreed }
+
+- name: a hint that contradicts a name makes the movie ambiguous
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv]
+    inputs:
+      hints: [{ path: Arrival (2016), year: 2017 }]
+  expect:
+    items:
+      - kind: movie
+        year: 2016
+        ambiguous: true
+        ambiguity_reasons: [hint_contradicts_name]
+        hints: [{ fact: year, value: "2017", outcome: contradicted, name_value: "2016" }]
+
+- name: an authoritative hint overrides the name
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv]
+    inputs:
+      hints: [{ path: Arrival (2016), year: 2017, authoritative: true }]
+  expect:
+    items:
+      - kind: movie
+        year: 2017
+        year_source: null
+        ambiguous: false
+        hints: [{ fact: year, value: "2017", outcome: overrode, name_value: "2016" }]
+
+- name: a hint on a movie's video applies to the movie
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival.mkv]
+    inputs:
+      hints: [{ path: Arrival.mkv, provider_ids: { tmdb: "329865" } }]
+  expect:
+    items:
+      - kind: movie
+        provider_ids: { tmdb: "329865" }
+        hints: [{ path: Arrival.mkv, fact: provider_id.tmdb, value: "329865", outcome: filled }]
+
+- name: a provider ID hint that differs from a tag is a conflicting provider ID
+  operation: interpret
+  input:
+    library: movies
+    paths: ['Arrival (2016) {tmdb-329865}/Arrival (2016).mkv']
+    inputs:
+      hints: [{ path: 'Arrival (2016) {tmdb-329865}', provider_ids: { tmdb: "1" } }]
+  expect:
+    items:
+      - kind: movie
+        provider_ids: { tmdb: { status: ambiguous } }
+        ambiguous: true
+        ambiguity_reasons: [hint_contradicts_name]
+
+- name: a contradicted hint blocks the rename
+  operation: plan_renames
+  input:
+    library: movies
+    paths: [Arrival 2016/Arrival 2016.mkv]
+    inputs:
+      hints: [{ path: Arrival 2016, year: 2017 }]
+  expect:
+    proposals: []
+    blocked: [{ from: Arrival 2016/Arrival 2016.mkv, reasons: [ambiguous_identity] }]
+
+- name: an authoritative hint renames by the hinted fact
+  operation: plan_renames
+  input:
+    library: movies
+    paths: [Arrival/Arrival.mkv]
+    inputs:
+      hints: [{ path: Arrival, year: 2016, provider_ids: { tmdb: "329865" } }]
+  expect:
+    proposals:
+      - { from: Arrival/Arrival.mkv, to: 'Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.mkv' }
+
+- name: a season hint on a folder sets the season of its episodes
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Staffel Zwei/Show - 05.mkv]
+    inputs:
+      hints: [{ path: Show/Staffel Zwei, season: 2 }]
+  expect:
+    items:
+      - { kind: series, title: Show }
+      - { kind: season, season: 2 }
+      - kind: episode
+        season: 2
+        episodes: [5]
+        hints: [{ path: Show/Staffel Zwei, fact: season, value: "2", outcome: filled }]
+
+- name: an episode hint makes a video without a code an episode
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Season 1/Pilot.mkv]
+    inputs:
+      hints: [{ path: Show/Season 1/Pilot.mkv, episodes: [1] }]
+  expect:
+    items:
+      - { kind: series, title: Show }
+      - { kind: season, season: 1 }
+      - kind: episode
+        season: 1
+        episodes: [1]
+        ambiguous: false
+        hints: [{ fact: episodes, value: "1", outcome: filled }]
+
+- name: an episode hint that contradicts the code makes the episode ambiguous
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Season 1/Show S01E02.mkv]
+    inputs:
+      hints: [{ path: Show/Season 1/Show S01E02.mkv, episodes: [3] }]
+  expect:
+    items:
+      - { kind: series }
+      - { kind: season }
+      - kind: episode
+        episodes: [2]
+        ambiguous: true
+        ambiguity_reasons: [hint_contradicts_name]
+        hints: [{ fact: episodes, value: "3", outcome: contradicted, name_value: "2" }]
+
+- name: an authoritative episode hint replaces the code's episodes
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Season 1/Show S01E02.mkv]
+    inputs:
+      hints: [{ path: Show/Season 1/Show S01E02.mkv, episodes: [3, 4], authoritative: true }]
+  expect:
+    items:
+      - { kind: series }
+      - { kind: season }
+      - kind: episode
+        episodes: [3, 4]
+        ambiguous: false
+        hints: [{ fact: episodes, value: "3, 4", outcome: overrode, name_value: "2" }]
+
+- name: two videos hinted to one episode are its versions
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Season 1/Pilot.mkv, Show/Season 1/Pilot Remastered.mkv]
+    inputs:
+      hints:
+        - { path: Show/Season 1/Pilot.mkv, episodes: [1] }
+        - { path: Show/Season 1/Pilot Remastered.mkv, episodes: [1] }
+  expect:
+    items:
+      - { kind: series }
+      - { kind: season }
+      - kind: episode
+        episodes: [1]
+        versions: [{}, {}]
+
+- name: an authoritative series title hint sets the title of the series and its episodes
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Season 1/Show S01E01.mkv]
+    inputs:
+      hints: [{ path: Show, title: Northern Passage, year: 2009, authoritative: true }]
+  expect:
+    items:
+      - kind: series
+        title: Northern Passage
+        year: 2009
+        hints:
+          - { fact: title, outcome: overrode, name_value: Show }
+          - { fact: year, outcome: filled }
+      - { kind: season, series_name: Northern Passage }
+      - { kind: episode, series_name: Northern Passage, series_year: 2009 }
+
+- name: a title hint that differs only by a leading article agrees with the name
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Season 1/Show S01E01.mkv]
+    inputs:
+      hints: [{ path: Show, title: The Show }]
+  expect:
+    items:
+      - { kind: series, title: Show, hints: [{ fact: title, outcome: agreed }] }
+      - { kind: season }
+      - { kind: episode, ambiguous: false }
+
+- name: a series folder hint that contradicts the folders makes the episode ambiguous
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Season 1/Show S01E01.mkv]
+    inputs:
+      hints: [{ path: Show/Season 1/Show S01E01.mkv, series_folder: Show/Season 1 }]
+  expect:
+    items:
+      - { kind: series, path: Show }
+      - { kind: season }
+      - kind: episode
+        ambiguous: true
+        ambiguity_reasons: [hint_contradicts_name]
+        hints: [{ fact: series_folder, value: Show/Season 1, outcome: contradicted, name_value: Show }]
+
+- name: a hint for a path outside the listing is an input diagnostic
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv]
+    inputs:
+      hints: [{ path: Arrivals, year: 2016 }]
+  expect:
+    input_diagnostics: [{ input: hint, path: Arrivals, reason: unknown_path }]
+
+- name: a hint that applies to no item is an input diagnostic
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv, Arrival (2016)/Trailers/Teaser.mkv]
+    inputs:
+      hints:
+        - { path: Arrival (2016)/Trailers/Teaser.mkv, year: 2015 }
+        - { path: Arrival (2016), episodes: [1] }
+  expect:
+    input_diagnostics:
+      - { input: hint, path: Arrival (2016), reason: not_applicable, fact: episodes }
+      - { input: hint, path: Arrival (2016)/Trailers/Teaser.mkv, reason: not_applicable, fact: year }
+
+- name: two hints for one path are an input diagnostic and neither applies
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival/Arrival.mkv]
+    inputs:
+      hints: [{ path: Arrival, year: 2016 }, { path: Arrival/, year: 2017 }]
+  expect:
+    items: [{ kind: movie, year: null, hints: [] }]
+    input_diagnostics: [{ input: hint, path: Arrival, reason: duplicate }]
+
+- name: a title hint that contradicts an episode's series name keeps the name and makes the episode ambiguous
+  operation: interpret
+  input:
+    library: tv
+    paths: [Loose.S01E03.mkv]
+    inputs:
+      hints: [{ path: Loose.S01E03.mkv, title: Quiet Hours, year: 2019 }]
+  expect:
+    items:
+      - { kind: series, title: Loose, year: 2019 }
+      - { kind: season, series_name: Loose }
+      - kind: episode
+        series_name: Loose
+        series_year: 2019
+        ambiguous: true
+        ambiguity_reasons: [hint_contradicts_name]
+        hints:
+          - { fact: title, value: Quiet Hours, outcome: contradicted, name_value: Loose }
+          - { fact: year, value: "2019", outcome: filled }
+    input_diagnostics: []
+
+- name: an authoritative title hint on an episode without a series folder replaces the series name
+  operation: plan_renames
+  input:
+    library: tv
+    paths: [Loose.S01E03.mkv]
+    inputs:
+      hints: [{ path: Loose.S01E03.mkv, title: Quiet Hours, authoritative: true }]
+  expect:
+    proposals:
+      - { from: Loose.S01E03.mkv, to: Quiet Hours/Season 01/Quiet Hours - S01E03.mkv }
+
+- name: a title hint on an episode without a series name in its name fills the series
+  operation: plan_renames
+  input:
+    library: tv
+    paths: [S01E03.mkv]
+    inputs:
+      hints: [{ path: S01E03.mkv, title: Quiet Hours }]
+  expect:
+    proposals:
+      - { from: S01E03.mkv, to: Quiet Hours/Season 01/Quiet Hours - S01E03.mkv }
+
+- name: a provider ID hint on an episode without a series folder is not applicable
+  operation: interpret
+  input:
+    library: tv
+    paths: [Quiet.Hours.S01E03.mkv]
+    inputs:
+      hints: [{ path: Quiet.Hours.S01E03.mkv, provider_ids: { tvdb: "81189" } }]
+  expect:
+    input_diagnostics: [{ input: hint, path: Quiet.Hours.S01E03.mkv, reason: not_applicable, fact: provider_id.tvdb }]

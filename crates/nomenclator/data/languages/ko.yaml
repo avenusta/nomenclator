@@ -1,0 +1,7 @@
+# Language pack `ko`: the words a library in this language uses. Applied when a
+# caller declares its languages; see decision X11.
+name: language-ko
+season_words:
+  add: ["시즌"]
+languages:
+  add: { ko: ["한국어"] }

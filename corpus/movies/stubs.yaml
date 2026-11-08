@@ -1,0 +1,36 @@
+- name: an ordinary video file resolves to its title and container (Brave.mkv)
+  operation: parse_movie_name
+  input:
+    name: Brave.mkv
+    kind: file
+  expect:
+    title: Brave
+    container: mkv
+
+- name: a .disc name is parsed as an ordinary name with container disc (Ratatouille.disc)
+  operation: parse_movie_name
+  input:
+    name: Ratatouille.disc
+    kind: file
+  expect:
+    title: Ratatouille
+    container: disc
+
+- name: a DVD source token before .disc is a release word, not a title word (Paddington.DVD.disc)
+  operation: parse_movie_name
+  input:
+    name: Paddington.DVD.disc
+    kind: file
+  expect:
+    title: Paddington
+    container: disc
+
+- name: a broadcast source token before .disc is a release word, not a title word (Moonrise.Kingdom.HDTV.disc)
+  operation: parse_movie_name
+  input:
+    name: Moonrise.Kingdom.HDTV.disc
+    kind: file
+  expect:
+    title: Moonrise Kingdom
+    container: disc
+

@@ -1,0 +1,545 @@
+- name: 'a complete season pack folder named like a release: one series, its season and ten titled episodes, a plan into a series and season folder with full episode names, and the download notes left unclaimed'
+  operation: end_to_end
+  input:
+    library: tv
+    paths:
+    - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/
+    - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E01.The.Red.Woman.1080p.WEB-DL.SUJAIDR.mkv
+    - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E02.Home.1080p.WEB-DL.SUJAIDR.mkv
+    - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E03.Oathbreaker.1080p.WEB-DL.SUJAIDR.mkv
+    - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E04.Book.of.the.Stranger.1080p.WEB-DL.SUJAIDR.mkv
+    - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E05.The.Door.1080p.WEB-DL.SUJAIDR.mkv
+    - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E06.Blood.of.My.Blood.1080p.SUJAIDR.mkv
+    - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E07.The.Broken.Man.1080p.WEB-DL.SUJAIDR.mkv
+    - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E08.No.One.1080p.WEB-DL.SUJAIDR.mkv
+    - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E09.Battle.of.the.Bastards.1080p.WEB-DL.SUJAIDR.mkv
+    - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E10.The.Winds.of.Winter.1080p.WEB-DL.SUJAIDR.mkv
+    - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/SUJAIDR.txt
+    - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Torrent downloaded from AhaShare.com.txt
+    - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Torrent downloaded from demonoid.ph.txt
+  expect:
+    interpretation:
+      items:
+      - kind: series
+        title: Game of Thrones
+        year: null
+        path: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR
+        provider_ids: {}
+        extras: []
+        artwork: []
+        nfo: null
+      - kind: season
+        series_name: Game of Thrones
+        series_path: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR
+        season: 6
+        path: null
+        provider_ids: {}
+        extras: []
+        artwork: []
+        nfo: null
+      - kind: episode
+        series_name: Game of Thrones
+        series_year: null
+        series_path: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR
+        season:
+          status: resolved
+          value: 6
+          evidence:
+            rule: episode_token
+            span:
+            - 16
+            - 22
+        episodes:
+        - 1
+        first_episode: 1
+        absolute: null
+        date:
+          status: unknown
+        episode_title: The Red Woman
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E01.The.Red.Woman.1080p.WEB-DL.SUJAIDR.mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: Game of Thrones
+        series_year: null
+        series_path: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR
+        season:
+          status: resolved
+          value: 6
+          evidence:
+            rule: episode_token
+            span:
+            - 16
+            - 22
+        episodes:
+        - 2
+        first_episode: 2
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Home
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E02.Home.1080p.WEB-DL.SUJAIDR.mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: Game of Thrones
+        series_year: null
+        series_path: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR
+        season:
+          status: resolved
+          value: 6
+          evidence:
+            rule: episode_token
+            span:
+            - 16
+            - 22
+        episodes:
+        - 3
+        first_episode: 3
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Oathbreaker
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E03.Oathbreaker.1080p.WEB-DL.SUJAIDR.mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: Game of Thrones
+        series_year: null
+        series_path: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR
+        season:
+          status: resolved
+          value: 6
+          evidence:
+            rule: episode_token
+            span:
+            - 16
+            - 22
+        episodes:
+        - 4
+        first_episode: 4
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Book of the Stranger
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E04.Book.of.the.Stranger.1080p.WEB-DL.SUJAIDR.mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: Game of Thrones
+        series_year: null
+        series_path: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR
+        season:
+          status: resolved
+          value: 6
+          evidence:
+            rule: episode_token
+            span:
+            - 16
+            - 22
+        episodes:
+        - 5
+        first_episode: 5
+        absolute: null
+        date:
+          status: unknown
+        episode_title: The Door
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E05.The.Door.1080p.WEB-DL.SUJAIDR.mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: Game of Thrones
+        series_year: null
+        series_path: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR
+        season:
+          status: resolved
+          value: 6
+          evidence:
+            rule: episode_token
+            span:
+            - 16
+            - 22
+        episodes:
+        - 6
+        first_episode: 6
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Blood of My Blood
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E06.Blood.of.My.Blood.1080p.SUJAIDR.mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: Game of Thrones
+        series_year: null
+        series_path: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR
+        season:
+          status: resolved
+          value: 6
+          evidence:
+            rule: episode_token
+            span:
+            - 16
+            - 22
+        episodes:
+        - 7
+        first_episode: 7
+        absolute: null
+        date:
+          status: unknown
+        episode_title: The Broken Man
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E07.The.Broken.Man.1080p.WEB-DL.SUJAIDR.mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: Game of Thrones
+        series_year: null
+        series_path: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR
+        season:
+          status: resolved
+          value: 6
+          evidence:
+            rule: episode_token
+            span:
+            - 16
+            - 22
+        episodes:
+        - 8
+        first_episode: 8
+        absolute: null
+        date:
+          status: unknown
+        episode_title: No One
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E08.No.One.1080p.WEB-DL.SUJAIDR.mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: Game of Thrones
+        series_year: null
+        series_path: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR
+        season:
+          status: resolved
+          value: 6
+          evidence:
+            rule: episode_token
+            span:
+            - 16
+            - 22
+        episodes:
+        - 9
+        first_episode: 9
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Battle of the Bastards
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E09.Battle.of.the.Bastards.1080p.WEB-DL.SUJAIDR.mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: Game of Thrones
+        series_year: null
+        series_path: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR
+        season:
+          status: resolved
+          value: 6
+          evidence:
+            rule: episode_token
+            span:
+            - 16
+            - 22
+        episodes:
+        - 10
+        first_episode: 10
+        absolute: null
+        date:
+          status: unknown
+        episode_title: The Winds of Winter
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E10.The.Winds.of.Winter.1080p.WEB-DL.SUJAIDR.mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      extras_of: {}
+      video_subtitles: {}
+      excluded_entries: []
+      undecided_entries: []
+      invalid_entries: []
+      unclaimed_files:
+      - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/SUJAIDR.txt
+      - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Torrent downloaded from AhaShare.com.txt
+      - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Torrent downloaded from demonoid.ph.txt
+      rule_diagnostics: []
+    plan:
+      proposals:
+      - from: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E01.The.Red.Woman.1080p.WEB-DL.SUJAIDR.mkv
+        to: Game of Thrones/Season 06/Game of Thrones - S06E01 - The Red Woman.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E02.Home.1080p.WEB-DL.SUJAIDR.mkv
+        to: Game of Thrones/Season 06/Game of Thrones - S06E02 - Home.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E03.Oathbreaker.1080p.WEB-DL.SUJAIDR.mkv
+        to: Game of Thrones/Season 06/Game of Thrones - S06E03 - Oathbreaker.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E04.Book.of.the.Stranger.1080p.WEB-DL.SUJAIDR.mkv
+        to: Game of Thrones/Season 06/Game of Thrones - S06E04 - Book of the Stranger.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E05.The.Door.1080p.WEB-DL.SUJAIDR.mkv
+        to: Game of Thrones/Season 06/Game of Thrones - S06E05 - The Door.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E06.Blood.of.My.Blood.1080p.SUJAIDR.mkv
+        to: Game of Thrones/Season 06/Game of Thrones - S06E06 - Blood of My Blood.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E07.The.Broken.Man.1080p.WEB-DL.SUJAIDR.mkv
+        to: Game of Thrones/Season 06/Game of Thrones - S06E07 - The Broken Man.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E08.No.One.1080p.WEB-DL.SUJAIDR.mkv
+        to: Game of Thrones/Season 06/Game of Thrones - S06E08 - No One.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E09.Battle.of.the.Bastards.1080p.WEB-DL.SUJAIDR.mkv
+        to: Game of Thrones/Season 06/Game of Thrones - S06E09 - Battle of the Bastards.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E10.The.Winds.of.Winter.1080p.WEB-DL.SUJAIDR.mkv
+        to: Game of Thrones/Season 06/Game of Thrones - S06E10 - The Winds of Winter.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      blocked: []
+    validation:
+      diagnostics:
+      - rule: missing_series_year
+        paths:
+        - 'Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR'
+      - rule: missing_provider_id
+        paths:
+        - 'Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR'
+      - rule: profile_violation
+        paths:
+        - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E01.The.Red.Woman.1080p.WEB-DL.SUJAIDR.mkv
+        reason: null
+        proposed_path: Game of Thrones/Season 06/Game of Thrones - S06E01 - The Red Woman.mkv
+      - rule: profile_violation
+        paths:
+        - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E02.Home.1080p.WEB-DL.SUJAIDR.mkv
+        reason: null
+        proposed_path: Game of Thrones/Season 06/Game of Thrones - S06E02 - Home.mkv
+      - rule: profile_violation
+        paths:
+        - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E03.Oathbreaker.1080p.WEB-DL.SUJAIDR.mkv
+        reason: null
+        proposed_path: Game of Thrones/Season 06/Game of Thrones - S06E03 - Oathbreaker.mkv
+      - rule: profile_violation
+        paths:
+        - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E04.Book.of.the.Stranger.1080p.WEB-DL.SUJAIDR.mkv
+        reason: null
+        proposed_path: Game of Thrones/Season 06/Game of Thrones - S06E04 - Book of the Stranger.mkv
+      - rule: profile_violation
+        paths:
+        - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E05.The.Door.1080p.WEB-DL.SUJAIDR.mkv
+        reason: null
+        proposed_path: Game of Thrones/Season 06/Game of Thrones - S06E05 - The Door.mkv
+      - rule: profile_violation
+        paths:
+        - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E06.Blood.of.My.Blood.1080p.SUJAIDR.mkv
+        reason: null
+        proposed_path: Game of Thrones/Season 06/Game of Thrones - S06E06 - Blood of My Blood.mkv
+      - rule: profile_violation
+        paths:
+        - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E07.The.Broken.Man.1080p.WEB-DL.SUJAIDR.mkv
+        reason: null
+        proposed_path: Game of Thrones/Season 06/Game of Thrones - S06E07 - The Broken Man.mkv
+      - rule: profile_violation
+        paths:
+        - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E08.No.One.1080p.WEB-DL.SUJAIDR.mkv
+        reason: null
+        proposed_path: Game of Thrones/Season 06/Game of Thrones - S06E08 - No One.mkv
+      - rule: profile_violation
+        paths:
+        - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E09.Battle.of.the.Bastards.1080p.WEB-DL.SUJAIDR.mkv
+        reason: null
+        proposed_path: Game of Thrones/Season 06/Game of Thrones - S06E09 - Battle of the Bastards.mkv
+      - rule: profile_violation
+        paths:
+        - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Game.of.Thrones.S06E10.The.Winds.of.Winter.1080p.WEB-DL.SUJAIDR.mkv
+        reason: null
+        proposed_path: Game of Thrones/Season 06/Game of Thrones - S06E10 - The Winds of Winter.mkv
+      - rule: unclaimed_file
+        paths:
+        - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/SUJAIDR.txt
+        reason: null
+        proposed_path: null
+      - rule: release_junk
+        paths:
+        - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Torrent downloaded from AhaShare.com.txt
+        reason: null
+        proposed_path: null
+      - rule: release_junk
+        paths:
+        - Game of Thrones Season 6 S06 Complete 1080p WEB DL x265 HEVC SUJAIDR/Torrent downloaded from demonoid.ph.txt
+        reason: null
+        proposed_path: null

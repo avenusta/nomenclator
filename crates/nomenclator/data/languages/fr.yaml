@@ -1,0 +1,33 @@
+# Language pack `fr`: the words a library in this language uses. Applied when a
+# caller declares its languages; see decision X11.
+name: language-fr
+season_words:
+  add: ["saison"]
+series_season_words:
+  add: ["série"]
+leading_articles:
+  add: ["le", "la", "les", "l", "un", "une"]
+number_words:
+  add:
+    "deux": 2
+    "trois": 3
+    "quatre": 4
+    "cinq": 5
+    "six": 6
+    "sept": 7
+    "huit": 8
+    "neuf": 9
+    "dix": 10
+    "onze": 11
+    "douze": 12
+    "treize": 13
+    "quatorze": 14
+    "quinze": 15
+    "seize": 16
+    "vingt": 20
+ordinal_suffixes:
+  add: ["e", "ème", "eme", "er", "re"]
+languages:
+  add: { fr: ["français", "francais"] }
+artwork_roles:
+  add: { "affiche": poster, "jaquette": poster, "fond": backdrop }

@@ -1,0 +1,190 @@
+# Numbering maps and episode orders (decision X17), in
+# `inputs.series`: per series, the episode order of its file names, absolute ranges
+# per season, and scene-to-aired pairs. Each episode reports the order of its coordinates.
+
+- name: an episode has no order when there are no series inputs
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Season 1/Show S01E02.mkv]
+  expect:
+    items: [{ kind: series }, { kind: season }, { kind: episode, order: null, mapped_from: null }]
+
+- name: a series' declared order is its episodes' order
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Season 1/Show S01E02.mkv]
+    inputs:
+      series: [{ series: Show, order: dvd }]
+  expect:
+    items: [{ kind: series }, { kind: season }, { kind: episode, season: 1, episodes: [2], order: dvd }]
+    input_diagnostics: []
+
+- name: in an absolute-ordered series a seasonless number is absolute
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Show - 13.mkv]
+    inputs:
+      series: [{ series: Show, order: absolute }]
+  expect:
+    items: [{ kind: series }, { kind: episode, season: null, episodes: null, absolute: [13], order: absolute }]
+
+- name: an absolute map resolves an absolute number to its aired season and episode
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Show - 13.mkv]
+    inputs:
+      series:
+        - series: Show
+          order: absolute
+          absolute: [{ season: 1, first: 1, last: 12 }, { season: 2, first: 13, last: 24 }]
+  expect:
+    items:
+      - { kind: series }
+      - { kind: season, season: 2 }
+      - kind: episode
+        season: 2
+        episodes: [1]
+        absolute: [13]
+        order: aired
+        mapped_from: { map: absolute, season: null, numbers: [13] }
+
+- name: a mapped absolute number and its aired name are versions of one episode
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Show 113.mkv, Show/Season 2/Show S02E13.mkv]
+    inputs:
+      series:
+        - series: Show
+          absolute: [{ season: 1, first: 1, last: 100 }, { season: 2, first: 101, last: 124 }]
+  expect:
+    items:
+      - { kind: series }
+      - { kind: season, season: 2 }
+      - { kind: episode, season: 2, episodes: [13], versions: [{}, {}] }
+
+- name: an absolute number that no range covers is not mapped
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Show 130.mkv]
+    inputs:
+      series: [{ series: Show, absolute: [{ season: 1, first: 1, last: 100 }] }]
+  expect:
+    items: [{ kind: series }, { kind: episode, episodes: null, absolute: [130], mapped_from: null }]
+
+- name: an absolute map that contradicts the season folder makes the episode ambiguous
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Season 3/Show 113.mkv]
+    inputs:
+      series: [{ series: Show, absolute: [{ season: 2, first: 101, last: 124 }] }]
+  expect:
+    items:
+      - { kind: series }
+      - { kind: season, season: 3 }
+      - kind: episode
+        season: 3
+        episodes: null
+        absolute: [113]
+        ambiguous: true
+        ambiguity_reasons: [numbering_contradicts_season]
+
+- name: a scene map resolves scene coordinates to aired coordinates
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Season 1/Show S01E13.mkv]
+    inputs:
+      series: [{ series: Show, scene: [{ from: [1, 13], to: [2, 1] }] }]
+  expect:
+    items:
+      - { kind: series }
+      - { kind: season, season: 2 }
+      - kind: episode
+        season: 2
+        episodes: [1]
+        order: aired
+        mapped_from: { map: scene, season: 1, numbers: [13] }
+
+- name: an episode-order hint sets the order of one video
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Season 1/Show S01E02.mkv, Show/Season 1/Show S01E03.mkv]
+    inputs:
+      series: [{ series: Show }]
+      hints: [{ path: Show/Season 1/Show S01E03.mkv, episode_order: dvd }]
+  expect:
+    items:
+      - { kind: series }
+      - { kind: season }
+      - { kind: episode, episodes: [2], order: aired }
+      - kind: episode
+        episodes: [3]
+        order: dvd
+        hints: [{ fact: episode_order, value: dvd, outcome: filled }]
+
+- name: one coordinate in two orders is two episodes
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Season 1/Show S01E02.mkv, Show/Season 1/Show S01E02 DVD.mkv]
+    inputs:
+      hints: [{ path: Show/Season 1/Show S01E02 DVD.mkv, episode_order: dvd }]
+  expect:
+    items:
+      - { kind: series }
+      - { kind: season }
+      - { kind: episode, episodes: [2], order: null }
+      - { kind: episode, episodes: [2], order: dvd }
+
+- name: series inputs that match no series are input diagnostics
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Season 1/Show S01E02.mkv]
+    inputs:
+      series: [{ series: Other Show, order: dvd }]
+  expect:
+    input_diagnostics: [{ input: series, path: Other Show, reason: unknown_path }]
+
+- name: series inputs apply to a series without a folder, matched by its title
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show S01E02.mkv]
+    inputs:
+      series: [{ series: Show, order: dvd }]
+  expect:
+    items: [{ kind: series, path: null }, { kind: season }, { kind: episode, order: dvd }]
+    input_diagnostics: []
+
+- name: a plan keeps the coordinates of episodes in the order their names use
+  operation: plan_renames
+  input:
+    library: tv
+    paths: [Show/Season 1/Show S01E02.mkv]
+    inputs:
+      series: [{ series: Show, order: dvd }]
+  expect:
+    proposals:
+      - { from: Show/Season 1/Show S01E02.mkv, to: Show/Season 01/Show - S01E02.mkv }
+
+- name: one coordinate in two orders blocks both renames as a collision
+  operation: plan_renames
+  input:
+    library: tv
+    paths: [Show/Season 1/Show S01E02.mkv, Show/Season 1/Show S01E02 DVD.mkv]
+    inputs:
+      hints: [{ path: Show/Season 1/Show S01E02 DVD.mkv, episode_order: dvd }]
+  expect:
+    proposals: []
+    blocked:
+      - { from: Show/Season 1/Show S01E02 DVD.mkv, reasons: [destination_collision] }
+      - { from: Show/Season 1/Show S01E02.mkv, reasons: [destination_collision] }

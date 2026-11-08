@@ -1,0 +1,17 @@
+# Lint and breaking-change rules for the wire contract `nomenclator.v1`.
+version: v2
+lint:
+  use:
+    - STANDARD
+  # These rules would rename the service, two response messages and the `Format3d` values.
+  # The names are part of the contract that generated clients use, so they stay.
+  except:
+    - SERVICE_SUFFIX
+    - RPC_REQUEST_RESPONSE_UNIQUE
+    - RPC_RESPONSE_STANDARD_NAME
+    - ENUM_VALUE_PREFIX
+    - ENUM_ZERO_VALUE_SUFFIX
+breaking:
+  # `nomenclator.v1` changes only compatibly (README, "Versioning").
+  use:
+    - FILE

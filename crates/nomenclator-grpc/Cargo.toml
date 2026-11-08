@@ -1,0 +1,40 @@
+[package]
+name = "nomenclator-grpc"
+version.workspace = true
+description = "The media naming conventions over gRPC: one implementation for callers in any language"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+# The tests read the corpus at the repository root, which the package does not contain.
+exclude = ["tests/"]
+categories = ["network-programming", "multimedia::video"]
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "nomenclator-server"
+path = "src/bin/nomenclator-server.rs"
+
+[dependencies]
+clap = { version = "4.6", features = ["derive"] }
+nomenclator = { workspace = true }
+prost = "0.14.4"
+prost-reflect = "0.16.5"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+tokio = { version = "1.48", features = ["rt-multi-thread", "macros", "net", "signal"] }
+tokio-stream = { version = "0.1.19", features = ["net"] }
+tonic = "0.14.9"
+tonic-prost = "0.14.9"
+
+[build-dependencies]
+prost = "0.14.4"
+prost-build = "0.14.4"
+protox = "0.10.0"
+tonic-prost-build = "0.14.9"
+
+[dev-dependencies]

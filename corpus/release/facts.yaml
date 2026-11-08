@@ -1,0 +1,146 @@
+# Release facts (decision X19): `parse_release` reads resolution, source,
+# codecs, bit depth, HDR, audio, language markers, release group, checksum, revision,
+# streaming service and container after the title. Each fact carries its span.
+
+- name: a release name states its resolution, source, codecs, channels and group
+  operation: parse_release
+  input: { name: Northern.Passage.2021.1080p.BluRay.DTS.x264-NPX.mkv, kind: file }
+  expect:
+    resolution: { status: resolved, value: 1080p, evidence: { rule: release_word, span: [22, 27] } }
+    source: bluray
+    video_codec: h264
+    audio_codecs: [{ value: dts }]
+    release_group: NPX
+    container: mkv
+
+- name: a remux of a UHD Blu-ray states its HDR formats, bit depth and object audio
+  operation: parse_release
+  input: { name: Northern.Passage.2021.2160p.UHD.BluRay.REMUX.HDR10.DV.10bit.HEVC.TrueHD.Atmos.7.1-NPX, kind: directory }
+  expect:
+    resolution: 2160p
+    source: uhd_bluray
+    remux: true
+    hdr: [{ value: hdr10 }, { value: dolby_vision }]
+    bit_depth: 10
+    video_codec: h265
+    audio_codecs: [{ value: dolby_truehd }, { value: dolby_atmos }]
+    audio_channels: "7.1"
+    release_group: NPX
+    container: null
+
+- name: a channel layout written right after an audio codec is read
+  operation: parse_release
+  input: { name: Quiet.Hours.S02E05.1080p.AMZN.WEB-DL.DDP5.1.H.264-NPX.mkv, kind: file }
+  expect:
+    source: web
+    streaming_service: amazon_prime
+    audio_codecs: [{ value: dolby_digital_plus, span: [37, 40] }]
+    audio_channels: { status: resolved, value: "5.1", evidence: { rule: release_word, span: [40, 43] } }
+    video_codec: h264
+    release_group: NPX
+
+- name: a word that is a release word inside a title is not a release fact
+  operation: parse_release
+  input: { name: The.Cam.2019.720p.HDTV.x264-NPX.mkv, kind: file }
+  expect:
+    source: hdtv
+    resolution: 720p
+
+- name: a title word before any release word is not read as a revision
+  operation: parse_release
+  input: { name: Real.Steel.2011.1080p.BluRay.x264-NPX.mkv, kind: file }
+  expect:
+    revision: []
+
+- name: revision markers are read after the title
+  operation: parse_release
+  input: { name: Northern.Passage.2021.REPACK.PROPER.1080p.WEB-DL.x264-NPX.mkv, kind: file }
+  expect:
+    revision: [{ value: repack }, { value: proper }]
+
+- name: a fansub name states its group in leading brackets and its checksum
+  operation: parse_release
+  input: { name: "[Lantern Subs] Quiet Hours - 12 (1080p) [A1B2C3D4].mkv", kind: file }
+  expect:
+    release_group: { status: resolved, value: Lantern Subs, evidence: { rule: release_word, span: [1, 13] } }
+    checksum: A1B2C3D4
+    resolution: 1080p
+
+- name: an index site's tag after the group is not part of the group
+  operation: parse_release
+  input: { name: "Quiet.Hours.S02E05.720p.HDTV.x264-NPX[ettv].mkv", kind: file }
+  expect:
+    release_group: NPX
+
+- name: a group with a single-letter lead keeps its dash
+  operation: parse_release
+  input: { name: Northern.Passage.2021.1080p.BluRay.DTS.x264.D-Z0N3.mkv, kind: file }
+  expect:
+    release_group: D-Z0N3
+
+- name: a name without a dash-separated ending states no group
+  operation: parse_release
+  input: { name: Northern Passage (2021).mkv, kind: file }
+  expect:
+    release_group: null
+    resolution: null
+    source: null
+
+- name: a DVD screener states its source and the screener flag
+  operation: parse_release
+  input: { name: Northern.Passage.2021.DVDSCR.XviD.AC3-NPX.avi, kind: file }
+  expect:
+    source: dvd
+    screener: true
+    video_codec: xvid
+    audio_codecs: [{ value: dolby_digital }]
+
+- name: dimensions and a frame rate give the height as the resolution
+  operation: parse_release
+  input: { name: Northern Passage 2021 1920x1080 h264.mkv, kind: file }
+  expect:
+    resolution: 1080p
+
+- name: a frame rate after the scan type is left out of the resolution
+  operation: parse_release
+  input: { name: Northern Passage (2021) BluRay 1080p24 TrueHD 5.1.mkv, kind: file }
+  expect:
+    resolution: 1080p
+    audio_channels: "5.1"
+
+- name: an explicit height takes precedence over a 4K restoration note
+  operation: parse_release
+  input: { name: Northern.Passage.1988.1080p.BluRay.4K.RESTORED.x264-NPX.mkv, kind: file }
+  expect:
+    resolution: 1080p
+
+- name: a lone UHD word is a 2160p resolution
+  operation: parse_release
+  input: { name: Northern.Passage.2021.UHD.x265-NPX.mkv, kind: file }
+  expect:
+    resolution: 2160p
+
+- name: an explicit height takes precedence over a UHD word
+  operation: parse_release
+  input: { name: Northern.Passage.2021.1080p.UHD.x265-NPX.mkv, kind: file }
+  expect:
+    resolution: 1080p
+
+- name: two different sources are ambiguous
+  operation: parse_release
+  input: { name: Northern.Passage.2021.1080p.BluRay.WEB-DL.x264-NPX.mkv, kind: file }
+  expect:
+    source: { status: ambiguous }
+
+- name: audio and subtitle language markers are read
+  operation: parse_release
+  input: { name: Northern.Passage.2021.MULTi.German.1080p.BluRay.VOSTFR.x264-NPX.mkv, kind: file }
+  expect:
+    audio_languages: [{ value: multi }, { value: de }]
+    subtitle_languages: [{ value: fr }]
+
+- name: a streaming service glued to a quality word is read
+  operation: parse_release
+  input: { name: Quiet.Hours.S01E06.NetflixUHD.x265-NPX.mkv, kind: file }
+  expect:
+    streaming_service: netflix

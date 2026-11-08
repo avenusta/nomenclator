@@ -1,0 +1,92 @@
+# Two-way templates (decision R14): a template renders facts into a name and
+# reads a name back into facts.
+
+- name: a movie template renders its fields and pads numbers
+  operation: render_template
+  input:
+    template: "{title}[ ({year})]/{title}[ ({year})][ - part{part:00}]"
+    facts: { title: Northern Passage, year: "2021", part: "2" }
+  expect:
+    path: Northern Passage (2021)/Northern Passage (2021) - part02
+    missing_fields: []
+
+- name: an optional section with a field without a value is left out
+  operation: render_template
+  input:
+    template: "{title}[ ({year})]"
+    facts: { title: Northern Passage }
+  expect:
+    path: Northern Passage
+
+- name: a required field without a value renders no path
+  operation: render_template
+  input:
+    template: "{series} - S{season:00}E{episode:00}"
+    facts: { series: Quiet Hours, episode: "5" }
+  expect:
+    path: null
+    missing_fields: [season]
+
+- name: doubled braces and brackets are literal characters
+  operation: render_template
+  input:
+    template: "{title} {{tmdb-{tmdb}}} [[{year}]]"
+    facts: { title: Arrival, tmdb: "329865", year: "2016" }
+  expect:
+    path: "Arrival {tmdb-329865} [2016]"
+
+- name: an episode template reads a rendered name back into its facts
+  operation: read_template
+  input:
+    template: "{series}/Season {season:00}/{series} - S{season:00}E{episode:00}[ - {episode_title}]"
+    name: Quiet Hours/Season 02/Quiet Hours - S02E05 - The Long Night
+  expect:
+    facts: { status: resolved, value: { series: Quiet Hours, season: "2", episode: "5", episode_title: The Long Night } }
+
+- name: a name that does not match the template reads as unknown
+  operation: read_template
+  input:
+    template: "{title} ({year})"
+    name: Northern Passage 2021
+  expect:
+    facts: { status: unknown }
+
+- name: a field used twice must have one value
+  operation: read_template
+  input:
+    template: "{title}/{title} ({year})"
+    name: Northern Passage/Southern Passage (2021)
+  expect:
+    facts: { status: unknown }
+
+- name: the reading that fills the most fields is kept, so present optional text is read
+  operation: read_template
+  input:
+    template: "{title}[ ({year})][ {{tmdb-{tmdb}}}]"
+    name: "Arrival (2016) {tmdb-329865}"
+  expect:
+    facts: { status: resolved, value: { title: Arrival, year: "2016", tmdb: "329865" } }
+
+- name: a name that two readings with the same fields fit is ambiguous
+  operation: read_template
+  input:
+    template: "{series} - {episode_title}"
+    name: A - B - C
+  expect:
+    facts: { status: ambiguous, candidates: [{ series: A, episode_title: B - C }, { series: A - B, episode_title: C }] }
+
+- name: a template with two adjacent fields is invalid
+  operation: render_template
+  input:
+    template: "{title}{year}"
+    facts: { title: A }
+  expect:
+    error: { reason: adjacent_fields }
+
+- name: a template with an unclosed section is invalid
+  operation: render_template
+  input:
+    template: "{title}[ ({year})"
+    facts: { title: A }
+  expect:
+    error: { reason: unclosed_section }

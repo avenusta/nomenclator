@@ -1,0 +1,163 @@
+- name: an episode candidate at the facts' season and episode is selected
+  operation: rank_candidates
+  input:
+    facts: { kind: episode, season: 2, episodes: [5] }
+    candidates:
+      - { handle: s02e04, kind: episode, title: Low Tide, season: 2, episode: 4 }
+      - { handle: s02e05, kind: episode, title: High Water, season: 2, episode: 5 }
+      - { handle: s02e06, kind: episode, title: Landfall, season: 2, episode: 6 }
+  expect:
+    outcome: selected
+    selected: s02e05
+    reason: best_score
+    candidates:
+      - handle: s02e05
+        score: 60
+        components:
+          - { component: title, points: 0, reason: title_unknown }
+          - { component: year, points: 0, reason: year_unknown }
+          - { component: episode, points: 60, reason: same_episode }
+        contradictions: []
+      - handle: s02e04
+        score: 0
+        contradictions: [{ component: episode, reason: different_episode }]
+      - handle: s02e06
+        contradictions: [{ component: episode, reason: different_episode }]
+
+- name: an episode candidate in another season contradicts the facts even with the same episode number
+  operation: rank_candidates
+  input:
+    facts: { kind: episode, season: 3, episodes: [5] }
+    candidates:
+      - { handle: s02e05, kind: episode, title: High Water, season: 2, episode: 5 }
+  expect:
+    outcome: no_match
+    reason: all_contradicted
+    candidates:
+      - handle: s02e05
+        contradictions: [{ component: episode, reason: different_episode }]
+
+- name: an episode title adds to the score of matching coordinates
+  operation: rank_candidates
+  input:
+    facts: { kind: episode, title: High Water, season: 2, episodes: [5] }
+    candidates:
+      - { handle: s02e05, kind: episode, title: High Water, season: 2, episode: 5 }
+  expect:
+    outcome: selected
+    selected: s02e05
+    candidates:
+      - handle: s02e05
+        score: 120
+        components:
+          - { component: title, points: 60, reason: exact_title, matched_title: High Water }
+          - { component: year, points: 0, reason: year_unknown }
+          - { component: episode, points: 60, reason: same_episode }
+
+- name: an episode number alone with the season unknown is not enough evidence
+  operation: rank_candidates
+  input:
+    facts: { kind: episode, episodes: [5] }
+    candidates:
+      - { handle: s01e05, kind: episode, title: Low Tide, season: 1, episode: 5 }
+      - { handle: s02e05, kind: episode, title: High Water, season: 2, episode: 5 }
+  expect:
+    outcome: no_match
+    reason: insufficient_evidence
+    candidates:
+      - handle: s01e05
+        score: 30
+        components:
+          - { component: title, points: 0, reason: title_unknown }
+          - { component: year, points: 0, reason: year_unknown }
+          - { component: episode, points: 30, reason: same_episode_season_unknown }
+      - { handle: s02e05, score: 30 }
+
+- name: an episode number with a matching title is selected when the season is unknown
+  operation: rank_candidates
+  input:
+    facts: { kind: episode, title: High Water, episodes: [5] }
+    candidates:
+      - { handle: s01e05, kind: episode, title: Low Tide, season: 1, episode: 5 }
+      - { handle: s02e05, kind: episode, title: High Water, season: 2, episode: 5 }
+  expect:
+    outcome: selected
+    selected: s02e05
+    candidates:
+      - { handle: s02e05, score: 90 }
+      - { handle: s01e05, score: 30 }
+
+- name: a multi-episode file matches each of its episodes and returns a tie to resolve per episode
+  operation: rank_candidates
+  input:
+    facts: { kind: episode, season: 2, episodes: [5, 6] }
+    candidates:
+      - { handle: s02e05, kind: episode, title: High Water, season: 2, episode: 5 }
+      - { handle: s02e06, kind: episode, title: Landfall, season: 2, episode: 6 }
+      - { handle: s02e07, kind: episode, title: Ebb, season: 2, episode: 7 }
+  expect:
+    outcome: ambiguous
+    reason: tied_scores
+    tied: [s02e05, s02e06]
+
+- name: a dated episode is selected by its air date
+  operation: rank_candidates
+  input:
+    facts: { kind: episode, date: '2024-05-17' }
+    candidates:
+      - { handle: may-16, kind: episode, title: Evening Report, date: '2024-05-16' }
+      - { handle: may-17, kind: episode, title: Evening Report, date: '2024-05-17' }
+  expect:
+    outcome: selected
+    selected: may-17
+    candidates:
+      - handle: may-17
+        score: 80
+        components:
+          - { component: title, points: 0, reason: title_unknown }
+          - { component: year, points: 20, reason: same_year }
+          - { component: date, points: 60, reason: same_date }
+        contradictions: []
+      - handle: may-16
+        contradictions: [{ component: date, reason: different_date }]
+
+- name: an episode candidate without coordinates is scored on its other evidence
+  operation: rank_candidates
+  input:
+    facts: { kind: episode, title: High Water, season: 2, episodes: [5] }
+    candidates:
+      - { handle: a, kind: episode, title: High Water }
+  expect:
+    outcome: selected
+    selected: a
+    candidates:
+      - handle: a
+        score: 60
+        components:
+          - { component: title, points: 60, reason: exact_title, matched_title: High Water }
+          - { component: year, points: 0, reason: year_unknown }
+
+- name: a series candidate is never selected for episode facts
+  operation: rank_candidates
+  input:
+    facts: { kind: episode, title: High Water, season: 2, episodes: [5] }
+    candidates:
+      - { handle: show, kind: series, title: High Water }
+  expect:
+    outcome: no_match
+    reason: all_contradicted
+    candidates:
+      - handle: show
+        contradictions: [{ component: kind, reason: different_kind }]
+
+- name: a series is selected by its provider ID among same-titled series
+  operation: rank_candidates
+  input:
+    facts: { kind: series, title: Harbour Lights, provider_ids: { tvdb: '81189' } }
+    candidates:
+      - { handle: uk, kind: series, title: Harbour Lights, year: 1999, provider_ids: { tvdb: '70001' } }
+      - { handle: us, kind: series, title: Harbour Lights, year: 2008, provider_ids: { tvdb: '81189' } }
+  expect:
+    outcome: selected
+    selected: us
+    reason: provider_id

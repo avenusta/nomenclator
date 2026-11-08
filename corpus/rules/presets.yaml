@@ -1,0 +1,183 @@
+# Presets (decision X12): named values in an overlay's `presets` section,
+# each choosing between alternatives that the decision catalogue records as contested. The
+# defaults are the values the decisions set.
+
+- name: by default an all-numeric date with both parts at most 12 is ambiguous
+  operation: parse_episode_name
+  input: { path: Show/Show 05.06.2024.mkv }
+  expect:
+    date: { status: ambiguous }
+
+- name: the day-first preset reads such a date day first
+  overlays:
+    - "name: european-dates\npresets:\n  date_order: day_first\n"
+  operation: parse_episode_name
+  input: { path: Show/Show 05.06.2024.mkv }
+  expect:
+    date: 2024-06-05
+
+- name: the month-first preset reads such a date month first
+  overlays:
+    - "name: us-dates\npresets:\n  date_order: month_first\n"
+  operation: parse_episode_name
+  input: { path: Show/Show 05.06.2024.mkv }
+  expect:
+    date: 2024-05-06
+
+- name: a date preset does not override a part above 12
+  overlays:
+    - "name: european-dates\npresets:\n  date_order: day_first\n"
+  operation: parse_episode_name
+  input: { path: Show/Show 05.13.2024.mkv }
+  expect:
+    date: 2024-05-13
+
+- name: by default any year up to 2099 is a year
+  operation: parse_movie_name
+  input: { name: Northern Passage 2098.mkv, kind: file }
+  expect:
+    title: Northern Passage
+    year: 2098
+
+- name: with a latest plausible year, a later number is part of the title
+  overlays:
+    - "name: no-future\npresets:\n  latest_plausible_year: 2027\n"
+  operation: parse_movie_name
+  input: { name: Northern Passage 2098.mkv, kind: file }
+  expect:
+    title: Northern Passage 2098
+    year: null
+
+- name: with a latest plausible year, an earlier year is still a year
+  overlays:
+    - "name: no-future\npresets:\n  latest_plausible_year: 2027\n"
+  operation: parse_movie_name
+  input: { name: Northern Passage (2021).mkv, kind: file }
+  expect:
+    year: 2021
+
+- name: by default a bare episode number outside a season folder is read
+  operation: parse_episode_name
+  input: { path: Show/Show - 05.mkv }
+  expect:
+    episodes: [5]
+
+- name: the season-folders-only preset ignores bare numbers outside a season folder
+  overlays:
+    - "name: strict-numbers\npresets:\n  bare_numbers: season_folders_only\n"
+  operation: parse_episode_name
+  input: { path: Show/Show - 05.mkv }
+  expect:
+    episodes: null
+
+- name: the season-folders-only preset reads bare numbers inside a season folder
+  overlays:
+    - "name: strict-numbers\npresets:\n  bare_numbers: season_folders_only\n"
+  operation: parse_episode_name
+  input: { path: Show/Season 02/Show - 05.mkv }
+  expect:
+    season: 2
+    episodes: [5]
+
+- name: by default nested rule files stack, so a parent pattern applies
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003) - extras.mkv
+    kind: file
+    ignore_files:
+      - { path: .ignore, contents: '*.mkv' }
+      - { path: Oldboy (2003)/.ignore, contents: '*.nfo' }
+  expect:
+    excluded: true
+
+- name: the nearest-only preset makes a nested rule file replace the rule files of its parents
+  overlays:
+    - "name: nearest\npresets:\n  ignore_nesting: nearest\n"
+  operation: evaluate_ignore
+  input:
+    path: Oldboy (2003)/Oldboy (2003) - extras.mkv
+    kind: file
+    ignore_files:
+      - { path: .ignore, contents: '*.mkv' }
+      - { path: Oldboy (2003)/.ignore, contents: '*.nfo' }
+  expect:
+    excluded: false
+
+- name: by default a sample is an extra of its movie
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv, Arrival (2016)/Arrival (2016)-sample.mkv]
+  expect:
+    items: [{ kind: movie, extras: [{ extra: sample }] }]
+    excluded_entries: []
+
+- name: the excluded-samples preset excludes samples instead
+  overlays:
+    - "name: no-samples\npresets:\n  samples: excluded\n"
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv, Arrival (2016)/Arrival (2016)-sample.mkv]
+  expect:
+    items: [{ kind: movie, extras: [] }]
+    excluded_entries:
+      - { path: Arrival (2016)/Arrival (2016)-sample.mkv, reason: sample }
+
+- name: two overlays choosing different values for one preset conflict
+  operation: build_rules
+  input:
+    overlays:
+      - "name: european-dates\npresets:\n  date_order: day_first\n"
+      - "name: us-dates\npresets:\n  date_order: month_first\n"
+  expect:
+    identity: null
+    diagnostics:
+      - reason: conflicting_change
+        vocabulary: presets
+        entry: date_order
+        overlays: [european-dates, us-dates]
+
+- name: an unknown preset returns a diagnostic on its line
+  operation: build_rules
+  input:
+    overlays:
+      - "name: typo\npresets:\n  date_ordre: day_first\n"
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: unknown_preset, line: 3, entry: date_ordre }
+
+- name: a preset value outside its alternatives returns a diagnostic on its line
+  operation: build_rules
+  input:
+    overlays:
+      - "name: bad-value\npresets:\n  latest_plausible_year: 2200\n  date_order: year_first\n"
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: invalid_preset_value, line: 3, entry: latest_plausible_year }
+      - { reason: invalid_preset_value, line: 4, entry: date_order }
+
+- name: the number of a season folder is the season when the number is a plausible year
+  operation: parse_season_folder
+  input: { name: Staffel 2060, parent_name: Dark, parent_is_series_folder: true }
+  expect:
+    season: 2060
+
+- name: a season folder has no season when its year is after a lowered latest plausible year
+  overlays:
+    - "name: near-years\npresets:\n  latest_plausible_year: 2030\n"
+  operation: parse_season_folder
+  input: { name: Staffel 2060, parent_name: Dark, parent_is_series_folder: true }
+  expect:
+    season: null
+
+- name: an episode token whose season is after a lowered latest plausible year has no season or episode
+  overlays:
+    - "name: near-years\npresets:\n  latest_plausible_year: 2030\n"
+  operation: parse_episode_name
+  input: { path: Quiet Hours/Quiet Hours S2050E01.mkv }
+  expect:
+    season: null
+    episodes: null

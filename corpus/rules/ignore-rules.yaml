@@ -1,0 +1,160 @@
+# Built-in ignore groups (decision X13) and ignore dialects (decision X14).
+
+- name: a hidden file is excluded by default
+  operation: evaluate_ignore
+  input: { path: Movies/.hidden-cut.mkv, kind: file }
+  expect:
+    excluded: true
+    exclusion: { reason: hidden_entry }
+
+- name: an overlay that removes the hidden-entries group does not exclude hidden files
+  overlays:
+    - "name: keep-dotfiles\nbuilt_in_ignore_groups:\n  remove: [hidden_entries]\n"
+  operation: evaluate_ignore
+  input: { path: Movies/.hidden-cut.mkv, kind: file }
+  expect:
+    excluded: false
+
+- name: when a built-in group is disabled, only the rule files can exclude the entry
+  overlays:
+    - "name: keep-dotfiles\nbuilt_in_ignore_groups:\n  remove: [hidden_entries]\n"
+  operation: evaluate_ignore
+  input:
+    path: Movies/.hidden-cut.mkv
+    kind: file
+    ignore_files: [{ path: .ignore, contents: '.hidden-*' }]
+  expect:
+    excluded: true
+    exclusion: { reason: rule, rule_file: .ignore, line: 1 }
+
+- name: disabling one group leaves the other groups enabled
+  overlays:
+    - "name: keep-partials\nbuilt_in_ignore_groups:\n  remove: [partial_downloads]\n"
+  operation: evaluate_ignore
+  input: { path: Movies/@eaDir, kind: directory }
+  expect:
+    excluded: true
+    exclusion: { reason: system_junk }
+
+- name: disabling the partial-downloads group does not exclude unfinished downloads
+  overlays:
+    - "name: keep-partials\nbuilt_in_ignore_groups:\n  remove: [partial_downloads]\n"
+  operation: evaluate_ignore
+  input: { path: Movies/Movie (2001).mkv.part, kind: file }
+  expect:
+    excluded: false
+
+- name: disabling the generated-metadata group does not exclude a metadata folder
+  overlays:
+    - "name: keep-metadata\nbuilt_in_ignore_groups:\n  remove: [generated_metadata]\n"
+  operation: evaluate_ignore
+  input: { path: Movies/Movie (2001)/metadata, kind: directory }
+  expect:
+    excluded: false
+
+- name: disabling the system-junk group does not exclude NAS folders
+  overlays:
+    - "name: keep-junk\nbuilt_in_ignore_groups:\n  remove: [system_junk]\n"
+  operation: evaluate_ignore
+  input: { path: Movies/@eaDir, kind: directory }
+  expect:
+    excluded: false
+
+- name: an unknown built-in group returns a diagnostic on its line
+  operation: build_rules
+  input:
+    overlays:
+      - "name: typo\nbuilt_in_ignore_groups:\n  remove:\n    - hidden_files\n"
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: unknown_entry, line: 4, vocabulary: built_in_ignore_groups, entry: hidden_files }
+
+- name: a glob rule file matches a basename at any depth ignoring case
+  operation: evaluate_ignore
+  input:
+    path: Movies/Movie (2001)/Movie (2001)-SAMPLE.mkv
+    kind: file
+    ignore_files: [{ path: Movies/.ignore, contents: '*-sample.mkv', dialect: glob }]
+  expect:
+    excluded: true
+    exclusion: { reason: rule, rule_file: Movies/.ignore, line: 1 }
+
+- name: a glob pattern with a slash is relative to the rule file
+  operation: evaluate_ignore
+  input:
+    path: Movies/Old/Movie (2001).mkv
+    kind: file
+    ignore_files: [{ path: Movies/.ignore, contents: 'Old/*', dialect: glob }]
+  expect:
+    excluded: true
+
+- name: a glob pattern with a slash does not match deeper folders
+  operation: evaluate_ignore
+  input:
+    path: Movies/Archive/Old/Movie (2001).mkv
+    kind: file
+    ignore_files: [{ path: Movies/.ignore, contents: 'Old/*', dialect: glob }]
+  expect:
+    excluded: false
+
+- name: in a glob rule file a leading exclamation mark is part of the name
+  operation: evaluate_ignore
+  input:
+    path: Movies/!draft.mkv
+    kind: file
+    ignore_files: [{ path: Movies/.ignore, contents: '!draft.mkv', dialect: glob }]
+  expect:
+    excluded: true
+
+- name: in a gitignore rule file a leading exclamation mark negates the pattern
+  operation: evaluate_ignore
+  input:
+    path: Movies/!draft.mkv
+    kind: file
+    ignore_files: [{ path: Movies/.ignore, contents: '!draft.mkv' }]
+  expect:
+    excluded: false
+
+- name: a glob rule file skips comment lines
+  operation: evaluate_ignore
+  input:
+    path: Movies/Movie (2001).mkv
+    kind: file
+    ignore_files: [{ path: Movies/.ignore, contents: "# *.mkv\n*.nfo", dialect: glob }]
+  expect:
+    excluded: false
+
+- name: an overlay that adds a marker name excludes the folder that contains the marker
+  overlays:
+    - "name: skip-marker\nno_media_markers:\n  add: [.skip]\n"
+  operation: evaluate_ignore
+  input:
+    path: Movies/Drafts/Movie (2001).mkv
+    kind: file
+    ignore_files: [{ path: Movies/Drafts/.skip, contents: '' }]
+  expect:
+    excluded: true
+    exclusion: { path: Movies/Drafts, reason: no_media_marker, rule_file: Movies/Drafts/.skip }
+
+- name: an overlay that removes the default marker makes that file a rule file
+  overlays:
+    - "name: no-nomedia\nno_media_markers:\n  remove: [.nomedia]\n"
+  operation: evaluate_ignore
+  input:
+    path: Movies/Drafts/Movie (2001).mkv
+    kind: file
+    ignore_files: [{ path: Movies/Drafts/.nomedia, contents: '*.nfo' }]
+  expect:
+    excluded: false
+
+- name: interpretation applies the ignore settings of the overlays
+  overlays:
+    - "name: keep-dotfiles\nbuilt_in_ignore_groups:\n  remove: [hidden_entries]\n"
+  operation: interpret
+  input:
+    library: movies
+    paths: [.Arrival (2016)/Arrival (2016).mkv]
+  expect:
+    items: [{ kind: movie, title: Arrival, year: 2016 }]
+    excluded_entries: []

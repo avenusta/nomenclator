@@ -1,0 +1,12 @@
+# cargo-release configuration. `cargo release <level>` bumps every crate to one shared
+# version, dates the changelog, commits, and pushes the commit and a `v<version>` tag.
+# The release workflow publishes the crates from that tag, so cargo-release does not
+# publish them itself.
+shared-version = true
+consolidate-commits = true
+allow-branch = ["main"]
+tag-name = "v{{version}}"
+pre-release-commit-message = "Release {{version}}"
+tag-message = "Release {{version}}"
+publish = false
+push = true

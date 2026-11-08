@@ -1,0 +1,129 @@
+# Richer candidates (decision P8): original and localized titles, release
+# dates per country, and episode coordinates in several orders.
+
+- name: a localized title agrees and the component states its language
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Das Leben der Anderen, year: 2006 }
+    candidates:
+      - handle: lives
+        kind: movie
+        title: The Lives of Others
+        localized_titles: [{ title: Das Leben der Anderen, language: de }]
+        year: 2006
+  expect:
+    outcome: selected
+    selected: lives
+    candidates:
+      - handle: lives
+        components:
+          - { component: title, points: 60, reason: exact_title, matched_title: Das Leben der Anderen, matched_language: de }
+          - { component: year, points: 20, reason: same_year }
+
+- name: an original title agrees like an alternate title
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Zona, year: 1979 }
+    candidates:
+      - { handle: stalker, kind: movie, title: Stalker, original_title: Сталкер, alternate_titles: [Zona], year: 1979 }
+  expect:
+    selected: stalker
+    candidates:
+      - handle: stalker
+        components:
+          - { component: title, points: 60, matched_title: Zona }
+          - { component: year, points: 20 }
+
+- name: a release date in another country gives the same year and the component states the date and country
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, year: 2020 }
+    candidates:
+      - handle: passage
+        kind: movie
+        title: Northern Passage
+        year: 2021
+        release_dates: [{ date: 2020-09-12, country: CA }, { date: 2021-02-05, country: US }]
+  expect:
+    selected: passage
+    candidates:
+      - handle: passage
+        score: 80
+        components:
+          - { component: title, points: 60 }
+          - { component: year, points: 20, reason: same_year, matched_date: 2020-09-12, matched_country: CA }
+        contradictions: []
+
+- name: a year is beyond tolerance only if every year of the candidate is beyond it
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, year: 2018 }
+    candidates:
+      - { handle: passage, kind: movie, title: Northern Passage, year: 2021, release_dates: [{ date: 2019-09-12, country: CA }] }
+  expect:
+    candidates:
+      - handle: passage
+        components:
+          - { component: title, points: 60 }
+          - { component: year, points: 10, reason: year_within_tolerance, matched_date: 2019-09-12 }
+        contradictions: []
+
+- name: an episode in the DVD order is compared with the candidate's DVD coordinates
+  operation: rank_candidates
+  input:
+    facts: { kind: episode, season: 1, episodes: [3], order: dvd }
+    candidates:
+      - handle: pilot-part-two
+        kind: episode
+        title: Pilot Part Two
+        season: 1
+        episode: 2
+        coordinates: [{ order: dvd, season: 1, episode: 3 }]
+      - handle: aired-three
+        kind: episode
+        title: Third
+        season: 1
+        episode: 3
+        coordinates: [{ order: dvd, season: 1, episode: 4 }]
+  expect:
+    outcome: selected
+    selected: pilot-part-two
+    candidates:
+      - handle: pilot-part-two
+        components:
+          - { component: title, points: 0 }
+          - { component: year, points: 0 }
+          - { component: episode, points: 60, reason: same_episode, order: dvd }
+      - handle: aired-three
+        contradictions: [{ component: episode, reason: different_episode }]
+
+- name: a candidate without coordinates in the facts' order is not compared by coordinates
+  operation: rank_candidates
+  input:
+    facts: { kind: episode, season: 1, episodes: [3], order: dvd }
+    candidates:
+      - { handle: third, kind: episode, title: Third, season: 1, episode: 3 }
+  expect:
+    outcome: no_match
+    reason: insufficient_evidence
+    candidates:
+      - handle: third
+        components:
+          - { component: title, points: 0 }
+          - { component: year, points: 0 }
+        contradictions: []
+
+- name: absolute episode facts are compared with the candidate's absolute number
+  operation: rank_candidates
+  input:
+    facts: { kind: episode, episodes: [27], order: absolute }
+    candidates:
+      - { handle: s02e03, kind: episode, title: Landfall, season: 2, episode: 3, coordinates: [{ order: absolute, episode: 27 }] }
+  expect:
+    selected: s02e03
+    candidates:
+      - handle: s02e03
+        components:
+          - { component: title, points: 0 }
+          - { component: year, points: 0 }
+          - { component: episode, points: 60, reason: same_episode, order: absolute }

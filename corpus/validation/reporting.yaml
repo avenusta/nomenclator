@@ -1,0 +1,63 @@
+# Diagnostic reporting (decision R13): release junk as proposed removals,
+# suppressions, stable codes, messages and a summary.
+
+- name: release junk is a proposed removal and not a move
+  operation: plan_renames
+  input:
+    library: movies
+    paths: [Arrival 2016/Arrival.2016.1080p.mkv, Arrival 2016/RARBG.txt]
+  expect:
+    proposals:
+      - { from: Arrival 2016/Arrival.2016.1080p.mkv, to: Arrival (2016)/Arrival (2016).mkv }
+    removals: [{ path: Arrival 2016/RARBG.txt, reason: release_junk }]
+
+- name: every diagnostic carries a stable code and an English message
+  operation: validate
+  input:
+    library: movies
+    paths: ['Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.mkv', 'Arrival (2016) {tmdb-329865}/RARBG.txt']
+  expect:
+    diagnostics:
+      - rule: release_junk
+        code: N305
+        message: "`Arrival (2016) {tmdb-329865}/RARBG.txt` is release junk. The plan proposes its removal."
+
+- name: a message names the reason and the proposed path
+  operation: validate
+  input:
+    library: movies
+    paths: ['Arrival.2016.1080p.BluRay.x264-NPX {tmdb-329865}/Arrival.2016.1080p.BluRay.x264-NPX.mkv']
+  expect:
+    diagnostics:
+      - rule: profile_violation
+        code: N403
+        message: "`Arrival.2016.1080p.BluRay.x264-NPX {tmdb-329865}/Arrival.2016.1080p.BluRay.x264-NPX.mkv` does not follow the output profile. The profile name is `Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.mkv`."
+
+- name: a suppression by rule and glob removes matching diagnostics and counts them
+  operation: validate
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv, The Usual Suspects (1995)/The Usual Suspects (1995).mkv, The Usual Suspects (1995)/notes.txt]
+    profile:
+      suppressions:
+        - { rule: missing_provider_id, paths: ['Arrival*'] }
+        - { paths: ['*.txt'] }
+  expect:
+    diagnostics:
+      - { rule: missing_provider_id, paths: [The Usual Suspects (1995)/The Usual Suspects (1995).mkv] }
+    summary: { suppressed: 2 }
+
+- name: the summary counts diagnostics per rule and severity
+  operation: validate
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv, The Usual Suspects (1995)/The Usual Suspects (1995).mkv, The Usual Suspects (1995)/notes.txt]
+  expect:
+    summary:
+      errors: 0
+      warnings: 1
+      infos: 2
+      suppressed: 0
+      rules:
+        - { rule: unclaimed_file, code: N304, severity: warning, count: 1 }
+        - { rule: missing_provider_id, code: N503, severity: info, count: 2 }

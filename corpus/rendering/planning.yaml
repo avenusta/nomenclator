@@ -1,0 +1,570 @@
+- name: a loose release-named movie is proposed into its own folder with its profile name
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Northern.Passage.2021.1080p.BluRay.x264.mkv
+  expect:
+    proposals:
+    - from: Northern.Passage.2021.1080p.BluRay.x264.mkv
+      to: Northern Passage (2021)/Northern Passage (2021).mkv
+      case_only: false
+      requires_temporary_step: false
+      moves_with: null
+    blocked: []
+
+- name: sidecars, stem-named files and the other files of a single-movie folder move with its video
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Northern Passage 2021/Northern.Passage.2021.1080p.mkv
+    - Northern Passage 2021/Northern.Passage.2021.1080p.en.forced.srt
+    - Northern Passage 2021/Northern.Passage.2021.1080p.nfo
+    - Northern Passage 2021/poster.jpg
+    - Northern Passage 2021/notes.txt
+  expect:
+    proposals:
+    - from: Northern Passage 2021/Northern.Passage.2021.1080p.en.forced.srt
+      to: Northern Passage (2021)/Northern Passage (2021).en.forced.srt
+      moves_with: Northern Passage 2021/Northern.Passage.2021.1080p.mkv
+    - from: Northern Passage 2021/Northern.Passage.2021.1080p.mkv
+      to: Northern Passage (2021)/Northern Passage (2021).mkv
+      moves_with: null
+    - from: Northern Passage 2021/Northern.Passage.2021.1080p.nfo
+      to: Northern Passage (2021)/Northern Passage (2021).nfo
+      moves_with: Northern Passage 2021/Northern.Passage.2021.1080p.mkv
+    - from: Northern Passage 2021/notes.txt
+      to: Northern Passage (2021)/notes.txt
+      moves_with: Northern Passage 2021/Northern.Passage.2021.1080p.mkv
+    - from: Northern Passage 2021/poster.jpg
+      to: Northern Passage (2021)/poster.jpg
+      moves_with: Northern Passage 2021/Northern.Passage.2021.1080p.mkv
+    blocked: []
+
+- name: a movie already named by the profile gets no proposals
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Northern Passage (2021) {tmdb-550}/Northern Passage (2021) {tmdb-550}.mkv
+    - Northern Passage (2021) {tmdb-550}/Northern Passage (2021) {tmdb-550}.en.srt
+    - Northern Passage (2021) {tmdb-550}/Trailers/Theatrical Trailer.mkv
+    - Northern Passage (2021) {tmdb-550}/poster.jpg
+  expect:
+    proposals: []
+    blocked: []
+
+- name: versions with an edition tag and labels already named by the profile get no proposals
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Northern Passage (2021) {tmdb-550}/Northern Passage (2021) {tmdb-550} {edition-Director's Cut} - 2160p.mkv
+    - Northern Passage (2021) {tmdb-550}/Northern Passage (2021) {tmdb-550} - 1080p.mkv
+  expect:
+    proposals: []
+    blocked: []
+
+- name: a version adding provider and edition tags moves into the tagged folder with its tags written once
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - "Northern Passage (2021)/Northern Passage (2021) {tmdb-550} {edition-Director's Cut} - 2160p.mkv"
+    - Northern Passage (2021)/Northern Passage (2021) - 1080p.mkv
+  expect:
+    proposals:
+    - from: Northern Passage (2021)/Northern Passage (2021) - 1080p.mkv
+      to: Northern Passage (2021) {tmdb-550}/Northern Passage (2021) {tmdb-550} - 1080p.mkv
+    - from: "Northern Passage (2021)/Northern Passage (2021) {tmdb-550} {edition-Director's Cut} - 2160p.mkv"
+      to: "Northern Passage (2021) {tmdb-550}/Northern Passage (2021) {tmdb-550} {edition-Director's Cut} - 2160p.mkv"
+    blocked: []
+
+- name: the NFO of a stack is renamed to the stack's new name without a part marker
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Quiet Harbor (2020)/Quiet.Harbor.2020.cd1.mkv
+    - Quiet Harbor (2020)/Quiet.Harbor.2020.cd2.mkv
+    - Quiet Harbor (2020)/Quiet.Harbor.2020.nfo
+    - Quiet Harbor (2020)/movie.nfo
+  expect:
+    proposals:
+    - from: Quiet Harbor (2020)/Quiet.Harbor.2020.cd1.mkv
+      to: Quiet Harbor (2020)/Quiet Harbor (2020) - part1.mkv
+    - from: Quiet Harbor (2020)/Quiet.Harbor.2020.cd2.mkv
+      to: Quiet Harbor (2020)/Quiet Harbor (2020) - part2.mkv
+    - from: Quiet Harbor (2020)/Quiet.Harbor.2020.nfo
+      to: Quiet Harbor (2020)/Quiet Harbor (2020).nfo
+      moves_with: Quiet Harbor (2020)/Quiet.Harbor.2020.cd1.mkv
+    blocked: []
+
+- name: the NFO of each version is renamed with that version's video
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Quiet Harbor (2020)/Quiet.Harbor.2020.1080p.mkv
+    - Quiet Harbor (2020)/Quiet.Harbor.2020.1080p.nfo
+    - Quiet Harbor (2020)/Quiet.Harbor.2020.2160p.mkv
+    - Quiet Harbor (2020)/Quiet.Harbor.2020.2160p.nfo
+  expect:
+    proposals:
+    - from: Quiet Harbor (2020)/Quiet.Harbor.2020.1080p.mkv
+      to: Quiet Harbor (2020)/Quiet Harbor (2020) - 1080p.mkv
+      moves_with: Quiet Harbor (2020)/Quiet.Harbor.2020.2160p.mkv
+    - from: Quiet Harbor (2020)/Quiet.Harbor.2020.1080p.nfo
+      to: Quiet Harbor (2020)/Quiet Harbor (2020) - 1080p.nfo
+      moves_with: Quiet Harbor (2020)/Quiet.Harbor.2020.1080p.mkv
+    - from: Quiet Harbor (2020)/Quiet.Harbor.2020.2160p.mkv
+      to: Quiet Harbor (2020)/Quiet Harbor (2020) - 2160p.mkv
+      moves_with: null
+    - from: Quiet Harbor (2020)/Quiet.Harbor.2020.2160p.nfo
+      to: Quiet Harbor (2020)/Quiet Harbor (2020) - 2160p.nfo
+      moves_with: Quiet Harbor (2020)/Quiet.Harbor.2020.2160p.mkv
+    blocked: []
+
+- name: stacked parts are renamed to part markers and move with the first part
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Quiet Harbor (2020)/Quiet Harbor (2020) - cd1.mkv
+    - Quiet Harbor (2020)/Quiet Harbor (2020) - cd2.mkv
+  expect:
+    proposals:
+    - from: Quiet Harbor (2020)/Quiet Harbor (2020) - cd1.mkv
+      to: Quiet Harbor (2020)/Quiet Harbor (2020) - part1.mkv
+      moves_with: null
+    - from: Quiet Harbor (2020)/Quiet Harbor (2020) - cd2.mkv
+      to: Quiet Harbor (2020)/Quiet Harbor (2020) - part2.mkv
+      moves_with: Quiet Harbor (2020)/Quiet Harbor (2020) - cd1.mkv
+    blocked: []
+
+- name: parts with a gap are blocked and not renumbered
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Quiet Harbor (2020)/Quiet Harbor (2020) - cd1.mkv
+    - Quiet Harbor (2020)/Quiet Harbor (2020) - cd3.mkv
+  expect:
+    proposals: []
+    blocked:
+    - from: Quiet Harbor (2020)/Quiet Harbor (2020) - cd1.mkv
+      reasons: [ambiguous_parts]
+      to: null
+    - from: Quiet Harbor (2020)/Quiet Harbor (2020) - cd3.mkv
+      reasons: [ambiguous_parts]
+      to: null
+
+- name: conflicting provider IDs block the rename
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Quiet Harbor (2020) {tmdb-1}/Quiet Harbor (2020) {tmdb-2}.mkv
+  expect:
+    proposals: []
+    blocked:
+    - from: Quiet Harbor (2020) {tmdb-1}/Quiet Harbor (2020) {tmdb-2}.mkv
+      reasons: [ambiguous_provider_id]
+
+- name: a video that contradicts its folder is blocked
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Quiet Harbor (2020)/Loud Harbor (1999).mkv
+  expect:
+    proposals: []
+    blocked:
+    - from: Quiet Harbor (2020)/Loud Harbor (1999).mkv
+      reasons: [ambiguous_identity]
+
+- name: series content in a movie library is blocked
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Some Show/Season 01/Some Show S01E01.mkv
+  expect:
+    proposals: []
+    blocked:
+    - from: Some Show/Season 01/Some Show S01E01.mkv
+      reasons: [misplaced_series]
+
+- name: a video without a title is blocked
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - title00.mkv
+  expect:
+    proposals: []
+    blocked:
+    - from: title00.mkv
+      reasons: [missing_title]
+      to: null
+
+- name: an extra no item owns is blocked
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Movie One (2001)/Movie One (2001).mkv
+    - trailer.mkv
+  expect:
+    proposals: []
+    blocked:
+    - from: trailer.mkv
+      reasons: [no_owner]
+
+- name: a version whose label clashes with a version already at that name is blocked
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Quiet Harbor (2020)/Quiet Harbor (2020) [1080p].mkv
+    - Quiet Harbor (2020)/Quiet Harbor (2020) - 1080p.mkv
+  expect:
+    proposals: []
+    blocked:
+    - from: Quiet Harbor (2020)/Quiet Harbor (2020) [1080p].mkv
+      reasons: [destination_exists]
+      to: Quiet Harbor (2020)/Quiet Harbor (2020) - 1080p.mkv
+      conflicting_paths: [Quiet Harbor (2020)/Quiet Harbor (2020) - 1080p.mkv]
+
+- name: two works that render to one destination are both blocked, with their sidecars
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Movie 2020/Movie.2020.mkv
+    - Movie 2020/Movie.2020.en.srt
+    - Movie.2020/Movie.2020.mkv
+  expect:
+    proposals: []
+    blocked:
+    - from: Movie 2020/Movie.2020.en.srt
+      reasons: [moves_with_blocked_file]
+      to: Movie (2020)/Movie (2020).en.srt
+    - from: Movie 2020/Movie.2020.mkv
+      reasons: [destination_collision]
+      to: Movie (2020)/Movie (2020).mkv
+      conflicting_paths: [Movie.2020/Movie.2020.mkv]
+    - from: Movie.2020/Movie.2020.mkv
+      reasons: [destination_collision]
+      to: Movie (2020)/Movie (2020).mkv
+      conflicting_paths: [Movie 2020/Movie.2020.mkv]
+
+- name: a destination folder that differs only in case from a folder that is not moved is blocked
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Northern Passage (2021).mkv
+    - northern passage (2021)/readme.txt
+  expect:
+    proposals: []
+    blocked:
+    - from: Northern Passage (2021).mkv
+      reasons: [destination_differs_only_in_case_or_normalization]
+      to: Northern Passage (2021)/Northern Passage (2021).mkv
+      conflicting_paths: [northern passage (2021)]
+
+- name: a destination folder that differs only in Unicode normalization from a folder that is not moved is blocked
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - "Amélie.2001.mkv"
+    - "Amélie (2001)/notes.txt"
+  expect:
+    proposals: []
+    blocked:
+    - from: "Amélie.2001.mkv"
+      reasons: [destination_differs_only_in_case_or_normalization]
+      to: "Amélie (2001)/Amélie (2001).mkv"
+      conflicting_paths: ["Amélie (2001)"]
+
+- name: a rename that changes only letter case is marked case-only
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - northern passage (2021)/Northern Passage (2021).mkv
+  expect:
+    proposals:
+    - from: northern passage (2021)/Northern Passage (2021).mkv
+      to: northern passage (2021)/northern passage (2021).mkv
+      case_only: true
+      requires_temporary_step: false
+    blocked: []
+
+- name: a reserved name blocks the rename of the video and its subtitle
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Con.mkv
+    - Con.en.srt
+  expect:
+    proposals: []
+    blocked:
+    - from: Con.en.srt
+      reasons: [reserved_name]
+    - from: Con.mkv
+      reasons: [reserved_name]
+
+- name: the posix target allows a reserved name
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Con.mkv
+    profile: { target_filesystem: posix }
+  expect:
+    proposals:
+    - from: Con.mkv
+      to: Con/Con.mkv
+    blocked: []
+
+- name: an episode and its subtitle are renamed into a two-digit season folder
+  operation: plan_renames
+  input:
+    library: tv
+    paths:
+    - Harbor Lights/Season 1/Harbor.Lights.S01E01.Pilot.1080p.mkv
+    - Harbor Lights/Season 1/Harbor.Lights.S01E01.Pilot.1080p.en.srt
+  expect:
+    proposals:
+    - from: Harbor Lights/Season 1/Harbor.Lights.S01E01.Pilot.1080p.en.srt
+      to: Harbor Lights/Season 01/Harbor Lights - S01E01 - Pilot.en.srt
+      moves_with: Harbor Lights/Season 1/Harbor.Lights.S01E01.Pilot.1080p.mkv
+    - from: Harbor Lights/Season 1/Harbor.Lights.S01E01.Pilot.1080p.mkv
+      to: Harbor Lights/Season 01/Harbor Lights - S01E01 - Pilot.mkv
+      moves_with: null
+    blocked: []
+
+- name: episode versions are renamed with their labels after the episode title
+  operation: plan_renames
+  input:
+    library: tv
+    paths:
+    - Coastline (2010)/Season 01/Coastline - S01E01 - Pilot - 1080p.mkv
+    - Coastline (2010)/Season 01/Coastline - S01E01 - Pilot - 720p.mkv
+  expect:
+    proposals:
+    - from: Coastline (2010)/Season 01/Coastline - S01E01 - Pilot - 1080p.mkv
+      to: Coastline (2010)/Season 01/Coastline (2010) - S01E01 - Pilot - 1080p.mkv
+    - from: Coastline (2010)/Season 01/Coastline - S01E01 - Pilot - 720p.mkv
+      to: Coastline (2010)/Season 01/Coastline (2010) - S01E01 - Pilot - 720p.mkv
+    blocked: []
+
+- name: an episode extra is renamed with the title after its episode code when its season folder is renamed
+  operation: plan_renames
+  input:
+    library: tv
+    paths:
+    - Harbor Lights (2019)/Season 1/Harbor Lights - S01E01 - Low Tide.mkv
+    - Harbor Lights (2019)/Season 1/Deleted Scenes/S01E01 - Cut.mkv
+  expect:
+    proposals:
+    - from: Harbor Lights (2019)/Season 1/Deleted Scenes/S01E01 - Cut.mkv
+      to: Harbor Lights (2019)/Season 01/Deleted Scenes/S01E01 - Cut.mkv
+      moves_with: Harbor Lights (2019)/Season 1/Harbor Lights - S01E01 - Low Tide.mkv
+    - from: Harbor Lights (2019)/Season 1/Harbor Lights - S01E01 - Low Tide.mkv
+      to: Harbor Lights (2019)/Season 01/Harbor Lights (2019) - S01E01 - Low Tide.mkv
+    blocked: []
+
+- name: series and season NFOs are not renamed inside the renamed folders and an episode NFO is renamed with its video
+  operation: plan_renames
+  input:
+    library: tv
+    paths:
+    - Harbor Lights/tvshow.nfo
+    - Harbor Lights/Season 1/season.nfo
+    - Harbor Lights/Season 1/Harbor.Lights.S01E01.Pilot.mkv
+    - Harbor Lights/Season 1/Harbor.Lights.S01E01.Pilot.nfo
+  expect:
+    proposals:
+    - from: Harbor Lights/Season 1/Harbor.Lights.S01E01.Pilot.mkv
+      to: Harbor Lights/Season 01/Harbor Lights - S01E01 - Pilot.mkv
+      moves_with: null
+    - from: Harbor Lights/Season 1/Harbor.Lights.S01E01.Pilot.nfo
+      to: Harbor Lights/Season 01/Harbor Lights - S01E01 - Pilot.nfo
+      moves_with: Harbor Lights/Season 1/Harbor.Lights.S01E01.Pilot.mkv
+    - from: Harbor Lights/Season 1/season.nfo
+      to: Harbor Lights/Season 01/season.nfo
+      moves_with: null
+    blocked: []
+
+- name: a series with a blocked episode is not moved and its other files are renamed inside its folders
+  operation: plan_renames
+  input:
+    library: tv
+    paths:
+    - Harbor Lights [2019]/Season 1/Harbor.Lights.S01E01.Pilot.mkv
+    - Harbor Lights [2019]/Season 1/Harbor.Lights.S01E01.Pilot.en.srt
+    - Harbor Lights [2019]/Season 1/Harbor.Lights.S01E02 {tvdb-1}.mkv
+    - Harbor Lights [2019]/Season 1/Harbor.Lights.S01E02 {tvdb-2} 720p.mkv
+    - Harbor Lights [2019]/Season 2/Harbor.Lights.S02E01.mkv
+  expect:
+    proposals:
+    - from: Harbor Lights [2019]/Season 1/Harbor.Lights.S01E01.Pilot.en.srt
+      to: Harbor Lights [2019]/Season 1/Harbor Lights (2019) - S01E01 - Pilot.en.srt
+      moves_with: Harbor Lights [2019]/Season 1/Harbor.Lights.S01E01.Pilot.mkv
+    - from: Harbor Lights [2019]/Season 1/Harbor.Lights.S01E01.Pilot.mkv
+      to: Harbor Lights [2019]/Season 1/Harbor Lights (2019) - S01E01 - Pilot.mkv
+      moves_with: null
+    - from: Harbor Lights [2019]/Season 2/Harbor.Lights.S02E01.mkv
+      to: Harbor Lights [2019]/Season 2/Harbor Lights (2019) - S02E01.mkv
+      moves_with: null
+    blocked:
+    - from: Harbor Lights [2019]/Season 1/Harbor.Lights.S01E02 {tvdb-1}.mkv
+      reasons: [ambiguous_provider_id]
+    - from: Harbor Lights [2019]/Season 1/Harbor.Lights.S01E02 {tvdb-2} 720p.mkv
+      reasons: [ambiguous_provider_id]
+
+- name: a blocked episode of one series does not block the move of another series' folder
+  operation: plan_renames
+  input:
+    library: tv
+    paths:
+    - Harbor Lights [2019]/Season 1/Harbor.Lights.S01E02 {tvdb-1}.mkv
+    - Harbor Lights [2019]/Season 1/Harbor.Lights.S01E02 {tvdb-2} 720p.mkv
+    - Coastline [2010]/Season 1/Coastline.S01E01.mkv
+  expect:
+    proposals:
+    - from: Coastline [2010]/Season 1/Coastline.S01E01.mkv
+      to: Coastline (2010)/Season 01/Coastline (2010) - S01E01.mkv
+
+- name: an episode is renamed with the episode title that the interpreter resolved, also when the file has the title before the episode code
+  operation: plan_renames
+  input:
+    library: tv
+    paths:
+    - Harbor Lights/Low Tide - S01E01.mkv
+  expect:
+    proposals:
+    - from: Harbor Lights/Low Tide - S01E01.mkv
+      to: Harbor Lights/Season 01/Harbor Lights - S01E01 - Low Tide.mkv
+    blocked: []
+
+- name: a series already named by the profile gets no proposals
+  operation: plan_renames
+  input:
+    library: tv
+    paths:
+    - Harbor Lights (2019) {tvdb-81189}/Season 01/Harbor Lights (2019) - S01E05 - Low Tide.mkv
+    - Harbor Lights (2019) {tvdb-81189}/Season 01/Harbor Lights (2019) - S01E06-E07 - The Storm.mkv
+    - Harbor Lights (2019) {tvdb-81189}/Season 01/Deleted Scenes/S01E05 - Alternate Ending.mkv
+    - Harbor Lights (2019) {tvdb-81189}/Season 01/Featurettes/Making Of.mkv
+    - Harbor Lights (2019) {tvdb-81189}/Featurettes/Cast Interviews.mkv
+    - Harbor Lights (2019) {tvdb-81189}/Season 00/Harbor Lights (2019) - S00E01 - Christmas Special.mkv
+  expect:
+    proposals: []
+    blocked: []
+
+- name: an episode without a season is blocked
+  operation: plan_renames
+  input:
+    library: tv
+    paths:
+    - Third Watch/Third Watch E05.mkv
+  expect:
+    proposals: []
+    blocked:
+    - from: Third Watch/Third Watch E05.mkv
+      reasons: [missing_season]
+
+- name: files that no item claims move with their folder and are marked unclaimed
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Northern.Passage.2021.1080p-GRP/Northern.Passage.2021.1080p-GRP.mkv
+    - Northern.Passage.2021.1080p-GRP/source.txt
+  expect:
+    proposals:
+    - from: Northern.Passage.2021.1080p-GRP/Northern.Passage.2021.1080p-GRP.mkv
+      to: Northern Passage (2021)/Northern Passage (2021).mkv
+      moves_with: null
+      unclaimed: false
+    - from: Northern.Passage.2021.1080p-GRP/source.txt
+      to: Northern Passage (2021)/source.txt
+      moves_with: Northern.Passage.2021.1080p-GRP/Northern.Passage.2021.1080p-GRP.mkv
+      unclaimed: true
+    blocked: []
+
+- name: extras in a group subfolder of an extras folder are planned inside that group subfolder
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Gravity 2013 1080p/Gravity 2013 1080p.mkv
+    - Gravity 2013 1080p/Featurettes/Mission Control/Space tech.mkv
+    - Gravity 2013 1080p/Featurettes/Shot Breakdowns/Space tech.mkv
+    - Gravity 2013 1080p/Featurettes/Collision Point.mkv
+  expect:
+    proposals:
+    - from: Gravity 2013 1080p/Featurettes/Collision Point.mkv
+      to: Gravity (2013)/Featurettes/Collision Point.mkv
+    - from: Gravity 2013 1080p/Featurettes/Mission Control/Space tech.mkv
+      to: Gravity (2013)/Featurettes/Mission Control/Space tech.mkv
+    - from: Gravity 2013 1080p/Featurettes/Shot Breakdowns/Space tech.mkv
+      to: Gravity (2013)/Featurettes/Shot Breakdowns/Space tech.mkv
+    - from: Gravity 2013 1080p/Gravity 2013 1080p.mkv
+      to: Gravity (2013)/Gravity (2013).mkv
+    blocked: []
+
+- name: extras in a vocabulary folder inside an extras folder are planned under that folder's kind
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Gravity (2013)/Gravity (2013).mkv
+    - Gravity (2013)/Featurettes/Deleted Scenes/Splashdown.mkv
+  expect:
+    proposals:
+    - from: Gravity (2013)/Featurettes/Deleted Scenes/Splashdown.mkv
+      to: Gravity (2013)/Deleted Scenes/Splashdown.mkv
+    blocked: []
+
+- name: extras in one folder all keep their underscores when any of them has spaces
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Gravity (2013)/Gravity (2013).mkv
+    - Gravity (2013)/Featurettes/Behind the visor_new.mkv
+    - Gravity (2013)/Featurettes/Splashdown_new.mkv
+  expect:
+    proposals: []
+    blocked: []
+
+- name: extras in a folder where no name has spaces have their underscores read as spaces
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+    - Gravity (2013)/Gravity (2013).mkv
+    - Gravity (2013)/Featurettes/Making_Of.mkv
+  expect:
+    proposals:
+    - from: Gravity (2013)/Featurettes/Making_Of.mkv
+      to: Gravity (2013)/Featurettes/Making Of.mkv
+    blocked: []
+
+- name: folder artwork of a movie in a category folder keeps the category folder
+  operation: plan_renames
+  input:
+    library: movies
+    paths: [Sci-Fi/Arrival 2016/Arrival.2016.mkv, Sci-Fi/Arrival 2016/poster.jpg]
+  expect:
+    proposals:
+      - { from: Sci-Fi/Arrival 2016/Arrival.2016.mkv, to: Sci-Fi/Arrival (2016)/Arrival (2016).mkv }
+      - { from: Sci-Fi/Arrival 2016/poster.jpg, to: Sci-Fi/Arrival (2016)/poster.jpg }

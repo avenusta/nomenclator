@@ -1,0 +1,85 @@
+- name: a poster.jpg file is poster artwork
+  operation: classify_artwork
+  input:
+    name: poster.jpg
+  expect:
+    role: poster
+
+- name: a backdrop.jpg file is backdrop artwork
+  operation: classify_artwork
+  input:
+    name: backdrop.jpg
+  expect:
+    role: backdrop
+
+- name: a fanart.jpg file is backdrop artwork
+  operation: classify_artwork
+  input:
+    name: fanart.jpg
+  expect:
+    role: backdrop
+
+- name: a banner.jpg file is banner artwork
+  operation: classify_artwork
+  input:
+    name: banner.jpg
+  expect:
+    role: banner
+
+- name: a logo.jpg file is logo artwork
+  operation: classify_artwork
+  input:
+    name: logo.jpg
+  expect:
+    role: logo
+
+- name: a clearlogo.jpg file is logo artwork
+  operation: classify_artwork
+  input:
+    name: clearlogo.jpg
+  expect:
+    role: logo
+
+- name: a thumb.jpg file is thumb artwork
+  operation: classify_artwork
+  input:
+    name: thumb.jpg
+  expect:
+    role: thumb
+
+- name: a landscape.jpg file is thumb artwork
+  operation: classify_artwork
+  input:
+    name: landscape.jpg
+  expect:
+    role: thumb
+
+- name: an image without an artwork keyword is artwork of role other
+  operation: classify_artwork
+  input:
+    name: screen1.png
+  expect:
+    role: other
+
+- name: a file with an artwork word in its name and no image extension is not artwork
+  operation: classify_artwork
+  input:
+    name: poster.nfo
+  expect:
+    role: null
+
+- name: a -THUMB image next to an episode video, with the video's name before the suffix, is the still of that episode
+  operation: classify_artwork
+  input:
+    path: Mad Men/Season 2/Mad Men.S02E11-THUMB.jpg
+    video_path: Mad Men/Season 2/Mad Men.S02E11.mkv
+  expect:
+    role: episode_still
+
+- name: a -thumb image outside the folder of its episode video is not a still of that episode
+  operation: classify_artwork
+  input:
+    path: Mad Men/Mad Men.S02E11-thumb.jpg
+    video_path: Mad Men/Season 2/Mad Men.S02E11.mkv
+  expect:
+    is_episode_still: false

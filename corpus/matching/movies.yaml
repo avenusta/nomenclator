@@ -1,0 +1,546 @@
+- name: a candidate with the facts' provider ID is selected over a candidate with a better title match
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, year: 2021, provider_ids: { tmdb: '550' } }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage, year: 2021, provider_ids: { tmdb: '9001' } }
+      - { handle: b, kind: movie, title: Southern Crossing, year: 2021, provider_ids: { tmdb: '550' } }
+  expect:
+    outcome: selected
+    selected: b
+    reason: provider_id
+    candidates:
+      - handle: b
+        score: 120
+        components:
+          - { component: provider_id, points: 100, reason: same_id, provider: tmdb }
+          - { component: title, points: 0, reason: dissimilar_title }
+          - { component: year, points: 20, reason: same_year }
+        contradictions: []
+      - handle: a
+        score: 80
+        contradictions: [{ component: provider_id, reason: different_id, provider: tmdb }]
+
+- name: an exact title match does not outscore a conflicting provider ID of the same namespace
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, year: 2021, provider_ids: { tmdb: '550' } }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage, year: 2021, provider_ids: { tmdb: '9001' } }
+  expect:
+    outcome: no_match
+    selected: null
+    reason: all_contradicted
+
+- name: a provider ID of another namespace neither matches nor contradicts
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, year: 2021, provider_ids: { tmdb: '550' } }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage, year: 2021, provider_ids: { imdb: tt0000550 } }
+  expect:
+    outcome: selected
+    selected: a
+    reason: best_score
+    candidates:
+      - handle: a
+        score: 80
+        components:
+          - { component: title, points: 60, reason: exact_title, matched_title: Northern Passage }
+          - { component: year, points: 20, reason: same_year }
+        contradictions: []
+
+- name: a candidate with one matching ID and one conflicting ID is a contradiction
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, provider_ids: { tmdb: '550', imdb: tt0000550 } }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage, provider_ids: { tmdb: '550', imdb: tt0000999 } }
+  expect:
+    outcome: no_match
+    reason: provider_id_match_contradicted
+    candidates:
+      - handle: a
+        contradictions: [{ component: provider_id, reason: different_id, provider: imdb }]
+
+- name: when the matching ID candidate is contradicted, no other candidate is selected by title
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, year: 2021, provider_ids: { tmdb: '550' } }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage, year: 1987, provider_ids: { tmdb: '550' } }
+      - { handle: b, kind: movie, title: Northern Passage, year: 2021 }
+  expect:
+    outcome: no_match
+    selected: null
+    reason: provider_id_match_contradicted
+
+- name: two uncontradicted candidates with the facts' ID are ambiguous
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, provider_ids: { tmdb: '550' } }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage, provider_ids: { tmdb: '550' } }
+      - { handle: b, kind: movie, title: Northern Passage (Extended), provider_ids: { tmdb: '550' } }
+  expect:
+    outcome: ambiguous
+    selected: null
+    reason: several_provider_id_matches
+    tied: [a, b]
+
+- name: a series candidate is never selected for movie facts, even with a matching title
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, year: 2021 }
+    candidates:
+      - { handle: series, kind: series, title: Northern Passage, year: 2021 }
+      - { handle: movie, kind: movie, title: Northern Passage, year: 2021 }
+  expect:
+    outcome: selected
+    selected: movie
+    candidates:
+      - { handle: movie, score: 80, contradictions: [] }
+      - { handle: series, score: 80, contradictions: [{ component: kind, reason: different_kind }] }
+
+- name: a kind mismatch alone returns no match
+  operation: rank_candidates
+  input:
+    facts: { kind: series, title: Northern Passage, year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage, year: 2021 }
+  expect:
+    outcome: no_match
+    reason: all_contradicted
+
+- name: facts without a kind accept a candidate of any kind
+  operation: rank_candidates
+  input:
+    facts: { title: Northern Passage, year: 2021 }
+    candidates:
+      - { handle: a, kind: series, title: Northern Passage, year: 2021 }
+  expect:
+    outcome: selected
+    selected: a
+
+- name: a year one off is within tolerance and scores less than the same year
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage, year: 2022 }
+  expect:
+    outcome: selected
+    selected: a
+    candidates:
+      - handle: a
+        score: 70
+        components:
+          - { component: title, points: 60, reason: exact_title, matched_title: Northern Passage }
+          - { component: year, points: 10, reason: year_within_tolerance }
+        contradictions: []
+
+- name: a year two off contradicts
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage, year: 2019 }
+  expect:
+    outcome: no_match
+    reason: all_contradicted
+    candidates:
+      - handle: a
+        score: 60
+        components:
+          - { component: title, points: 60, reason: exact_title, matched_title: Northern Passage }
+          - { component: year, points: 0, reason: year_beyond_tolerance }
+        contradictions: [{ component: year, reason: year_beyond_tolerance }]
+
+- name: two candidates one year off the facts in each direction are a tie
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, year: 2021 }
+    candidates:
+      - { handle: earlier, kind: movie, title: Northern Passage, year: 2020 }
+      - { handle: later, kind: movie, title: Northern Passage, year: 2022 }
+  expect:
+    outcome: ambiguous
+    reason: tied_scores
+    tied: [earlier, later]
+
+- name: a year missing on either side is neither evidence nor contradiction
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage, year: 2021 }
+  expect:
+    outcome: selected
+    selected: a
+    candidates:
+      - handle: a
+        score: 60
+        components:
+          - { component: title, points: 60, reason: exact_title, matched_title: Northern Passage }
+          - { component: year, points: 0, reason: year_unknown }
+
+- name: the year of a release date is compared with the facts' year
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage, date: '2021-09-14' }
+  expect:
+    outcome: selected
+    selected: a
+    candidates: [{ handle: a, score: 80 }]
+
+- name: two remakes with the same title are distinguished by year
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, year: 2021 }
+    candidates:
+      - { handle: original, kind: movie, title: Northern Passage, year: 1987 }
+      - { handle: remake, kind: movie, title: Northern Passage, year: 2021 }
+  expect:
+    outcome: selected
+    selected: remake
+    reason: best_score
+
+- name: remakes with the same title are ambiguous when the facts have no year
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage }
+    candidates:
+      - { handle: original, kind: movie, title: Northern Passage, year: 1987 }
+      - { handle: remake, kind: movie, title: Northern Passage, year: 2021 }
+  expect:
+    outcome: ambiguous
+    selected: null
+    reason: tied_scores
+    tied: [original, remake]
+
+- name: an alternate title of the candidate matches exactly
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Le Passage du Nord, year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage, alternate_titles: [Le Passage du Nord, Nordpassage], year: 2021 }
+  expect:
+    outcome: selected
+    selected: a
+    candidates:
+      - handle: a
+        components:
+          - { component: title, points: 60, reason: exact_title, matched_title: Le Passage du Nord }
+          - { component: year, points: 20, reason: same_year }
+
+- name: an alternate title of the facts matches the candidate's primary title
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Nordpassage, alternate_titles: [Northern Passage], year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage, year: 2021 }
+  expect:
+    outcome: selected
+    selected: a
+    candidates:
+      - handle: a
+        components:
+          - { component: title, points: 60, reason: exact_title, matched_title: Northern Passage }
+          - { component: year, points: 20, reason: same_year }
+
+- name: titles are compared ignoring case, punctuation, separators and Unicode normalization
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: "café.society: the.return", year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: "Café Society – The Return", year: 2021 }
+  expect:
+    outcome: selected
+    selected: a
+    candidates:
+      - handle: a
+        components:
+          - { component: title, points: 60, reason: exact_title, matched_title: "Café Society – The Return" }
+          - { component: year, points: 20, reason: same_year }
+
+- name: ligatures are compared as their spelled-out letters
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Aeon Voyage, year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: Æon Voyage, year: 2021 }
+  expect:
+    outcome: selected
+    selected: a
+    candidates: [{ handle: a, score: 80 }]
+
+- name: Greek titles are compared with locale-independent case folding and accents stripped
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: ΒΟΡΕΙΟ ΠΕΡΑΣΜΑ, year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: Βόρειο Πέρασμα, year: 2021 }
+  expect:
+    outcome: selected
+    selected: a
+    candidates:
+      - handle: a
+        score: 80
+        components:
+          - { component: title, points: 60, reason: exact_title, matched_title: Βόρειο Πέρασμα }
+          - { component: year, points: 20, reason: same_year }
+
+- name: titles that differ only in accents are equal
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Cafe Lumiere Nocturne, year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: Café Lumière Nocturne, year: 2021 }
+      - { handle: b, kind: movie, title: Café Lumière, year: 2021 }
+  expect:
+    outcome: selected
+    selected: a
+    candidates:
+      - { handle: a, score: 80, components: [{ component: title, points: 60, reason: exact_title, matched_title: Café Lumière Nocturne }, { component: year, points: 20, reason: same_year }] }
+      - { handle: b, score: 60, components: [{ component: title, points: 40, reason: similar_title, matched_title: Café Lumière }, { component: year, points: 20, reason: same_year }] }
+
+- name: a sequel number distinguishes the sequel from the first film
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage 2, year: 2024 }
+    candidates:
+      - { handle: first, kind: movie, title: Northern Passage, year: 2021 }
+      - { handle: second, kind: movie, title: Northern Passage 2, year: 2024 }
+      - { handle: third, kind: movie, title: Northern Passage 3, year: 2025 }
+  expect:
+    outcome: selected
+    selected: second
+    candidates:
+      - { handle: second, score: 80 }
+      - handle: third
+        score: 43
+        components:
+          - { component: title, points: 33, reason: similar_title, matched_title: Northern Passage 3 }
+          - { component: year, points: 10, reason: year_within_tolerance }
+      - { handle: first, score: 40, contradictions: [{ component: year, reason: year_beyond_tolerance }] }
+
+- name: a sequel title without a year ranks the numbered candidate first
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage 2 }
+    candidates:
+      - { handle: first, kind: movie, title: Northern Passage }
+      - { handle: second, kind: movie, title: Northern Passage 2 }
+  expect:
+    outcome: selected
+    selected: second
+    candidates:
+      - { handle: second, score: 60 }
+      - { handle: first, score: 40, components: [{ component: title, points: 40, reason: similar_title, matched_title: Northern Passage }, { component: year, points: 0, reason: year_unknown }] }
+
+- name: candidates within the tie window are ambiguous
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage, year: 2021 }
+      - { handle: b, kind: movie, title: Northern Passage, year: 2022 }
+  expect:
+    outcome: ambiguous
+    reason: tied_scores
+    tied: [a, b]
+
+- name: a candidate more than the tie window ahead is selected
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage, year: 2021 }
+      - { handle: b, kind: movie, title: Northern Passage Returns, year: 2021 }
+  expect:
+    outcome: selected
+    selected: a
+    candidates:
+      - { handle: a, score: 80 }
+      - { handle: b, score: 60, components: [{ component: title, points: 40, reason: similar_title, matched_title: Northern Passage Returns }, { component: year, points: 20, reason: same_year }] }
+
+- name: the order in which candidates are supplied does not break a tie
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage }
+    candidates:
+      - { handle: z, kind: movie, title: Northern Passage, year: 2021 }
+      - { handle: a, kind: movie, title: Northern Passage, year: 1987 }
+  expect:
+    outcome: ambiguous
+    tied: [a, z]
+
+- name: no candidates returns no match
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, year: 2021 }
+    candidates: []
+  expect:
+    outcome: no_match
+    selected: null
+    reason: no_candidates
+    tied: []
+    candidates: []
+
+- name: a single candidate with only a similar title is not enough evidence
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage Returns, year: 2021 }
+  expect:
+    outcome: no_match
+    selected: null
+    reason: insufficient_evidence
+    candidates: [{ handle: a, score: 40, contradictions: [] }]
+
+- name: a single candidate with a dissimilar title and the same year is not enough evidence
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: Southern Crossing, year: 2021 }
+  expect:
+    outcome: no_match
+    reason: insufficient_evidence
+    candidates:
+      - handle: a
+        score: 20
+        components:
+          - { component: title, points: 0, reason: dissimilar_title }
+          - { component: year, points: 20, reason: same_year }
+
+- name: a similar title with the same year meets the minimum evidence
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage Returns, year: 2021 }
+  expect:
+    outcome: selected
+    selected: a
+    candidates: [{ handle: a, score: 60 }]
+
+- name: a leading article is dropped from the comparison key
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage, year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: The Northern Passage, year: 2021 }
+  expect:
+    outcome: selected
+    selected: a
+    candidates:
+      - handle: a
+        score: 80
+        components:
+          - { component: title, points: 60, reason: exact_title, matched_title: The Northern Passage }
+          - { component: year, points: 20, reason: same_year }
+
+- name: a leading article of another language is dropped from the comparison key
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Les Passagers du Nord, year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: Passagers du Nord, year: 2021 }
+  expect:
+    outcome: selected
+    selected: a
+    candidates: [{ handle: a, score: 80, components: [{ component: title, points: 60, reason: exact_title, matched_title: Passagers du Nord }, { component: year, points: 20, reason: same_year }] }]
+
+- name: an article inside a title is kept
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Passage of the North, year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: Passage of North, year: 2021 }
+  expect:
+    outcome: selected
+    selected: a
+    candidates: [{ handle: a, score: 63, components: [{ component: title, points: 43, reason: similar_title, matched_title: Passage of North }, { component: year, points: 20, reason: same_year }] }]
+
+- name: a title that is only an article is kept whole
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: The, year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: The, year: 2021 }
+  expect:
+    outcome: selected
+    selected: a
+    candidates: [{ handle: a, score: 80 }]
+
+- name: facts without a title are matched on other evidence
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, year: 2021 }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage, year: 2021 }
+  expect:
+    outcome: no_match
+    reason: insufficient_evidence
+    candidates:
+      - handle: a
+        components:
+          - { component: title, points: 0, reason: title_unknown }
+          - { component: year, points: 20, reason: same_year }
+
+- name: candidates with the same handle are invalid input
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage, year: 2021 }
+      - { handle: a, kind: movie, title: Northern Passage, year: 1987 }
+  expect:
+    outcome: invalid_input
+    selected: null
+    reason: duplicate_handle
+
+- name: a roman sequel numeral equals its digits
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage II, year: 2024 }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage 2, year: 2024 }
+  expect:
+    outcome: selected
+    selected: a
+    candidates:
+      - handle: a
+        score: 80
+        components:
+          - { component: title, points: 60, reason: exact_title, matched_title: Northern Passage 2 }
+          - { component: year, points: 20, reason: same_year }
+
+- name: a spelled-out sequel number equals its digits and its roman numeral
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Northern Passage Two, year: 2024 }
+    candidates:
+      - { handle: a, kind: movie, title: Northern Passage XII, year: 2024 }
+      - { handle: b, kind: movie, title: Northern Passage II, year: 2024 }
+  expect:
+    outcome: selected
+    selected: b
+    candidates:
+      - { handle: b, score: 80 }
+      - { handle: a, score: 53, components: [{ component: title, points: 33, reason: similar_title, matched_title: Northern Passage XII }, { component: year, points: 20, reason: same_year }] }
+
+- name: a roman numeral inside a word is not a number
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Vivid Passage, year: 2024 }
+    candidates:
+      - { handle: a, kind: movie, title: 6 Passage, year: 2024 }
+  expect:
+    outcome: no_match
+    reason: insufficient_evidence
+    candidates: [{ handle: a, score: 45, components: [{ component: title, points: 25, reason: similar_title, matched_title: 6 Passage }, { component: year, points: 20, reason: same_year }] }]

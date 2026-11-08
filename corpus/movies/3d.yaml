@@ -1,0 +1,314 @@
+- name: a bare 3d token in a dotted file name resolves to an unspecified 3D format (Gravity.3d.mp4)
+  operation: parse_movie_name
+  input:
+    name: Gravity.3d.mp4
+    kind: file
+  expect:
+    title: Gravity
+    format_3d: unspecified
+
+- name: a bare 3d token at the end of a folder title resolves to an unspecified 3D format (Gravity (2013) 3d)
+  operation: parse_movie_name
+  input:
+    name: Gravity (2013) 3d
+    kind: directory
+  expect:
+    format_3d: unspecified
+
+- name: a bare bracketed 3d token resolves to an unspecified 3D format (Gravity [3d].mp4)
+  operation: parse_movie_name
+  input:
+    name: Gravity [3d].mp4
+    kind: file
+  expect:
+    title: Gravity
+    format_3d: unspecified
+
+- name: a 3d token and a half side-by-side layout in a dotted file name resolve to hsbs (Cloud.Atlas.3d.hsbs.mkv)
+  operation: parse_movie_name
+  input:
+    name: Cloud.Atlas.3d.hsbs.mkv
+    kind: file
+  expect:
+    title: Cloud Atlas
+    format_3d: half_side_by_side
+
+- name: a 3d token and an sbs layout resolve to side-by-side (The.Lion.King.3d.sbs.mp4)
+  operation: parse_movie_name
+  input:
+    name: The.Lion.King.3d.sbs.mp4
+    kind: file
+  expect:
+    title: The Lion King
+    format_3d: side_by_side
+
+- name: a 3d token and an htab layout resolve to half top-and-bottom (Hugo.3d.htab.mp4)
+  operation: parse_movie_name
+  input:
+    name: Hugo.3d.htab.mp4
+    kind: file
+  expect:
+    title: Hugo
+    format_3d: half_top_and_bottom
+
+- name: a 3d token and a tab layout resolve to top-and-bottom (Coraline.3d.tab.mp4)
+  operation: parse_movie_name
+  input:
+    name: Coraline.3d.tab.mp4
+    kind: file
+  expect:
+    title: Coraline
+    format_3d: top_and_bottom
+
+- name: a 3d token and an mvc layout resolve to multiview (Tron.Legacy.3d.mvc.mp4)
+  operation: parse_movie_name
+  input:
+    name: Tron.Legacy.3d.mvc.mp4
+    kind: file
+  expect:
+    title: Tron Legacy
+    format_3d: mvc
+
+- name: a 3d token and a layout separated by spaces resolve to that layout (Tron Legacy 3d hsbs.mp4)
+  operation: parse_movie_name
+  input:
+    name: Tron Legacy 3d hsbs.mp4
+    kind: file
+  expect:
+    title: Tron Legacy
+    format_3d: half_side_by_side
+
+- name: a 3d token and a layout at the end of a folder title resolve to that layout (Coraline (2009) 3d hsbs)
+  operation: parse_movie_name
+  input:
+    name: Coraline (2009) 3d hsbs
+    kind: directory
+  expect:
+    format_3d: half_side_by_side
+
+- name: a 3d token and an htab layout at the end of a folder title resolve to half top-and-bottom (Up (2009) 3d htab)
+  operation: parse_movie_name
+  input:
+    name: Up (2009) 3d htab
+    kind: directory
+  expect:
+    format_3d: half_top_and_bottom
+
+- name: a layout word alone resolves to its layout (Up.sbs.mp4)
+  operation: parse_movie_name
+  input:
+    name: Up.sbs.mp4
+    kind: file
+  expect:
+    title: Up
+    format_3d: side_by_side
+
+- name: a tab layout word alone resolves to top-and-bottom (Coraline.tab.mp4)
+  operation: parse_movie_name
+  input:
+    name: Coraline.tab.mp4
+    kind: file
+  expect:
+    title: Coraline
+    format_3d: top_and_bottom
+
+- name: a glued sbs3d token resolves to side-by-side (Gravity.sbs3d.mp4)
+  operation: parse_movie_name
+  input:
+    name: Gravity.sbs3d.mp4
+    kind: file
+  expect:
+    title: Gravity
+    format_3d: side_by_side
+
+- name: a bracketed hsbs layout resolves to half side-by-side (Oblivion [hsbs].mp4)
+  operation: parse_movie_name
+  input:
+    name: Oblivion [hsbs].mp4
+    kind: file
+  expect:
+    title: Oblivion
+    format_3d: half_side_by_side
+
+- name: a bracketed ftab layout resolves to full top-and-bottom (Gravity [ftab].mp4)
+  operation: parse_movie_name
+  input:
+    name: Gravity [ftab].mp4
+    kind: file
+  expect:
+    title: Gravity
+    format_3d: full_top_and_bottom
+
+- name: a 3d token and hsbs in an underscore version label resolve to hsbs (Thor_3d-hsbs.mkv)
+  operation: parse_movie_name
+  input:
+    name: Thor_3d-hsbs.mkv
+    kind: file
+  expect:
+    title: Thor
+    format_3d: half_side_by_side
+
+- name: HSBS in a release name is half side-by-side (Coraline.2009.HSBS.mkv)
+  operation: parse_movie_name
+  input:
+    name: Coraline.2009.HSBS.mkv
+    kind: file
+  expect:
+    title: Coraline
+    format_3d: half_side_by_side
+
+- name: 3D SBS in a release name is side-by-side, its width unstated (Hugo.2011.3D.SBS.mkv)
+  operation: parse_movie_name
+  input:
+    name: Hugo.2011.3D.SBS.mkv
+    kind: file
+  expect:
+    title: Hugo
+    format_3d: side_by_side
+
+- name: FSBS in a release name is full side-by-side (Gravity.2013.FSBS.mkv)
+  operation: parse_movie_name
+  input:
+    name: Gravity.2013.FSBS.mkv
+    kind: file
+  expect:
+    title: Gravity
+    format_3d: full_side_by_side
+
+- name: HTAB in a release name is half top-and-bottom (Gravity.2012.HTAB.mkv)
+  operation: parse_movie_name
+  input:
+    name: Gravity.2012.HTAB.mkv
+    kind: file
+  expect:
+    title: Gravity
+    format_3d: half_top_and_bottom
+
+- name: 3D TAB in a release name is top-and-bottom, its height unstated (Coraline.2009.3D.TAB.mkv)
+  operation: parse_movie_name
+  input:
+    name: Coraline.2009.3D.TAB.mkv
+    kind: file
+  expect:
+    title: Coraline
+    format_3d: top_and_bottom
+
+- name: FTAB in a release name is full top-and-bottom (Tron.Legacy.2010.FTAB.mkv)
+  operation: parse_movie_name
+  input:
+    name: Tron.Legacy.2010.FTAB.mkv
+    kind: file
+  expect:
+    title: Tron Legacy
+    format_3d: full_top_and_bottom
+
+- name: MVC in a release name is multiview (The.Lion.King.2013.MVC.mkv)
+  operation: parse_movie_name
+  input:
+    name: The.Lion.King.2013.MVC.mkv
+    kind: file
+  expect:
+    title: The Lion King
+    format_3d: mvc
+
+- name: 3D alone in a release name is 3D of unknown layout (Up.2009.3D.mkv)
+  operation: parse_movie_name
+  input:
+    name: Up.2009.3D.mkv
+    kind: file
+  expect:
+    title: Up
+    format_3d: unspecified
+
+- name: a name without 3D tokens has no 3D format (Up.2009.1080p.mkv)
+  operation: parse_movie_name
+  input:
+    name: Up.2009.1080p.mkv
+    kind: file
+  expect:
+    title: Up
+    format_3d: null
+
+- name: two different 3D layouts are ambiguous (Oblivion.2013.SBS.HTAB.mkv)
+  operation: parse_movie_name
+  input:
+    name: Oblivion.2013.SBS.HTAB.mkv
+    kind: file
+  expect:
+    title: Oblivion
+    format_3d: { status: ambiguous, candidates: [side_by_side, half_top_and_bottom], reason: conflicting_3d_layouts }
+
+- name: a 3D word inside the title is not a 3D format (Tab Hunter Confidential (2015).mkv)
+  operation: parse_movie_name
+  input:
+    name: Tab Hunter Confidential (2015).mkv
+    kind: file
+  expect:
+    title: Tab Hunter Confidential
+    format_3d: null
+
+- name: a file's own year and 3D layout are read from the file name (Brave (2012).3d.sbs.mkv)
+  operation: parse_movie_name
+  input:
+    name: Brave (2012).3d.sbs.mkv
+    kind: file
+  expect:
+    title: Brave
+    year: 2012
+    container: mkv
+    format_3d: side_by_side
+
+- name: malformed 3D tokens are not a 3D format (21 (2008).3d1.sbas.mkv)
+  operation: parse_movie_name
+  input:
+    name: 21 (2008).3d1.sbas.mkv
+    kind: file
+  expect:
+    title: '21'
+    year: 2008
+    container: mkv
+    format_3d: null
+
+- name: a number title with a 3D layout resolves to its number as the title and its year (1917 (2019).3d.sbs.mkv)
+  operation: parse_movie_name
+  input:
+    name: 1917 (2019).3d.sbs.mkv
+    kind: file
+  expect:
+    title: '1917'
+    year: 2019
+    container: mkv
+    format_3d: side_by_side
+
+- name: a number title with a trailer suffix resolves to its title and year, and classify_extra returns the extra role (21 (2008)-trailer.mkv)
+  operation: parse_movie_name
+  input:
+    name: 21 (2008)-trailer.mkv
+    kind: file
+  expect:
+    title: '21'
+    year: 2008
+    container: mkv
+    format_3d: null
+
+- name: a file with no year resolves to its name as the title and no year (9 Lives.mkv)
+  operation: parse_movie_name
+  input:
+    name: 9 Lives.mkv
+    kind: file
+  expect:
+    title: 9 Lives
+    year: null
+    container: mkv
+    format_3d: null
+
+- name: a bluray disc name resolves to its title and year, with container disc (Up (2009).bluray.disc)
+  operation: parse_movie_name
+  input:
+    name: Up (2009).bluray.disc
+    kind: file
+  expect:
+    title: Up
+    year: 2009
+    container: disc
+    format_3d: null

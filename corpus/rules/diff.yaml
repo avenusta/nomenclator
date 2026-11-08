@@ -1,0 +1,88 @@
+# Rules diff (decision X15): one library interpreted under two rule sets,
+# `a` and `b` (each `{ overlays, languages }`, empty for the built-in rules); only the
+# facts that differ are listed, per path.
+
+- name: two equal rule sets have no differences
+  operation: diff_rules
+  input:
+    library: movies
+    paths: [The End 2160p.mkv]
+    a: {}
+    b: {}
+  expect:
+    paths: []
+
+- name: an overlay that removes a title-like release word changes the title that contains it
+  operation: diff_rules
+  input:
+    library: movies
+    paths: [The End 2160p.mkv, Northern Passage (2021).mkv]
+    a: {}
+    b:
+      overlays: ["name: keeps-end\ntitle_like_release_words:\n  remove: [end]\n"]
+  expect:
+    paths:
+      - path: The End 2160p.mkv
+        facts: [{ fact: title, a: The, b: The End }]
+
+- name: the excluded-samples preset changes an extra into an excluded entry
+  operation: diff_rules
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv, Arrival (2016)/Arrival (2016)-sample.mkv]
+    a: {}
+    b:
+      overlays: ["name: no-samples\npresets:\n  samples: excluded\n"]
+  expect:
+    paths:
+      - path: Arrival (2016)/Arrival (2016)-sample.mkv
+        facts:
+          - { fact: extra, a: sample, b: null }
+          - { fact: outcome, a: item, b: excluded }
+          - { fact: owner, a: Arrival, b: null }
+          - { fact: reason, a: null, b: sample }
+          - { fact: role, a: extra, b: null }
+          - { fact: title, a: Arrival, b: null }
+          - { fact: year, a: "2016", b: null }
+
+- name: in an English-only library a German season folder is read as the series folder
+  operation: diff_rules
+  input:
+    library: tv
+    paths: [Show/Staffel 2/Show S02E05.mkv, Show/Season 1/Show S01E01.mkv]
+    a: {}
+    b: { languages: [en] }
+  expect:
+    paths:
+      - path: Show/Staffel 2/Show S02E05.mkv
+        facts:
+          - { fact: episode_title, a: null, b: Show }
+          - { fact: series, a: Show, b: Staffel 2 }
+
+- name: in an English-only library an episode numbered only by its German season folder has no season
+  operation: diff_rules
+  input:
+    library: tv
+    paths: [Show/Staffel 2/Show - 05.mkv]
+    a: {}
+    b: { languages: [en] }
+  expect:
+    paths:
+      - path: Show/Staffel 2/Show - 05.mkv
+        facts:
+          - { fact: episode_title, a: null, b: Show }
+          - { fact: season, a: "2", b: null }
+          - { fact: series, a: Show, b: Staffel 2 }
+
+- name: caller inputs apply under both rule sets, so an authoritative title hint leaves no title difference
+  operation: diff_rules
+  input:
+    library: movies
+    paths: [The End 2160p.mkv]
+    inputs:
+      hints: [{ path: The End 2160p.mkv, title: The End, authoritative: true }]
+    a: {}
+    b:
+      overlays: ["name: keeps-end\ntitle_like_release_words:\n  remove: [end]\n"]
+  expect:
+    paths: []

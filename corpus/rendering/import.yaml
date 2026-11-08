@@ -1,0 +1,124 @@
+# Import mode (decision R17): destinations in a library for the files of a
+# download folder.
+
+- name: a season pack is split into the episodes of a new series
+  operation: plan_import
+  input:
+    library: tv
+    paths:
+      - Quiet.Hours.S01.1080p.WEB-DL-GRP/Quiet.Hours.S01E01.1080p.WEB-DL-GRP.mkv
+      - Quiet.Hours.S01.1080p.WEB-DL-GRP/Quiet.Hours.S01E02.1080p.WEB-DL-GRP.mkv
+    library_paths: []
+  expect:
+    proposals:
+      - { from: Quiet.Hours.S01.1080p.WEB-DL-GRP/Quiet.Hours.S01E01.1080p.WEB-DL-GRP.mkv, to: Quiet Hours/Season 01/Quiet Hours - S01E01.mkv }
+      - { from: Quiet.Hours.S01.1080p.WEB-DL-GRP/Quiet.Hours.S01E02.1080p.WEB-DL-GRP.mkv, to: Quiet Hours/Season 01/Quiet Hours - S01E02.mkv }
+    blocked: []
+
+- name: an episode of a series in the library goes into the library's series folder with its year and provider ID
+  operation: plan_import
+  input:
+    library: tv
+    paths: [Quiet.Hours.S02E05.720p.HDTV.mkv]
+    library_paths:
+      - "Drama/Quiet Hours (2019) {tvdb-81189}/Season 01/Quiet Hours (2019) - S01E01.mkv"
+  expect:
+    proposals:
+      - { from: Quiet.Hours.S02E05.720p.HDTV.mkv, to: "Drama/Quiet Hours (2019) {tvdb-81189}/Season 02/Quiet Hours (2019) - S02E05.mkv" }
+
+- name: a movie whose file is already in the library is blocked as an existing destination
+  operation: plan_import
+  input:
+    library: movies
+    paths: [Arrival.2016.1080p.BluRay.x264-GRP/Arrival.2016.1080p.BluRay.x264-GRP.mkv]
+    library_paths: [Arrival (2016)/Arrival (2016).mkv]
+  expect:
+    proposals: []
+    blocked:
+      - from: Arrival.2016.1080p.BluRay.x264-GRP/Arrival.2016.1080p.BluRay.x264-GRP.mkv
+        to: Arrival (2016)/Arrival (2016).mkv
+        reasons: [destination_exists]
+        conflicting_paths: [Arrival (2016)/Arrival (2016).mkv]
+
+- name: samples and release junk of a download are left in place
+  operation: plan_import
+  input:
+    library: movies
+    paths:
+      - Arrival.2016.1080p.BluRay.x264-GRP/Arrival.2016.1080p.BluRay.x264-GRP.mkv
+      - Arrival.2016.1080p.BluRay.x264-GRP/Sample/arrival.sample.mkv
+      - Arrival.2016.1080p.BluRay.x264-GRP/RARBG.txt
+    library_paths: []
+  expect:
+    proposals:
+      - { from: Arrival.2016.1080p.BluRay.x264-GRP/Arrival.2016.1080p.BluRay.x264-GRP.mkv, to: Arrival (2016)/Arrival (2016).mkv }
+    left_in_place:
+      - { path: Arrival.2016.1080p.BluRay.x264-GRP/RARBG.txt, reason: release_junk }
+      - { path: Arrival.2016.1080p.BluRay.x264-GRP/Sample/arrival.sample.mkv, reason: sample }
+
+- name: an extra of a download is placed with its owner
+  operation: plan_import
+  input:
+    library: movies
+    paths:
+      - Arrival (2016)/Arrival.2016.mkv
+      - Arrival (2016)/Featurettes/Making Of.mkv
+    library_paths: []
+  expect:
+    proposals:
+      - { from: Arrival (2016)/Arrival.2016.mkv, to: Arrival (2016)/Arrival (2016).mkv }
+      - { from: Arrival (2016)/Featurettes/Making Of.mkv, to: Arrival (2016)/Featurettes/Making Of.mkv }
+
+- name: a download's category folders are not kept
+  operation: plan_import
+  input:
+    library: movies
+    paths: [complete/movies/Arrival.2016.1080p.mkv]
+    library_paths: []
+  expect:
+    proposals:
+      - { from: complete/movies/Arrival.2016.1080p.mkv, to: Arrival (2016)/Arrival (2016).mkv }
+
+- name: a work that matches several library works by title is blocked
+  operation: plan_import
+  input:
+    library: movies
+    paths: [Dune.1080p.mkv]
+    library_paths: [Dune (1984)/Dune (1984).mkv, Dune (2021)/Dune (2021).mkv]
+  expect:
+    proposals: []
+    blocked:
+      - { from: Dune.1080p.mkv, reasons: [ambiguous_library_work] }
+
+- name: a download path that equals a library path is still checked against the library
+  operation: plan_import
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv]
+    library_paths: [Arrival (2016)/Arrival (2016).mkv]
+  expect:
+    proposals: []
+    blocked:
+      - { from: Arrival (2016)/Arrival (2016).mkv, reasons: [destination_exists] }
+
+- name: two download files with one destination are both blocked
+  operation: plan_import
+  input:
+    library: movies
+    paths: [a/Arrival.2016.mkv, b/Arrival.2016.mkv]
+    library_paths: []
+  expect:
+    proposals: []
+    blocked:
+      - { from: a/Arrival.2016.mkv, reasons: [destination_collision] }
+      - { from: b/Arrival.2016.mkv, reasons: [destination_collision] }
+
+- name: a download work matches a library work by the title comparison key, so a leading article does not matter
+  operation: plan_import
+  input:
+    library: movies
+    paths: [The.Matrix.1999.1080p.mkv]
+    library_paths: ["Matrix (1999) {tmdb-603}/Matrix (1999) {tmdb-603}.mkv"]
+  expect:
+    proposals:
+      - { from: The.Matrix.1999.1080p.mkv, to: "Matrix (1999) {tmdb-603}/The Matrix (1999) {tmdb-603}.mkv" }

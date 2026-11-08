@@ -1,0 +1,219 @@
+- name: a dotted series folder that ends in a season token resolves to a spaced title, with dots read as spaces (M6)
+  operation: parse_series_name
+  input:
+    name: Arrested.Development.S03
+  expect:
+    title: Arrested Development
+
+- name: the series title of a name followed by the words Season 10 ends before the season words
+  operation: parse_series_name
+  input:
+    name: Cheers Season 10
+  expect:
+    title: Cheers
+
+- name: the title of a name followed by an episode token and release words ends before the token
+  operation: parse_series_name
+  input:
+    name: Narcos s02e10 720p hdtv
+  expect:
+    title: Narcos
+
+- name: words after an episode token are episode title text, not part of the series title
+  operation: parse_series_name
+  input:
+    name: House of Cards s02e10 Smoke 720p hdtv
+  expect:
+    title: House of Cards
+
+- name: a season tag followed by a release word such as COMPLETE does not change the series title
+  operation: parse_series_name
+  input:
+    name: Mad.Men.S07.COMPLETE
+  expect:
+    title: Mad Men
+
+- name: a dotted acronym made of single letters keeps its dots, so M.A.S.H.S01 resolves to M.A.S.H.
+  operation: parse_series_name
+  input:
+    name: M.A.S.H.S01
+  expect:
+    title: M.A.S.H.
+
+- name: a dotted abbreviation inside a title keeps its dots, so Chicago.P.D.S09 resolves to Chicago P.D.
+  operation: parse_series_name
+  input:
+    name: Chicago.P.D.S09
+  expect:
+    title: Chicago P.D.
+
+- name: underscores between title words and a season word are read as spaces
+  operation: parse_series_name
+  input:
+    name: Ray_Donovan_Season_1
+  expect:
+    title: Ray Donovan
+
+- name: the series title of a season folder under a series folder is the title of the folder above it
+  operation: parse_series_name
+  input:
+    path: Friends/Season 1
+  expect:
+    title: Friends
+
+- name: the series title of a season folder under an underscore-named series folder is that title with its underscores read as spaces
+  operation: parse_series_name
+  input:
+    path: The_Twilight_Zone/Season 10
+  expect:
+    title: The Twilight Zone
+
+- name: a year-like title is part of the title, so 1883 (2021) resolves to title 1883
+  operation: parse_series_name
+  input:
+    name: 1883 (2021)
+  expect:
+    title: '1883'
+
+- name: a series folder tag is read as the series' tvdb id - Brooklyn Nine-Nine [tvdbid=12345]
+  operation: parse_series_name
+  input:
+    name: Brooklyn Nine-Nine [tvdbid=12345]
+  expect:
+    provider_ids:
+      tvdb: '12345'
+
+- name: a parenthesised series folder tag with a dash is read as the series' tvdb id - Ted Lasso (tvdbid-81189)
+  operation: parse_series_name
+  input:
+    name: Ted Lasso (tvdbid-81189)
+  expect:
+    provider_ids:
+      tvdb: '81189'
+
+- name: a series folder tag is read as the series' tvmaze id - Mythbusters [tvmazeid-67890]
+  operation: parse_series_name
+  input:
+    name: Mythbusters [tvmazeid-67890]
+  expect:
+    provider_ids:
+      tvmaze: '67890'
+
+- name: a series folder tag is read as the series' tmdb id - Arrested Development [tmdbid=99999]
+  operation: parse_series_name
+  input:
+    name: Arrested Development [tmdbid=99999]
+  expect:
+    provider_ids:
+      tmdb: '99999'
+
+- name: a series folder tag is read as the series' imdb id - Arcane [imdbid-tt1234567]
+  operation: parse_series_name
+  input:
+    name: Arcane [imdbid-tt1234567]
+  expect:
+    provider_ids:
+      imdb: tt1234567
+
+- name: a series folder tag is read as the series' anidb id - Fullmetal Alchemist [anidbid=11111]
+  operation: parse_series_name
+  input:
+    name: Fullmetal Alchemist [anidbid=11111]
+  expect:
+    provider_ids:
+      anidb: '11111'
+
+- name: a series folder tag is read as the series' anilist id - Fullmetal Alchemist [anilistid=22222]
+  operation: parse_series_name
+  input:
+    name: Fullmetal Alchemist [anilistid=22222]
+  expect:
+    provider_ids:
+      anilist: '22222'
+
+- name: a series folder tag is read as the series' anisearch id - Fullmetal Alchemist [anisearchid=33333]
+  operation: parse_series_name
+  input:
+    name: Fullmetal Alchemist [anisearchid=33333]
+  expect:
+    provider_ids:
+      anisearch: '33333'
+
+- name: every provider tag in a series folder name is read
+  operation: parse_series_name
+  input:
+    name: Stargate SG-1 [tvdbid=12345][tmdbid=99999]
+  expect:
+    provider_ids:
+      tvdb: '12345'
+      tmdb: '99999'
+
+- name: a series folder name with no tag gives no provider IDs
+  operation: parse_series_name
+  input:
+    name: The Twilight Zone
+  expect:
+    provider_ids:
+      tvdb: null
+      tmdb: null
+      imdb: null
+
+- name: a tvdb tag that is an unfilled template is removed from a show title
+  operation: parse_series_name
+  input:
+    name: Tokyo Ghoul [tvdb-{TvdbId}]
+  expect:
+    title: Tokyo Ghoul
+
+- name: an imdb tag with no value is removed from a show title
+  operation: parse_series_name
+  input:
+    name: Emmerdale {imdb-}
+  expect:
+    title: Emmerdale
+
+- name: a well-formed tvdb tag in square brackets is stripped from a show title
+  operation: parse_series_name
+  input:
+    name: Black Mirror [tvdb-252]
+  expect:
+    title: Black Mirror
+
+- name: a well-formed tmdb tag in curly braces is stripped from a show title
+  operation: parse_series_name
+  input:
+    name: Ozark {tmdb-69740}
+  expect:
+    title: Ozark
+
+- name: a show title with no tag stays the same
+  operation: parse_series_name
+  input:
+    name: Neon Genesis Evangelion
+  expect:
+    title: Neon Genesis Evangelion
+
+- name: a dotted lowercase series folder resolves to a spaced title with its letter case unchanged (M6)
+  operation: parse_series_name
+  input:
+    name: the.mandalorian
+  expect:
+    title: the mandalorian
+    year: null
+
+- name: a Title (Year) series folder resolves to its title and year
+  operation: parse_series_name
+  input:
+    name: The Leftovers (2014)
+  expect:
+    title: The Leftovers
+    year: 2014
+
+- name: a show title before a UK season label is split into show and season
+  operation: parse_series_name
+  input:
+    name: The Twilight Zone Series 5 Rod Serling
+  expect:
+    title: The Twilight Zone
+    season: 5
+

@@ -1,0 +1,62 @@
+# Collection and category folders (decision R10): a folder that contains movie
+# folders, or loose movie videos, is a category. A movie states the folder that contains
+# it as its collection, and planned names stay inside the category folders.
+
+- name: a folder that contains movie folders is the collection of each movie
+  operation: interpret
+  input:
+    library: movies
+    paths:
+      - Collections/Northern Saga/Northern Passage (2021)/Northern.Passage.2021.1080p.mkv
+      - Collections/Northern Saga/Southern Passage (2023)/Southern Passage (2023).mkv
+  expect:
+    items:
+      - { kind: movie, title: Northern Passage, path: Collections/Northern Saga/Northern Passage (2021), collection: Collections/Northern Saga }
+      - { kind: movie, title: Southern Passage, path: Collections/Northern Saga/Southern Passage (2023), collection: Collections/Northern Saga }
+
+- name: a folder that contains a loose movie video is its collection
+  operation: interpret
+  input:
+    library: movies
+    paths: [Directors/Ada Vale/Quiet Room (2019).mkv]
+  expect:
+    items: [{ kind: movie, title: Quiet Room, path: null, collection: Directors/Ada Vale }]
+
+- name: a movie at the library root has no collection
+  operation: interpret
+  input:
+    library: movies
+    paths: [Quiet Room (2019)/Quiet Room (2019).mkv]
+  expect:
+    items: [{ kind: movie, collection: null }]
+
+- name: a folder that is another movie's folder is not a collection
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv, Arrival (2016)/Northern Passage (2021)/Northern Passage (2021).mkv]
+  expect:
+    items:
+      - { kind: movie, title: Arrival, path: Arrival (2016), collection: null }
+      - { kind: movie, title: Northern Passage, path: Arrival (2016)/Northern Passage (2021), collection: null }
+
+- name: planned movie names stay inside their collection folders
+  operation: plan_renames
+  input:
+    library: movies
+    paths:
+      - Collections/Northern Saga/Northern Passage (2021)/Northern.Passage.2021.1080p.mkv
+      - Directors/Ada Vale/Quiet Room (2019).mkv
+  expect:
+    proposals:
+      - { from: Collections/Northern Saga/Northern Passage (2021)/Northern.Passage.2021.1080p.mkv, to: Collections/Northern Saga/Northern Passage (2021)/Northern Passage (2021).mkv }
+      - { from: Directors/Ada Vale/Quiet Room (2019).mkv, to: Directors/Ada Vale/Quiet Room (2019)/Quiet Room (2019).mkv }
+    blocked: []
+
+- name: planned series names stay inside their category folders
+  operation: plan_renames
+  input:
+    library: tv
+    paths: [Kids/Show/Season 01/Show S01E01.mkv]
+  expect:
+    proposals: [{ from: Kids/Show/Season 01/Show S01E01.mkv, to: Kids/Show/Season 01/Show - S01E01.mkv }]

@@ -1,0 +1,1851 @@
+// Provides the media naming library over gRPC for callers in other languages. The
+// server calls the same implementation as the Rust library.
+//
+// Conventions for every operation:
+//
+// - Paths are root-relative strings separated by `/` (`Show/Season 01/Show S01E02.mkv`).
+//   A directory path ends in `/`. The separator is always `/`, never the separator of
+//   the operating system.
+// - Protobuf strings are UTF-8. If the file system of a caller returns a name that is
+//   not valid UTF-8, the caller cannot send it. The caller reports that entry itself as
+//   `unsupported_encoding` (decision X4) and does not decode it lossily.
+// - Every operation is batched. A request holds queries, and each query has a `handle`
+//   that the caller chooses. The response holds one result per query, in request
+//   order, with the same `handle`. The server echoes handles and does not interpret
+//   them.
+// - A fact that a name may not settle is a `*Finding`. A finding is resolved with its
+//   evidence, ambiguous with the competing candidates, or unknown. Unknown is a valid
+//   answer, not an error.
+// - Enum value 0 (`*_UNSPECIFIED`, or `FORMAT_3D_UNSET`) means not set or none.
+// - If a query is malformed (no operation chosen, a number out of range, a required
+//   enum left unset), the whole call fails with INVALID_ARGUMENT and a message that
+//   names the problem.
+//
+// This package (`v1`) versions the wire contract. The naming rules have their own
+// version, which GetVersion returns. A compatible wire change can come with a change
+// in naming behaviour. Every response states the rules it was answered under in
+// `rules`. Compare `rules` with the `rules` of a stored result to check whether the
+// stored facts are stale.
+syntax = "proto3";
+
+package nomenclator.v1;
+
+service Nomenclator {
+  // Returns the wire contract, naming rules and implementation versions.
+  rpc GetVersion(GetVersionRequest) returns (GetVersionResponse);
+  // Parses single names into facts: movie, series, season folder, episode, provider
+  // IDs, sidecar, extra, artwork, NFO and file-type checks.
+  rpc ParseNames(ParseNamesRequest) returns (ParseNamesResponse);
+  // Groups stacked parts (`part1`, `cd2`, `a`/`b`) among sibling paths.
+  rpc GroupParts(GroupPartsRequest) returns (GroupPartsResponse);
+  // Reports whether ignore rules, markers and built-in exclusions exclude entries.
+  rpc EvaluateIgnore(EvaluateIgnoreRequest) returns (EvaluateIgnoreResponse);
+  // Interprets a complete library scope into items and explicit outcomes.
+  rpc Interpret(InterpretRequest) returns (InterpretResponse);
+  // Interprets one tree whose paths arrive in batches, for a tree that is too large for
+  // one message. The first message carries the header, and every message can carry
+  // paths. The response has one result.
+  rpc InterpretStream(stream InterpretStreamRequest) returns (InterpretResponse);
+  // Scores caller-supplied provider candidates against known facts. The results are
+  // sorted by handle. Queries that share a handle are invalid input.
+  rpc RankCandidates(RankCandidatesRequest) returns (RankCandidatesResponse);
+  // Returns the provider queries for each set of facts, most specific first.
+  rpc SearchQueries(SearchQueriesRequest) returns (SearchQueriesResponse);
+  // Renders a path from facts the caller already has.
+  rpc RenderNames(RenderNamesRequest) returns (RenderNamesResponse);
+  // Interprets a scope, then proposes renames under a profile. Does not rename any file.
+  rpc PlanRenames(PlanRenamesRequest) returns (PlanRenamesResponse);
+  // Interprets a download tree and a library tree, then proposes moves of the download's
+  // files into the library. Does not move any file.
+  rpc PlanImport(PlanImportRequest) returns (PlanImportResponse);
+  // Interprets a library that one profile wrote, then proposes renames into the layout of
+  // another profile. Does not rename any file.
+  rpc PlanConversion(PlanConversionRequest) returns (PlanRenamesResponse);
+  // Interprets a scope, then reports diagnostics under a profile.
+  rpc Validate(ValidateRequest) returns (ValidateResponse);
+  // Suggests whether a folder's names look like a Movies or a TV library. No other call
+  // reads the suggestion.
+  rpc SuggestLibraryType(SuggestLibraryTypeRequest) returns (SuggestLibraryTypeResponse);
+}
+
+// ---------------------------------------------------------------------------
+// Versions
+
+message GetVersionRequest {}
+
+message GetVersionResponse {
+  // The protobuf package of this contract: `nomenclator.v1`.
+  string wire_contract = 1;
+  // The naming rules version, equal to the naming library's version.
+  string rules_version = 2;
+  // The build of the running server.
+  string implementation_version = 3;
+  // The identity of the built-in rules.
+  RulesIdentity rules = 4;
+}
+
+// The rules that produced a response.
+message RulesIdentity {
+  // The built-in rules version.
+  string version = 1;
+  // The overlays applied to the built-in rules, in declared order.
+  repeated OverlayIdentity overlays = 2;
+  // The declared languages, sorted. An empty list means every language.
+  repeated string languages = 3;
+}
+
+message OverlayIdentity {
+  string name = 1;
+  // Unset when the overlay states no version.
+  optional string version = 2;
+  // A digest of the overlay's changes. Overlays with equal changes have equal digests.
+  string digest = 3;
+}
+
+// The rules that a request is answered under: the built-in rules with these overlays
+// applied together. Each overlay is a YAML or JSON document (see the library's
+// `Overlay`). If an overlay cannot be read, or if overlays disagree about an entry, the
+// call fails with INVALID_ARGUMENT and lists every diagnostic.
+message RulesSelection {
+  repeated string overlays = 1;
+  // The library's languages, as BCP 47 tags that have a language pack. If set, the rules
+  // hold the shared base and the words of exactly those languages. An empty list selects
+  // every language.
+  repeated string languages = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Shared facts and evidence
+
+enum FindingStatus {
+  FINDING_STATUS_UNSPECIFIED = 0;
+  FINDING_STATUS_RESOLVED = 1;
+  FINDING_STATUS_AMBIGUOUS = 2;
+  FINDING_STATUS_UNKNOWN = 3;
+}
+
+// The naming rule that produced a fact.
+enum Rule {
+  RULE_UNSPECIFIED = 0;
+  RULE_WHOLE_NAME = 1;
+  RULE_TEXT_BEFORE_YEAR = 2;
+  RULE_TEXT_BEFORE_RELEASE_WORDS = 3;
+  RULE_BRACKETED_YEAR = 4;
+  RULE_BARE_YEAR = 5;
+  RULE_LANGUAGE_TOKEN = 6;
+  RULE_SIDECAR_TITLE_TOKENS = 7;
+  RULE_EDITION_TAG = 8;
+  RULE_EDITION_WORDS = 9;
+  RULE_FORMAT3D_WORD = 10;
+  RULE_EXTRAS_FOLDER = 11;
+  RULE_EXTRAS_SUFFIX = 12;
+  RULE_EXTRAS_NAME = 13;
+  RULE_SEASON_MARKER = 14;
+  RULE_SPECIALS_FOLDER = 15;
+  RULE_BARE_NUMBER_SEASON_FOLDER = 16;
+  RULE_SEASON_FOLDER = 17;
+  RULE_EPISODE_TOKEN = 18;
+  RULE_COMPACT_NUMBER = 19;
+  RULE_DATE = 20;
+  RULE_RELEASE_WORD = 21;
+  RULE_SPECIAL_MARKER = 22;
+}
+
+// Byte range [start, end) into the original UTF-8 name.
+message Span {
+  uint32 start = 1;
+  uint32 end = 2;
+}
+
+message Evidence {
+  Rule rule = 1;
+  Span span = 2;
+}
+
+message TextFinding {
+  FindingStatus status = 1;
+  // Set when resolved.
+  optional string value = 2;
+  // The source of a resolved fact, if the fact came from text.
+  Evidence evidence = 3;
+  // The competing values when ambiguous.
+  repeated string candidates = 4;
+  // The reason the fact is ambiguous.
+  optional string reason = 5;
+}
+
+message NumberFinding {
+  FindingStatus status = 1;
+  optional uint32 value = 2;
+  Evidence evidence = 3;
+  repeated uint32 candidates = 4;
+  optional string reason = 5;
+}
+
+message ExtraKindFinding {
+  FindingStatus status = 1;
+  ExtraKind value = 2;
+  Evidence evidence = 3;
+  repeated ExtraKind candidates = 4;
+  optional string reason = 5;
+}
+
+message Format3dFinding {
+  FindingStatus status = 1;
+  Format3d value = 2;
+  Evidence evidence = 3;
+  repeated Format3d candidates = 4;
+  optional string reason = 5;
+}
+
+enum EntryKind {
+  ENTRY_KIND_UNSPECIFIED = 0;
+  ENTRY_KIND_FILE = 1;
+  ENTRY_KIND_DIRECTORY = 2;
+}
+
+enum LibraryType {
+  LIBRARY_TYPE_UNSPECIFIED = 0;
+  LIBRARY_TYPE_MOVIES = 1;
+  LIBRARY_TYPE_TV = 2;
+}
+
+enum SidecarKind {
+  SIDECAR_KIND_UNSPECIFIED = 0;
+  SIDECAR_KIND_SUBTITLE = 1;
+  SIDECAR_KIND_AUDIO = 2;
+  // A still image of the video.
+  SIDECAR_KIND_IMAGE = 3;
+}
+
+enum SidecarFlag {
+  SIDECAR_FLAG_UNSPECIFIED = 0;
+  SIDECAR_FLAG_DEFAULT = 1;
+  SIDECAR_FLAG_FORCED = 2;
+  SIDECAR_FLAG_HEARING_IMPAIRED = 3;
+}
+
+enum Format3d {
+  FORMAT_3D_UNSET = 0;
+  FORMAT_3D_SIDE_BY_SIDE = 1;
+  FORMAT_3D_HALF_SIDE_BY_SIDE = 2;
+  FORMAT_3D_FULL_SIDE_BY_SIDE = 3;
+  FORMAT_3D_TOP_AND_BOTTOM = 4;
+  FORMAT_3D_HALF_TOP_AND_BOTTOM = 5;
+  FORMAT_3D_FULL_TOP_AND_BOTTOM = 6;
+  FORMAT_3D_MVC = 7;
+  // `3d` without a layout word.
+  FORMAT_3D_UNSPECIFIED = 8;
+}
+
+enum ExtraKind {
+  EXTRA_KIND_UNSPECIFIED = 0;
+  EXTRA_KIND_TRAILER = 1;
+  EXTRA_KIND_BEHIND_THE_SCENES = 2;
+  EXTRA_KIND_DELETED_SCENE = 3;
+  EXTRA_KIND_FEATURETTE = 4;
+  EXTRA_KIND_INTERVIEW = 5;
+  EXTRA_KIND_SCENE = 6;
+  EXTRA_KIND_SHORT = 7;
+  EXTRA_KIND_CLIP = 8;
+  EXTRA_KIND_BLOOPER = 9;
+  EXTRA_KIND_SAMPLE = 10;
+  EXTRA_KIND_THEME_SONG = 11;
+  EXTRA_KIND_THEME_VIDEO = 12;
+  EXTRA_KIND_OTHER = 13;
+  EXTRA_KIND_EXTRA = 14;
+}
+
+enum NfoRole {
+  NFO_ROLE_UNSPECIFIED = 0;
+  // The item of the video that the NFO is named after.
+  NFO_ROLE_VIDEO = 1;
+  NFO_ROLE_MOVIE = 2;
+  NFO_ROLE_TVSHOW = 3;
+  NFO_ROLE_SEASON = 4;
+}
+
+enum ArtworkRole {
+  ARTWORK_ROLE_UNSPECIFIED = 0;
+  ARTWORK_ROLE_POSTER = 1;
+  ARTWORK_ROLE_BACKDROP = 2;
+  ARTWORK_ROLE_BANNER = 3;
+  ARTWORK_ROLE_LOGO = 4;
+  ARTWORK_ROLE_THUMB = 5;
+  ARTWORK_ROLE_EPISODE_STILL = 6;
+  ARTWORK_ROLE_OTHER = 7;
+}
+
+// A rule file that the caller found in the library. A `.nomedia` marker excludes its
+// folder. Any other file (`.ignore`) holds patterns.
+message IgnoreFile {
+  string path = 1;
+  // Unset if the caller could not read the file. Entries that the file could decide
+  // then stay undecided.
+  optional string contents = 2;
+  // The syntax of the file's lines; unset for gitignore.
+  IgnoreDialect dialect = 3;
+}
+
+enum IgnoreDialect {
+  IGNORE_DIALECT_UNSPECIFIED = 0;
+  // Negation with `!`, escapes with `\`, and a trailing `/` that matches folders only.
+  IGNORE_DIALECT_GITIGNORE = 1;
+  // One glob per line. A glob without `/` matches a name at any depth. A glob with `/`
+  // is relative to the file. No negation and no escapes.
+  IGNORE_DIALECT_GLOB = 2;
+}
+
+message StringList {
+  repeated string values = 1;
+}
+
+// ---------------------------------------------------------------------------
+// ParseNames
+
+message ParseNamesRequest {
+  repeated ParseNameQuery queries = 1;
+  // The rules to answer under; unset for the built-in rules.
+  RulesSelection rules = 2;
+}
+
+message ParseNameQuery {
+  string handle = 1;
+  oneof query {
+    MovieNameQuery movie_name = 2;
+    SeriesNameQuery series_name = 3;
+    SeasonFolderQuery season_folder = 4;
+    EpisodeNameQuery episode_name = 5;
+    ProviderIdsQuery provider_ids = 6;
+    SidecarQuery sidecar = 7;
+    ExtraQuery extra = 8;
+    ArtworkQuery artwork = 9;
+    NfoQuery nfo = 10;
+    FilePathQuery video_file = 11;
+    FilePathQuery audio_file = 12;
+    FilePathQuery image_file = 13;
+    SubtitleFileQuery subtitle_file = 14;
+    // Reads the release facts after a name's title.
+    MovieNameQuery release = 15;
+    // Reports whether a file is release junk.
+    FilePathQuery release_junk = 16;
+  }
+}
+
+message MovieNameQuery {
+  string name = 1;
+  EntryKind kind = 2;
+}
+
+message SeriesNameQuery {
+  // A series folder name, or a root-relative path whose series folder is read.
+  string name_or_path = 1;
+}
+
+message SeasonFolderQuery {
+  string name = 1;
+  optional string parent_name = 2;
+  // `true` if the caller knows that the parent is a series folder (T9).
+  bool parent_is_series_folder = 3;
+}
+
+message EpisodeNameQuery {
+  // A root-relative path. The folders above the entry are also evidence.
+  string path = 1;
+  EntryKind kind = 2;
+  // The season of the entry's folder, if the caller already knows it.
+  optional uint32 season_folder_number = 3;
+}
+
+message ProviderIdsQuery {
+  string text = 1;
+}
+
+message SidecarQuery {
+  string name = 1;
+  string video_name = 2;
+  SidecarKind kind = 3;
+}
+
+message ExtraQuery {
+  string path = 1;
+  EntryKind kind = 2;
+  LibraryType library = 3;
+  // The other in-scope entries. The library judges ownership only from these entries
+  // and the path.
+  repeated string context_paths = 4;
+}
+
+message ArtworkQuery {
+  string path = 1;
+  optional string video_path = 2;
+}
+
+message NfoQuery {
+  string path = 1;
+  // The videos in scope.
+  repeated string video_paths = 2;
+}
+
+message FilePathQuery {
+  string path = 1;
+}
+
+message SubtitleFileQuery {
+  string path = 1;
+  repeated string sibling_paths = 2;
+}
+
+message ParseNamesResponse {
+  repeated ParseNameResult results = 1;
+  // The rules every result was produced under.
+  RulesIdentity rules = 2;
+}
+
+// The result of the operation that the query chose, under the same field name.
+message ParseNameResult {
+  string handle = 1;
+  oneof result {
+    MovieName movie_name = 2;
+    SeriesName series_name = 3;
+    SeasonFolder season_folder = 4;
+    EpisodeName episode_name = 5;
+    ProviderIds provider_ids = 6;
+    Sidecar sidecar = 7;
+    ExtraClassification extra = 8;
+    ArtworkClassification artwork = 9;
+    NfoClassification nfo = 10;
+    VideoFileCheck video_file = 11;
+    FileTypeCheck audio_file = 12;
+    FileTypeCheck image_file = 13;
+    FileTypeCheck subtitle_file = 14;
+    ReleaseFacts release = 15;
+    FileTypeCheck release_junk = 16;
+  }
+}
+
+// The facts a release name states after its title. Every fact is optional and carries
+// the span it was read from.
+message ReleaseFacts {
+  // The height with its scan type: `1080p`, `1080i`.
+  TextFinding resolution = 1;
+  // The source medium: `bluray`, `uhd_bluray`, `web`, `hdtv`, `dvd` and others.
+  TextFinding source = 2;
+  // `true` if the release is a remux of its source.
+  bool remux = 3;
+  // `true` if the release is a screener.
+  bool screener = 4;
+  // `h264`, `h265`, `xvid`, `av1` and others.
+  TextFinding video_codec = 5;
+  NumberFinding bit_depth = 6;
+  // `hdr10`, `hdr10_plus`, `dolby_vision`, `hlg`, `hdr`, in name order.
+  repeated ReleaseMarker hdr = 7;
+  // `dolby_digital`, `dts_hd`, `aac` and others, in name order.
+  repeated ReleaseMarker audio_codecs = 8;
+  // `5.1`, `7.1`, `2.0`.
+  TextFinding audio_channels = 9;
+  // `multi`, `dual`, or a BCP 47 tag, in name order.
+  repeated ReleaseMarker audio_languages = 10;
+  // `multi`, `subbed`, or a BCP 47 tag, in name order.
+  repeated ReleaseMarker subtitle_languages = 11;
+  TextFinding release_group = 12;
+  // The CRC32 checksum in uppercase.
+  TextFinding checksum = 13;
+  // `proper`, `repack`, `real`, `rerip`, in name order.
+  repeated ReleaseMarker revision = 14;
+  // `netflix`, `amazon_prime`, `disney_plus` and others.
+  TextFinding streaming_service = 15;
+  // The lowercase file extension; unset for folders.
+  optional string container = 16;
+}
+
+// A release fact that a name can state several times.
+message ReleaseMarker {
+  string value = 1;
+  Span span = 2;
+}
+
+message MovieName {
+  TextFinding title = 1;
+  NumberFinding year = 2;
+  map<string, TextFinding> provider_ids = 3;
+  // The raw text of an `{edition-X}` or `[edition-X]` tag.
+  TextFinding edition = 4;
+  // The edition words after the title. It is a hint, never an edition (M9).
+  TextFinding edition_hint = 5;
+  Format3dFinding format_3d = 6;
+  // The lowercase file extension; unset for folders.
+  optional string container = 7;
+  // `true` if the name alone identifies a movie.
+  bool trusted = 8;
+  // The other titles that the name states: after `AKA`, after ` / `, or in a trailing
+  // parenthesised group.
+  repeated AlternateTitle alternate_titles = 9;
+}
+
+// A title that a name states beside its main title.
+message AlternateTitle {
+  string title = 1;
+  Span span = 2;
+}
+
+message SeriesName {
+  TextFinding title = 1;
+  NumberFinding year = 2;
+  // A season that the name also carries, as in a release pack.
+  NumberFinding season = 3;
+  map<string, TextFinding> provider_ids = 4;
+}
+
+message SeasonFolder {
+  NumberFinding season = 1;
+  // `true` if the name is a season word alone, with no number.
+  bool is_bare_season_folder = 2;
+  map<string, TextFinding> provider_ids = 3;
+}
+
+message EpisodeName {
+  TextFinding series_name = 1;
+  NumberFinding series_year = 2;
+  optional string series_path = 3;
+  AlternateIdentity alternate_identity = 4;
+  NumberFinding season = 5;
+  // Every episode the name covers, ranges expanded.
+  repeated uint32 episodes = 6;
+  optional uint32 first_episode = 7;
+  // Unset for a single episode.
+  optional uint32 last_episode = 8;
+  // Absolute numbers, counted across seasons; never mixed into `episodes`.
+  repeated uint32 absolute = 9;
+  // `YYYY-MM-DD`.
+  TextFinding date = 10;
+  optional string episode_title = 11;
+  map<string, TextFinding> provider_ids = 12;
+  PresentationKind presentation_kind = 13;
+  bool is_episode = 14;
+  bool ambiguous = 15;
+  // The special that the name states instead of an episode number. The season is 0 and no
+  // episodes are set.
+  Special special = 16;
+  // The release revision after the episode number (`12v2` is 2).
+  optional uint32 release_version = 17;
+  // `true` if `END` follows the episode number.
+  bool is_final = 18;
+}
+
+message AlternateIdentity {
+  string title = 1;
+  // Unset if the text carries no year.
+  optional uint32 year = 2;
+}
+
+enum PresentationKind {
+  PRESENTATION_KIND_UNSPECIFIED = 0;
+  PRESENTATION_KIND_EPISODE = 1;
+  PRESENTATION_KIND_MULTI_EPISODE = 2;
+  PRESENTATION_KIND_ABSOLUTE = 3;
+  PRESENTATION_KIND_DATED = 4;
+  // A special without an episode number.
+  PRESENTATION_KIND_SPECIAL = 5;
+}
+
+message ProviderIds {
+  map<string, TextFinding> provider_ids = 1;
+}
+
+message Sidecar {
+  // `true` if the sidecar name matches the video.
+  bool matches = 1;
+  // A BCP 47 tag.
+  TextFinding language = 2;
+  repeated SidecarFlag flags = 3;
+  TextFinding title = 4;
+}
+
+message ExtraClassification {
+  ExtraKindFinding extra = 1;
+  optional string title = 2;
+  // The folder whose title the extra belongs to.
+  optional string owner = 3;
+  optional string series_path = 4;
+  // The owned extras folder that contains the entry.
+  optional string supplemental_dir = 5;
+}
+
+message ArtworkClassification {
+  // Unset if the file is not an image.
+  ArtworkRole role = 1;
+  bool is_episode_still = 2;
+}
+
+message NfoClassification {
+  // Unset if the file is not an NFO or if its name matches no NFO role.
+  NfoRole role = 1;
+}
+
+enum UnsupportedVideoReason {
+  UNSUPPORTED_VIDEO_REASON_UNSPECIFIED = 0;
+  UNSUPPORTED_VIDEO_REASON_DISC_IMAGE = 1;
+  UNSUPPORTED_VIDEO_REASON_DISC_STRUCTURE = 2;
+  UNSUPPORTED_VIDEO_REASON_UNSUPPORTED_CONTAINER = 3;
+}
+
+message VideoFileCheck {
+  bool result = 1;
+  // `true` if the file is a video that the library reports as unsupported instead of
+  // accepting it.
+  bool unsupported_video = 2;
+  UnsupportedVideoReason unsupported_video_reason = 3;
+}
+
+message FileTypeCheck {
+  bool result = 1;
+}
+
+// ---------------------------------------------------------------------------
+// GroupParts
+
+message GroupPartsRequest {
+  repeated GroupPartsQuery queries = 1;
+}
+
+message GroupPartsQuery {
+  string handle = 1;
+  repeated string paths = 2;
+}
+
+message GroupPartsResponse {
+  repeated GroupPartsResult results = 1;
+  // The rules every result was produced under.
+  RulesIdentity rules = 2;
+}
+
+message GroupPartsResult {
+  string handle = 1;
+  repeated Stack stacks = 2;
+}
+
+message Stack {
+  // The shared name before the part marker.
+  string name = 1;
+  // The parts in order.
+  repeated string paths = 2;
+  bool ambiguous = 3;
+  // `missing_part` or `duplicate_part`.
+  optional string ambiguity_reason = 4;
+}
+
+// ---------------------------------------------------------------------------
+// EvaluateIgnore
+
+message EvaluateIgnoreRequest {
+  // Every rule file in the library, shared by all queries.
+  repeated IgnoreFile ignore_files = 1;
+  repeated EvaluateIgnoreQuery queries = 2;
+  // The rules to answer under; unset for the built-in rules.
+  RulesSelection rules = 3;
+}
+
+message EvaluateIgnoreQuery {
+  string handle = 1;
+  string path = 2;
+  EntryKind kind = 3;
+}
+
+message EvaluateIgnoreResponse {
+  repeated EvaluateIgnoreResult results = 1;
+  // The rules every result was produced under.
+  RulesIdentity rules = 2;
+}
+
+message EvaluateIgnoreResult {
+  string handle = 1;
+  // Unset if an unreadable rule file leaves the answer undecided (incomplete).
+  optional bool excluded = 2;
+  Exclusion exclusion = 3;
+  repeated string unreadable_rule_files = 4;
+  repeated RuleDiagnostic rule_diagnostics = 5;
+}
+
+message Exclusion {
+  // The entry itself or the folder above it that matched.
+  string path = 1;
+  ExclusionReason reason = 2;
+  optional string rule_file = 3;
+  // The 1-based line in `rule_file`.
+  optional uint32 line = 4;
+}
+
+enum ExclusionReason {
+  EXCLUSION_REASON_UNSPECIFIED = 0;
+  EXCLUSION_REASON_HIDDEN_ENTRY = 1;
+  EXCLUSION_REASON_SYSTEM_JUNK = 2;
+  EXCLUSION_REASON_PARTIAL_DOWNLOAD = 3;
+  EXCLUSION_REASON_GENERATED_METADATA = 4;
+  EXCLUSION_REASON_NO_MEDIA_MARKER = 5;
+  EXCLUSION_REASON_EMPTY_RULE_FILE = 6;
+  EXCLUSION_REASON_RULE = 7;
+  // A sample that the excluded-samples preset excludes.
+  EXCLUSION_REASON_SAMPLE = 8;
+}
+
+message RuleDiagnostic {
+  string rule_file = 1;
+  // The 1-based line; unset if the problem concerns the whole file.
+  optional uint32 line = 2;
+  RuleDiagnosticReason reason = 3;
+}
+
+enum RuleDiagnosticReason {
+  RULE_DIAGNOSTIC_REASON_UNSPECIFIED = 0;
+  RULE_DIAGNOSTIC_REASON_UNCLOSED_BRACKET = 1;
+  RULE_DIAGNOSTIC_REASON_UNKNOWN_CHARACTER_CLASS = 2;
+  RULE_DIAGNOSTIC_REASON_TRAILING_BACKSLASH = 3;
+  RULE_DIAGNOSTIC_REASON_EMPTY_PATTERN = 4;
+  RULE_DIAGNOSTIC_REASON_OUTSIDE_LIBRARY_ROOT = 5;
+}
+
+// ---------------------------------------------------------------------------
+// Interpret, PlanRenames, Validate
+
+// A complete scope: every entry of the library, with the rule files found in it.
+message LibraryTreeQuery {
+  string handle = 1;
+  LibraryType library = 2;
+  repeated string paths = 3;
+  repeated IgnoreFile ignore_files = 4;
+  // Facts that the caller already knows besides the names (T20).
+  CallerInputs inputs = 5;
+  // Catalogue facts that only Validate reads (X18).
+  ReferenceMetadata reference = 6;
+  // The scope group to interpret (X23). Only Interpret reads this field. Unset for the
+  // whole tree. A scoped result has no input diagnostics.
+  ScopeGroup scope_group = 7;
+}
+
+message InterpretStreamRequest {
+  // Required in the first message, and only there.
+  InterpretStreamHeader header = 1;
+  // A batch of root-relative paths, with directories ending in `/`.
+  repeated string paths = 2;
+}
+
+message InterpretStreamHeader {
+  string handle = 1;
+  LibraryType library = 2;
+  repeated IgnoreFile ignore_files = 3;
+  // Facts that the caller already knows besides the names (T20).
+  CallerInputs inputs = 4;
+  // The scope group to interpret (X23). Unset for the whole tree.
+  ScopeGroup scope_group = 5;
+  // The rules to answer under; unset for the built-in rules.
+  RulesSelection rules = 6;
+}
+
+// Scopes that are interpreted together: folders at the library root, and the files at
+// the library root.
+message ScopeGroup {
+  // `true` to include the files at the library root.
+  bool root = 1;
+  // Folder names at the library root, without `/`.
+  repeated string folders = 2;
+}
+
+message CallerInputs {
+  // Facts per path. A hint that contradicts a name makes the item ambiguous unless the
+  // hint is authoritative.
+  repeated Hint hints = 1;
+  // Structural decisions: merged and split items, extras' kinds and owners.
+  Overrides overrides = 2;
+  // Per series, the order in which its names number episodes, and its numbering maps.
+  repeated SeriesInputs series = 3;
+}
+
+message ReferenceMetadata {
+  repeated ReferenceMovie movies = 1;
+  // Episode lists in the aired order.
+  repeated ReferenceSeries series = 2;
+}
+
+// A movie's year. The entry identifies the movie by `path` (its folder or a video) or
+// by one of `provider_ids`.
+message ReferenceMovie {
+  optional string path = 1;
+  map<string, string> provider_ids = 2;
+  uint32 year = 3;
+}
+
+message ReferenceSeries {
+  // The series folder, or the title of a series that has no folder.
+  string series = 1;
+  // Each entry is `[season, episode]`.
+  repeated NumberList episodes = 2;
+}
+
+message NumberList {
+  repeated uint32 values = 1;
+}
+
+message SeriesInputs {
+  // The series folder, or the title of a series that has no folder.
+  string series = 1;
+  // The order in which the series' names number episodes; unset for aired. Under the
+  // absolute order, a number without a season is an absolute number.
+  EpisodeOrder order = 2;
+  repeated AbsoluteRange absolute = 3;
+  repeated SceneMapping scene = 4;
+}
+
+enum EpisodeOrder {
+  EPISODE_ORDER_UNSPECIFIED = 0;
+  EPISODE_ORDER_AIRED = 1;
+  EPISODE_ORDER_DVD = 2;
+  EPISODE_ORDER_ABSOLUTE = 3;
+}
+
+// Absolute numbers `first`-`last` are episodes 1, 2, ... of the aired season `season`.
+message AbsoluteRange {
+  uint32 season = 1;
+  uint32 first = 2;
+  uint32 last = 3;
+}
+
+message SceneMapping {
+  // `[season, episode]` in scene numbering.
+  repeated uint32 from = 1;
+  // `[season, episode]` as aired.
+  repeated uint32 to = 2;
+}
+
+// The numbers that a numbering map replaced.
+message MappedNumbering {
+  NumberingMap map = 1;
+  // The season the name stated, if any.
+  optional uint32 season = 2;
+  // Absolute numbers, or scene episodes.
+  repeated uint32 numbers = 3;
+}
+
+enum NumberingMap {
+  NUMBERING_MAP_UNSPECIFIED = 0;
+  NUMBERING_MAP_ABSOLUTE = 1;
+  NUMBERING_MAP_SCENE = 2;
+}
+
+message Overrides {
+  // Groups of videos that are versions of one item. The item is the item of the first
+  // video.
+  repeated StringList merge = 1;
+  // Videos that are items of their own.
+  repeated string split = 2;
+  repeated ExtraOverride extras = 3;
+}
+
+message ExtraOverride {
+  string path = 1;
+  // If the path is a feature video, the override makes the video an extra.
+  ExtraKind kind = 2;
+  // The folder whose item owns the extra.
+  optional string owner = 3;
+}
+
+message Hint {
+  // A file or folder. A trailing `/` is ignored.
+  string path = 1;
+  bool authoritative = 2;
+  // A movie's title, or a series' title on its series folder.
+  optional string title = 3;
+  optional uint32 year = 4;
+  map<string, string> provider_ids = 5;
+  // (TV) The series folder of the videos at or below the path. It must be one of their
+  // folders.
+  optional string series_folder = 6;
+  // (TV) The season of the videos at or below the path. On a folder, the hint makes the
+  // folder a season folder.
+  optional uint32 season = 7;
+  // (TV) The episodes that a video covers.
+  repeated uint32 episodes = 8;
+  // (TV) The order of the coordinates of the videos at or below the path.
+  EpisodeOrder episode_order = 9;
+}
+
+// A hinted fact that an item applied, recorded as evidence with source `hint`.
+message AppliedHint {
+  string path = 1;
+  // `title`, `year`, `provider_id.<provider>`, `series_folder`, `season` or `episodes`.
+  string fact = 2;
+  string value = 3;
+  HintOutcome outcome = 4;
+  // The value that the names stated, if they stated the fact.
+  optional string name_value = 5;
+}
+
+enum HintOutcome {
+  HINT_OUTCOME_UNSPECIFIED = 0;
+  // The names did not state the fact.
+  HINT_OUTCOME_FILLED = 1;
+  HINT_OUTCOME_AGREED = 2;
+  // The item keeps the names' value and is ambiguous.
+  HINT_OUTCOME_CONTRADICTED = 3;
+  // An authoritative hint replaced the names' value.
+  HINT_OUTCOME_OVERRODE = 4;
+}
+
+// A caller input that no item took.
+message InputDiagnostic {
+  // `hint`, `merge`, `split`, `extra_override` or `series`.
+  string input = 1;
+  string path = 2;
+  InputDiagnosticReason reason = 3;
+  // The fact that no item took, for `not_applicable`.
+  optional string fact = 4;
+}
+
+enum InputDiagnosticReason {
+  INPUT_DIAGNOSTIC_REASON_UNSPECIFIED = 0;
+  INPUT_DIAGNOSTIC_REASON_UNKNOWN_PATH = 1;
+  INPUT_DIAGNOSTIC_REASON_NOT_APPLICABLE = 2;
+  INPUT_DIAGNOSTIC_REASON_DUPLICATE = 3;
+}
+
+message InterpretRequest {
+  repeated LibraryTreeQuery queries = 1;
+  // The rules to answer under; unset for the built-in rules.
+  RulesSelection rules = 2;
+}
+
+message InterpretResponse {
+  repeated InterpretResult results = 1;
+  // The rules every result was produced under.
+  RulesIdentity rules = 2;
+}
+
+message InterpretResult {
+  string handle = 1;
+  // Movies, or series with their seasons and episodes, and extras that no item owns.
+  repeated Item items = 2;
+  // Each owner's extras, keyed by a movie's or episode's primary video path, or a
+  // series' or season's folder.
+  map<string, ExtraList> extras_of = 3;
+  // Subtitles attached to each video, keyed by video path.
+  map<string, SidecarFileList> video_subtitles = 4;
+  // Entries that a rule excludes.
+  repeated ExcludedEntry excluded_entries = 5;
+  // Entries that an unreadable rule file leaves undecided (incomplete scope).
+  repeated UndecidedEntry undecided_entries = 6;
+  // Paths that violate the input contract (invalid input).
+  repeated InvalidEntry invalid_entries = 7;
+  // In-scope files that no item claimed.
+  repeated string unclaimed_files = 8;
+  repeated RuleDiagnostic rule_diagnostics = 9;
+  // Caller inputs that no item took.
+  repeated InputDiagnostic input_diagnostics = 10;
+  // The unclaimed files that are release junk. They are also in `unclaimed_files`.
+  repeated string release_junk = 11;
+}
+
+message Item {
+  oneof kind {
+    Movie movie = 1;
+    Series series = 2;
+    Season season = 3;
+    Episode episode = 4;
+    // An extra that no item owns.
+    OrphanExtra extra = 5;
+  }
+}
+
+message Movie {
+  optional string title = 1;
+  // The folder or file whose name gave the title.
+  optional string title_source = 2;
+  optional uint32 year = 3;
+  optional string year_source = 4;
+  // The folder that owns the movie; unset for a video that is its own movie.
+  optional string path = 5;
+  map<string, TextFinding> provider_ids = 6;
+  // Alternative representations, primary first.
+  repeated Version versions = 7;
+  repeated Extra extras = 8;
+  repeated SidecarFile subtitles = 9;
+  repeated SidecarFile audio = 10;
+  repeated Artwork artwork = 11;
+  optional string nfo = 12;
+  // `true` if the item is series content in a movie library (M15).
+  bool misplaced_series = 13;
+  bool ambiguous = 14;
+  repeated string ambiguity_reasons = 15;
+  repeated AppliedHint hints = 16;
+  // The collection or category folder that contains the movie's folder, or the movie's
+  // video if the movie has no folder. Unset at the library root.
+  optional string collection = 17;
+  // The other titles that the name giving the title states.
+  repeated string alternate_titles = 18;
+}
+
+message Series {
+  optional string title = 1;
+  optional uint32 year = 2;
+  optional string path = 3;
+  map<string, TextFinding> provider_ids = 4;
+  repeated Extra extras = 5;
+  repeated Artwork artwork = 6;
+  optional string nfo = 7;
+  // The text that the episodes in the season folders repeat. It is another title for
+  // the series (T2).
+  AlternateIdentity alternate_identity = 8;
+  repeated AppliedHint hints = 9;
+}
+
+message Season {
+  optional string series_name = 1;
+  optional string series_path = 2;
+  uint32 season = 3;
+  optional string path = 4;
+  map<string, TextFinding> provider_ids = 5;
+  repeated Extra extras = 6;
+  repeated Artwork artwork = 7;
+  optional string nfo = 8;
+}
+
+message Episode {
+  optional string series_name = 1;
+  optional uint32 series_year = 2;
+  optional string series_path = 3;
+  NumberFinding season = 4;
+  repeated uint32 episodes = 5;
+  optional uint32 first_episode = 6;
+  repeated uint32 absolute = 7;
+  TextFinding date = 8;
+  optional string episode_title = 9;
+  // The disc or per-episode folder that contains the episode.
+  optional string path = 10;
+  map<string, TextFinding> provider_ids = 11;
+  // Videos with the same coverage, primary first.
+  repeated Version versions = 12;
+  repeated Extra extras = 13;
+  repeated SidecarFile subtitles = 14;
+  repeated SidecarFile audio = 15;
+  repeated Artwork artwork = 16;
+  optional string nfo = 17;
+  bool ambiguous = 18;
+  repeated string ambiguity_reasons = 19;
+  repeated AppliedHint hints = 20;
+  // The order of the episode's coordinates, if the caller states orders. Absolute if
+  // the episode has absolute numbers only.
+  EpisodeOrder order = 21;
+  // The numbers that a caller's numbering map replaced.
+  MappedNumbering mapped_from = 22;
+  // The special that the episode is, if its name states one instead of a number.
+  Special special = 23;
+}
+
+// A special that a name states instead of an episode number.
+message Special {
+  SpecialKind kind = 1;
+  // The number as written (`2`, `12.5`). Unset if the name states no number.
+  optional string number = 2;
+}
+
+enum SpecialKind {
+  SPECIAL_KIND_UNSPECIFIED = 0;
+  SPECIAL_KIND_OVA = 1;
+  SPECIAL_KIND_OAD = 2;
+  SPECIAL_KIND_ONA = 3;
+  // A decimal episode such as `12.5`.
+  SPECIAL_KIND_RECAP = 4;
+}
+
+message Version {
+  // One path, or the ordered parts. A disc structure is its folder path, which ends in
+  // `/`.
+  repeated string paths = 1;
+  optional string label = 2;
+  optional string ambiguity_reason = 3;
+  optional string edition = 4;
+  optional string edition_hint = 5;
+  Format3d format_3d = 6;
+  // The NFO that is named after this version's video or after the shared name of its
+  // parts.
+  optional string nfo = 7;
+}
+
+message Extra {
+  repeated string paths = 1;
+  ExtraKind extra = 2;
+  optional string title = 3;
+  optional uint32 year = 4;
+}
+
+message ExtraList {
+  repeated Extra values = 1;
+}
+
+message OrphanExtra {
+  repeated string paths = 1;
+  ExtraKind extra = 2;
+  optional string title = 3;
+  optional uint32 year = 4;
+  // `true` if several items could own the extra equally.
+  bool ambiguous = 5;
+}
+
+message SidecarFile {
+  string path = 1;
+  TextFinding language = 2;
+  repeated SidecarFlag flags = 3;
+  TextFinding title = 4;
+}
+
+message SidecarFileList {
+  repeated SidecarFile values = 1;
+}
+
+message Artwork {
+  string path = 1;
+  ArtworkRole role = 2;
+}
+
+message ExcludedEntry {
+  string path = 1;
+  ExclusionReason reason = 2;
+  // The entry or the folder above it that matched.
+  string matched_path = 3;
+  optional string rule_file = 4;
+}
+
+message UndecidedEntry {
+  string path = 1;
+  repeated string unreadable_rule_files = 2;
+}
+
+message InvalidEntry {
+  string path = 1;
+  InvalidEntryReason reason = 2;
+}
+
+enum InvalidEntryReason {
+  INVALID_ENTRY_REASON_UNSPECIFIED = 0;
+  INVALID_ENTRY_REASON_NOT_ROOT_RELATIVE = 1;
+  INVALID_ENTRY_REASON_INVALID_COMPONENT = 2;
+  INVALID_ENTRY_REASON_DUPLICATE = 3;
+}
+
+// The output profile. Every field is optional. An unset field takes its default.
+message OutputProfile {
+  // Default `[tmdb, imdb]`. If the list is empty, the rendered name contains no ID.
+  StringList movie_provider_order = 1;
+  // Default `[tvdb, tmdb]`.
+  StringList series_provider_order = 2;
+  // Default portable.
+  TargetFilesystem target_filesystem = 3;
+  // Default 255, in UTF-8 bytes.
+  optional uint32 max_component_bytes = 4;
+  // Validation rules (by snake_case rule name, such as `missing_year`) reported at
+  // another severity or not reported. Plans ignore this field.
+  map<string, SeverityOverride> severity = 5;
+  // The asset roles that each item of a kind needs, keyed by `movie`, `series`, `season`
+  // or `episode`. Validation reports each missing role as `missing_asset`.
+  map<string, AssetRoleList> required_assets = 6;
+  // The subtitles that each feature video needs. Validation reports each missing one as
+  // `missing_subtitle`.
+  repeated WantedSubtitle wanted_subtitles = 7;
+  // The diagnostics that validation leaves out.
+  repeated Suppression suppressions = 8;
+  // Default folder.
+  MovieLayout movie_layout = 9;
+  // Default padded.
+  SeasonFolderStyle season_folder_style = 10;
+  // The name of the season 0 folder. Unset for the season folder name of season 0,
+  // which follows `season_folder_style`.
+  optional string specials_folder = 11;
+  // The folder name of each extra kind, keyed by snake_case kind name, that does not use
+  // its default folder.
+  map<string, string> extras_folders = 12;
+  // Default braces.
+  ProviderTagStyle provider_tag_style = 13;
+  // The text that replaces each listed text in a fact before the filesystem rules apply.
+  map<string, string> character_replacements = 14;
+  // Default dash.
+  VersionLabelStyle version_label_style = 15;
+  // Default lower.
+  ExtensionCase extension_case = 16;
+}
+
+enum MovieLayout {
+  MOVIE_LAYOUT_UNSPECIFIED = 0;
+  // Each movie has its own folder.
+  MOVIE_LAYOUT_FOLDER = 1;
+  // A movie's files are at the root or in its category folder. A movie that has extras
+  // or folder files keeps its folder.
+  MOVIE_LAYOUT_FLAT = 2;
+}
+
+enum SeasonFolderStyle {
+  SEASON_FOLDER_STYLE_UNSPECIFIED = 0;
+  // `Season 01`.
+  SEASON_FOLDER_STYLE_PADDED = 1;
+  // `Season 1`.
+  SEASON_FOLDER_STYLE_UNPADDED = 2;
+}
+
+enum ProviderTagStyle {
+  PROVIDER_TAG_STYLE_UNSPECIFIED = 0;
+  // `{tmdb-329865}`.
+  PROVIDER_TAG_STYLE_BRACES = 1;
+  // `[tmdbid-329865]`.
+  PROVIDER_TAG_STYLE_BRACKETS_ID = 2;
+  // No provider ID is written.
+  PROVIDER_TAG_STYLE_NONE = 3;
+}
+
+enum VersionLabelStyle {
+  VERSION_LABEL_STYLE_UNSPECIFIED = 0;
+  // `Arrival (2016) - 2160p`.
+  VERSION_LABEL_STYLE_DASH = 1;
+  // `Arrival (2016) [2160p]`.
+  VERSION_LABEL_STYLE_BRACKETS = 2;
+}
+
+enum ExtensionCase {
+  EXTENSION_CASE_UNSPECIFIED = 0;
+  // The extension in lowercase.
+  EXTENSION_CASE_LOWER = 1;
+  // The extension as the facts give it.
+  EXTENSION_CASE_KEEP = 2;
+}
+
+// Diagnostics that validation leaves out: those of `rule`, or of every rule if `rule` is
+// unset, with a path that one of `paths` matches.
+message Suppression {
+  DiagnosticRule rule = 1;
+  // Globs in gitignore syntax, matched against root-relative paths.
+  repeated string paths = 2;
+}
+
+message AssetRoleList {
+  repeated AssetRole values = 1;
+}
+
+enum AssetRole {
+  ASSET_ROLE_UNSPECIFIED = 0;
+  ASSET_ROLE_POSTER = 1;
+  ASSET_ROLE_BACKDROP = 2;
+  ASSET_ROLE_BANNER = 3;
+  ASSET_ROLE_LOGO = 4;
+  ASSET_ROLE_THUMB = 5;
+  ASSET_ROLE_EPISODE_STILL = 6;
+  ASSET_ROLE_NFO = 7;
+  ASSET_ROLE_THEME_SONG = 8;
+  ASSET_ROLE_THEME_VIDEO = 9;
+}
+
+// A subtitle that a feature video needs.
+message WantedSubtitle {
+  // A BCP 47 tag. A base language (`pt`) also accepts its regions (`pt-BR`).
+  string language = 1;
+  // The flags that the subtitle must have.
+  repeated SidecarFlag flags = 2;
+}
+
+enum SeverityOverride {
+  SEVERITY_OVERRIDE_UNSPECIFIED = 0;
+  SEVERITY_OVERRIDE_ERROR = 1;
+  SEVERITY_OVERRIDE_WARNING = 2;
+  SEVERITY_OVERRIDE_INFO = 3;
+  // The rule is not reported.
+  SEVERITY_OVERRIDE_OFF = 4;
+}
+
+enum TargetFilesystem {
+  TARGET_FILESYSTEM_UNSPECIFIED = 0;
+  // Names that are valid on Windows, macOS and Linux.
+  TARGET_FILESYSTEM_PORTABLE = 1;
+  // Only `/` and NUL are forbidden.
+  TARGET_FILESYSTEM_POSIX = 2;
+}
+
+message PlanRenamesRequest {
+  OutputProfile profile = 1;
+  // Each tree is interpreted, then planned with its own paths as the existing entries.
+  repeated LibraryTreeQuery queries = 2;
+  // The rules to answer under; unset for the built-in rules.
+  RulesSelection rules = 3;
+}
+
+message PlanRenamesResponse {
+  repeated PlanRenamesResult results = 1;
+  // The rules every result was produced under.
+  RulesIdentity rules = 2;
+}
+
+message PlanRenamesResult {
+  string handle = 1;
+  // In execution order.
+  repeated RenameProposal proposals = 2;
+  // Sorted by source path.
+  repeated BlockedRename blocked = 3;
+  // The files that the plan proposes to remove instead of moving.
+  repeated ProposedRemoval removals = 4;
+}
+
+// A file that the plan proposes to remove. The caller decides whether to remove it.
+message ProposedRemoval {
+  string path = 1;
+  RemovalReason reason = 2;
+}
+
+enum RemovalReason {
+  REMOVAL_REASON_UNSPECIFIED = 0;
+  // The file is release junk.
+  REMOVAL_REASON_RELEASE_JUNK = 1;
+}
+
+message RenameProposal {
+  string from = 1;
+  string to = 2;
+  // `true` if the paths differ only in letter case or Unicode normalization.
+  bool case_only = 3;
+  // `true` if the proposal is part of a rename cycle. The caller moves one of the
+  // cycle's files to a temporary name first.
+  bool requires_temporary_step = 4;
+  // The video this file moves with; unset for the video itself.
+  optional string moves_with = 5;
+  // `true` if no item claims the file. The file moves with its folder.
+  bool unclaimed = 6;
+}
+
+message BlockedRename {
+  string from = 1;
+  repeated BlockReason reasons = 2;
+  // The rendered destination, if one could be rendered.
+  optional string to = 3;
+  repeated string conflicting_paths = 4;
+}
+
+enum BlockReason {
+  BLOCK_REASON_UNSPECIFIED = 0;
+  BLOCK_REASON_MISSING_TITLE = 1;
+  BLOCK_REASON_MISSING_EXTENSION = 2;
+  BLOCK_REASON_MISSING_SEASON = 3;
+  BLOCK_REASON_MISSING_EPISODE_REFERENCE = 4;
+  BLOCK_REASON_ABSOLUTE_WITHOUT_SEASON_MAPPING = 5;
+  BLOCK_REASON_MISSING_EXTRA_TITLE = 6;
+  BLOCK_REASON_RESERVED_NAME = 7;
+  BLOCK_REASON_COMPONENT_TOO_LONG = 8;
+  BLOCK_REASON_AMBIGUOUS_IDENTITY = 9;
+  BLOCK_REASON_AMBIGUOUS_PROVIDER_ID = 10;
+  BLOCK_REASON_AMBIGUOUS_PARTS = 11;
+  BLOCK_REASON_AMBIGUOUS_SEASON = 12;
+  BLOCK_REASON_AMBIGUOUS_SIDECAR_LANGUAGE = 13;
+  BLOCK_REASON_MISPLACED_SERIES = 14;
+  BLOCK_REASON_NO_OWNER = 15;
+  BLOCK_REASON_DISC_STRUCTURE = 16;
+  BLOCK_REASON_DESTINATION_EXISTS = 17;
+  BLOCK_REASON_DESTINATION_COLLISION = 18;
+  BLOCK_REASON_DESTINATION_DIFFERS_ONLY_IN_CASE_OR_NORMALIZATION = 19;
+  BLOCK_REASON_MOVES_WITH_BLOCKED_FILE = 20;
+  // An imported work matches several works of the library.
+  BLOCK_REASON_AMBIGUOUS_LIBRARY_WORK = 21;
+  // An asset role that the item kind cannot have, such as a movie's episode still.
+  BLOCK_REASON_ASSET_ROLE_NOT_FOR_ITEM = 22;
+}
+
+message PlanConversionRequest {
+  // The profile that wrote the library. Its extras and specials folder names are read.
+  OutputProfile from_profile = 1;
+  // The profile of the proposed names.
+  OutputProfile to_profile = 2;
+  repeated LibraryTreeQuery queries = 3;
+  // The rules to answer under; unset for the built-in rules.
+  RulesSelection rules = 4;
+}
+
+message PlanImportRequest {
+  OutputProfile profile = 1;
+  repeated ImportQuery queries = 2;
+  // The rules to answer under; unset for the built-in rules.
+  RulesSelection rules = 3;
+}
+
+// A download tree and the library tree that it is imported into.
+message ImportQuery {
+  string handle = 1;
+  LibraryType library = 2;
+  // The download-relative paths, with directories ending in `/`.
+  repeated string paths = 3;
+  repeated IgnoreFile ignore_files = 4;
+  // Facts that the caller already knows about the download's names (T20).
+  CallerInputs inputs = 5;
+  // The library-relative paths, with directories ending in `/`.
+  repeated string library_paths = 6;
+  repeated IgnoreFile library_ignore_files = 7;
+}
+
+message PlanImportResponse {
+  repeated PlanImportResult results = 1;
+  // The rules every result was produced under.
+  RulesIdentity rules = 2;
+}
+
+message PlanImportResult {
+  string handle = 1;
+  // Sorted by source path.
+  repeated ImportProposal proposals = 2;
+  // Sorted by source path.
+  repeated BlockedRename blocked = 3;
+  // The download files that the import leaves in place, sorted by path.
+  repeated LeftFile left_in_place = 4;
+}
+
+message ImportProposal {
+  // The download-relative source path.
+  string from = 1;
+  // The library-relative destination path.
+  string to = 2;
+  // The video this file moves with; unset for the video itself.
+  optional string moves_with = 3;
+  // `true` if no item claims the file. The file moves with its folder.
+  bool unclaimed = 4;
+}
+
+message LeftFile {
+  string path = 1;
+  LeftReason reason = 2;
+}
+
+enum LeftReason {
+  LEFT_REASON_UNSPECIFIED = 0;
+  LEFT_REASON_SAMPLE = 1;
+  // The file is release junk.
+  LEFT_REASON_RELEASE_JUNK = 2;
+  // No item claims the file, and the file follows no video or movie folder.
+  LEFT_REASON_UNCLAIMED = 3;
+}
+
+message ValidateRequest {
+  OutputProfile profile = 1;
+  // Each tree is interpreted, then validated.
+  repeated LibraryTreeQuery queries = 2;
+  // The rules to answer under; unset for the built-in rules.
+  RulesSelection rules = 3;
+}
+
+message ValidateResponse {
+  repeated ValidateResult results = 1;
+  // The rules every result was produced under.
+  RulesIdentity rules = 2;
+}
+
+message ValidateResult {
+  string handle = 1;
+  // Sorted by first path, then rule.
+  repeated Diagnostic diagnostics = 2;
+  // Reference entries no item took.
+  repeated InputDiagnostic input_diagnostics = 3;
+  // The counts of the diagnostics per rule and severity.
+  ValidationSummary summary = 4;
+}
+
+// The counts of a validation's diagnostics. It reports counts, never a score.
+message ValidationSummary {
+  uint32 errors = 1;
+  uint32 warnings = 2;
+  uint32 infos = 3;
+  // The diagnostics that a suppression left out.
+  uint32 suppressed = 4;
+  // The count per rule and severity, the most severe first.
+  repeated RuleCount rules = 5;
+}
+
+message RuleCount {
+  DiagnosticRule rule = 1;
+  string code = 2;
+  Severity severity = 3;
+  uint32 count = 4;
+}
+
+message Diagnostic {
+  DiagnosticRule rule = 1;
+  repeated string paths = 2;
+  // The ambiguity reason, the provider, the blocked reason, or the fact that a folder
+  // mismatch disagrees on (as its snake_case name).
+  optional string reason = 3;
+  // The path that the entry of a profile violation has under the profile.
+  optional string proposed_path = 4;
+  // The rule's severity, or the profile's override of it.
+  Severity severity = 5;
+  // The rule's stable code (`N101`).
+  string code = 6;
+  // The English message.
+  string message = 7;
+}
+
+enum Severity {
+  SEVERITY_UNSPECIFIED = 0;
+  // The entry cannot be named safely.
+  SEVERITY_ERROR = 1;
+  // The name does not follow the profile, or a fact is probably wrong.
+  SEVERITY_WARNING = 2;
+  // An optional fact is missing.
+  SEVERITY_INFO = 3;
+}
+
+enum DiagnosticRule {
+  DIAGNOSTIC_RULE_UNSPECIFIED = 0;
+  DIAGNOSTIC_RULE_AMBIGUOUS_IDENTITY = 1;
+  DIAGNOSTIC_RULE_CONFLICTING_PROVIDER_IDS = 2;
+  DIAGNOSTIC_RULE_MISPLACED_SERIES = 3;
+  DIAGNOSTIC_RULE_ORPHAN_EXTRA = 4;
+  DIAGNOSTIC_RULE_ORPHAN_SIDECAR = 5;
+  DIAGNOSTIC_RULE_ORPHAN_ARTWORK = 6;
+  DIAGNOSTIC_RULE_UNCLAIMED_FILE = 7;
+  DIAGNOSTIC_RULE_MISSING_PART = 8;
+  DIAGNOSTIC_RULE_DUPLICATE_PART = 9;
+  DIAGNOSTIC_RULE_CLASHING_VERSION_LABELS = 10;
+  DIAGNOSTIC_RULE_INSUFFICIENT_FACTS = 11;
+  DIAGNOSTIC_RULE_INVALID_NAME_UNDER_PROFILE = 12;
+  DIAGNOSTIC_RULE_PROFILE_VIOLATION = 13;
+  DIAGNOSTIC_RULE_FOLDER_MISMATCH = 14;
+  DIAGNOSTIC_RULE_OVERLAPPING_EPISODES = 15;
+  DIAGNOSTIC_RULE_MISSING_YEAR = 16;
+  DIAGNOSTIC_RULE_MISSING_SERIES_YEAR = 17;
+  DIAGNOSTIC_RULE_MISSING_PROVIDER_ID = 18;
+  DIAGNOSTIC_RULE_MISSING_EPISODE_TITLE = 19;
+  // A reference episode the library lacks (reason `SxxEyy`).
+  DIAGNOSTIC_RULE_MISSING_EPISODE = 20;
+  // An episode the reference does not list (reason `SxxEyy`).
+  DIAGNOSTIC_RULE_UNEXPECTED_EPISODE = 21;
+  // A movie year that differs from the reference (reason: the reference year).
+  DIAGNOSTIC_RULE_REFERENCE_YEAR_MISMATCH = 22;
+  // An unclaimed file that is release junk.
+  DIAGNOSTIC_RULE_RELEASE_JUNK = 23;
+  // One work in two folders (reason: the provider, or title_and_year).
+  DIAGNOSTIC_RULE_DUPLICATE_WORK = 24;
+  // Two episode items with the same coverage (reason: SxxEyy).
+  DIAGNOSTIC_RULE_DUPLICATE_EPISODE = 25;
+  // An asset role that the profile requires and an item lacks (reason: the role).
+  DIAGNOSTIC_RULE_MISSING_ASSET = 26;
+  // A subtitle that the profile wants and a feature video lacks (reason: language and flags).
+  DIAGNOSTIC_RULE_MISSING_SUBTITLE = 27;
+}
+
+// ---------------------------------------------------------------------------
+// RenderNames
+
+message RenderNamesRequest {
+  OutputProfile profile = 1;
+  repeated RenderNamesQuery queries = 2;
+}
+
+message RenderNamesQuery {
+  string handle = 1;
+  NamingFacts facts = 2;
+}
+
+// The facts that a name is rendered from.
+message NamingFacts {
+  // The library type, which selects the layout. Required.
+  LibraryType library = 1;
+  // The movie's or series' title.
+  optional string title = 2;
+  optional uint32 year = 3;
+  map<string, string> provider_ids = 4;
+  optional string edition = 5;
+  optional string version_label = 6;
+  // The 1-based part number of a stacked representation.
+  optional uint32 part = 7;
+  // The video's extension.
+  optional string container = 8;
+  optional uint32 season = 9;
+  repeated uint32 episodes = 10;
+  // Never written. The renderer uses it only to block a name that has no season
+  // mapping.
+  repeated uint32 absolute = 11;
+  // `YYYY-MM-DD`.
+  optional string date = 12;
+  optional string episode_title = 13;
+  // An extra of the work to render instead of the work's video.
+  ExtraFacts extra = 14;
+  // A sidecar to render for the video (or extra) that the other facts name.
+  SidecarFacts sidecar = 15;
+  // The movie has extras or folder files. A flat movie layout keeps its folder.
+  bool has_extras = 16;
+  // An asset of the item to render instead of the item's video. The item is an episode
+  // if the facts have episodes, a date or absolute numbers, else a season if they have a
+  // season, else the movie or series.
+  AssetFacts asset = 17;
+}
+
+message AssetFacts {
+  // Required.
+  AssetRole role = 1;
+  optional string extension = 2;
+}
+
+message ExtraFacts {
+  // Required.
+  ExtraKind kind = 1;
+  optional string title = 2;
+  optional uint32 year = 3;
+  // The group folder inside the kind's folder (`On Location`).
+  optional string group = 4;
+}
+
+message SidecarFacts {
+  optional string language = 1;
+  repeated SidecarFlag flags = 2;
+  optional string title = 3;
+  optional string extension = 4;
+}
+
+message RenderNamesResponse {
+  repeated RenderNamesResult results = 1;
+  // The rules every result was produced under.
+  RulesIdentity rules = 2;
+}
+
+message RenderNamesResult {
+  string handle = 1;
+  // Unset if no name could be rendered.
+  optional string path = 2;
+  repeated BlockReason blocked_reasons = 3;
+}
+
+// ---------------------------------------------------------------------------
+// RankCandidates
+
+message RankCandidatesRequest {
+  repeated RankCandidatesQuery queries = 1;
+  // The rules to answer under; unset for the built-in rules.
+  RulesSelection rules = 2;
+}
+
+message RankCandidatesQuery {
+  string handle = 1;
+  MatchFacts facts = 2;
+  repeated MatchCandidate candidates = 3;
+}
+
+enum EntityKind {
+  ENTITY_KIND_UNSPECIFIED = 0;
+  ENTITY_KIND_MOVIE = 1;
+  ENTITY_KIND_SERIES = 2;
+  ENTITY_KIND_EPISODE = 3;
+}
+
+message MatchFacts {
+  EntityKind kind = 1;
+  optional string title = 2;
+  repeated string alternate_titles = 3;
+  optional uint32 year = 4;
+  // `YYYY-MM-DD`.
+  optional string date = 5;
+  // Map of provider namespace to ID.
+  map<string, string> provider_ids = 6;
+  optional uint32 season = 7;
+  // Every episode that the media covers.
+  repeated uint32 episodes = 8;
+  // The order that `season` and `episodes` are numbered in. Unset for the aired order.
+  EpisodeOrder order = 9;
+}
+
+message MatchCandidate {
+  // The caller's opaque name for the candidate, unique per query.
+  string handle = 1;
+  // Required.
+  EntityKind kind = 2;
+  string title = 3;
+  repeated string alternate_titles = 4;
+  optional uint32 year = 5;
+  optional string date = 6;
+  map<string, string> provider_ids = 7;
+  optional uint32 season = 8;
+  optional uint32 episode = 9;
+  // The title in the entity's original language.
+  optional string original_title = 10;
+  repeated LocalizedTitle localized_titles = 11;
+  // Each date's year counts as a year of the candidate.
+  repeated ReleaseDate release_dates = 12;
+  // The episode's coordinates in other orders. `season` and `episode` are the aired ones.
+  repeated EpisodeCoordinates coordinates = 13;
+}
+
+message LocalizedTitle {
+  string title = 1;
+  // A BCP 47 tag.
+  optional string language = 2;
+}
+
+message ReleaseDate {
+  // `YYYY-MM-DD`.
+  string date = 1;
+  // An ISO 3166-1 code.
+  optional string country = 2;
+}
+
+message EpisodeCoordinates {
+  // Required.
+  EpisodeOrder order = 1;
+  // Unset in the absolute order.
+  optional uint32 season = 2;
+  uint32 episode = 3;
+}
+
+message SearchQueriesRequest {
+  repeated SearchQueriesQuery queries = 1;
+  // The rules to answer under; unset for the built-in rules.
+  RulesSelection rules = 2;
+}
+
+message SearchQueriesQuery {
+  string handle = 1;
+  MatchFacts facts = 2;
+}
+
+message SearchQueriesResponse {
+  repeated SearchQueriesResult results = 1;
+  // The rules every result was produced under.
+  RulesIdentity rules = 2;
+}
+
+message SearchQueriesResult {
+  string handle = 1;
+  // In the order to send them.
+  repeated SearchQuery queries = 2;
+}
+
+// A lookup by provider ID (`provider` and `id`), or a search by `title` and an optional
+// `year`.
+message SearchQuery {
+  QueryReason reason = 1;
+  EntityKind kind = 2;
+  optional string provider = 3;
+  optional string id = 4;
+  optional string title = 5;
+  optional uint32 year = 6;
+}
+
+enum QueryReason {
+  QUERY_REASON_UNSPECIFIED = 0;
+  QUERY_REASON_PROVIDER_ID = 1;
+  QUERY_REASON_TITLE_WITH_YEAR = 2;
+  QUERY_REASON_ALTERNATE_TITLE_WITH_YEAR = 3;
+  QUERY_REASON_TITLE = 4;
+  QUERY_REASON_ALTERNATE_TITLE = 5;
+  QUERY_REASON_MAIN_TITLE = 6;
+}
+
+message RankCandidatesResponse {
+  repeated RankCandidatesResult results = 1;
+  // The rules every result was produced under.
+  RulesIdentity rules = 2;
+}
+
+message RankCandidatesResult {
+  string handle = 1;
+  MatchOutcome outcome = 2;
+  // The selected candidate's handle.
+  optional string selected = 3;
+  // `provider_id`, `best_score`, `tied_scores`, `several_provider_id_matches`,
+  // `no_candidates`, `all_contradicted`, `provider_id_match_contradicted`,
+  // `insufficient_evidence`, `duplicate_handle` or `duplicate_query_handle`.
+  string reason = 4;
+  // The candidates an ambiguous result could not choose between.
+  repeated string tied = 5;
+  // Every candidate: uncontradicted candidates first, then by score, then by handle.
+  repeated ScoredCandidate candidates = 6;
+}
+
+enum MatchOutcome {
+  MATCH_OUTCOME_UNSPECIFIED = 0;
+  MATCH_OUTCOME_SELECTED = 1;
+  MATCH_OUTCOME_AMBIGUOUS = 2;
+  MATCH_OUTCOME_NO_MATCH = 3;
+  MATCH_OUTCOME_INVALID_INPUT = 4;
+}
+
+enum MatchComponent {
+  MATCH_COMPONENT_UNSPECIFIED = 0;
+  MATCH_COMPONENT_PROVIDER_ID = 1;
+  MATCH_COMPONENT_KIND = 2;
+  MATCH_COMPONENT_TITLE = 3;
+  MATCH_COMPONENT_YEAR = 4;
+  MATCH_COMPONENT_EPISODE = 5;
+  MATCH_COMPONENT_DATE = 6;
+}
+
+message ScoredCandidate {
+  string handle = 1;
+  // The sum of the components' points; not a probability.
+  uint32 score = 2;
+  repeated ScoreComponent components = 3;
+  repeated Contradiction contradictions = 4;
+}
+
+message ScoreComponent {
+  MatchComponent component = 1;
+  uint32 points = 2;
+  string reason = 3;
+  // The compared namespace, for a provider ID component.
+  optional string provider = 4;
+  // The candidate title that agreed best, for a title component.
+  optional string matched_title = 5;
+  // The language of the localized title that agreed best, for a title component.
+  optional string matched_language = 6;
+  // The release date whose year agreed best, for a year component.
+  optional string matched_date = 7;
+  // The country of `matched_date`.
+  optional string matched_country = 8;
+  // The order of the compared coordinates, for an episode component.
+  EpisodeOrder order = 9;
+}
+
+message Contradiction {
+  MatchComponent component = 1;
+  string reason = 2;
+  optional string provider = 3;
+}
+
+// ---------------------------------------------------------------------------
+// SuggestLibraryType
+
+message SuggestLibraryTypeRequest {
+  repeated SuggestLibraryTypeQuery queries = 1;
+  // The rules to answer under. Unset for the built-in rules.
+  RulesSelection rules = 2;
+}
+
+message SuggestLibraryTypeQuery {
+  string handle = 1;
+  // The root-relative paths of one library folder.
+  repeated string paths = 2;
+}
+
+message SuggestLibraryTypeResponse {
+  repeated SuggestLibraryTypeResult results = 1;
+  // The rules that every result was produced under.
+  RulesIdentity rules = 2;
+}
+
+message SuggestLibraryTypeResult {
+  string handle = 1;
+  // `tv` if at least 90% of the videos have an episode signal, `movies` if at most 10% do,
+  // ambiguous between them, and unknown without videos.
+  LibraryTypeFinding library = 2;
+  // The videos with an episode signal, sorted by path.
+  repeated string episode_videos = 3;
+  // The other videos, extras left out, sorted by path.
+  repeated string movie_videos = 4;
+}
+
+message LibraryTypeFinding {
+  FindingStatus status = 1;
+  // Set when resolved.
+  LibraryType value = 2;
+  Evidence evidence = 3;
+  // The competing values when ambiguous.
+  repeated LibraryType candidates = 4;
+  // The reason the fact is ambiguous.
+  optional string reason = 5;
+}

@@ -1,0 +1,43 @@
+name: Naming case
+description: A file or folder name that nomenclator reads wrong.
+labels: ["naming case"]
+body:
+  - type: input
+    id: path
+    attributes:
+      label: Path
+      description: The root-relative path, with `/` separators. A folder path ends in `/`.
+      placeholder: Arrival (2016)/Arrival.2016.1080p.BluRay.x264.mkv
+    validations:
+      required: true
+  - type: dropdown
+    id: library
+    attributes:
+      label: Library type
+      options:
+        - movies
+        - tv
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected facts
+      description: The facts that the name states, such as title, year, season and episode.
+      placeholder: "title: Arrival\nyear: 2016"
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual output
+      description: 'The output of `nomenclator parse "<path>" --library <type> --format json`.'
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: case
+    attributes:
+      label: Corpus case
+      description: Optional. The case in the format of `corpus/README.md`.
+      render: yaml

@@ -1,0 +1,7 @@
+# Language pack `ru`: the words a library in this language uses. Applied when a
+# caller declares its languages; see decision X11.
+name: language-ru
+season_words:
+  add: ["сезон"]
+languages:
+  add: { ru: ["русский"] }

@@ -1,0 +1,2897 @@
+- name: a bare two-digit file name under a series folder with no season folder is the episode (T6)
+  operation: parse_episode_name
+  input:
+    path: Columbo/12.avi
+  expect:
+    episodes:
+    - 12
+
+- name: a series name followed by a two-digit number, with no season folder, is the episode (T6)
+  operation: parse_episode_name
+  input:
+    path: Columbo/Columbo 82.avi
+  expect:
+    episodes:
+    - 82
+
+- name: a series name followed by a three-digit number, with no season folder, is an absolute number, not an episode (T6, T14)
+  operation: parse_episode_name
+  input:
+    path: Frasier/Frasier 112.avi
+  expect:
+    episodes: null
+    absolute:
+    - 112
+
+- name: a three-digit number starting with 1 is absolute, not season 1, when no season folder contains it (T6)
+  operation: parse_episode_name
+  input:
+    path: Frasier/Frasier 101.avi
+  expect:
+    episodes: null
+    absolute:
+    - 101
+
+- name: a four-digit number in a season folder whose number its leading digits do not match is absolute (`Season 21/Bleach 1001`, T6)
+  operation: parse_episode_name
+  input:
+    path: Season 21/Bleach 1001.mkv
+  expect:
+    episodes: null
+    absolute:
+    - 1001
+
+- name: an NxNN token inside a bracketed release name with a year folder resolves to the episode, not the codec numbers (`Severance 2x05 [WEBDL-1080p][EAC3 5.1]`)
+  operation: parse_episode_name
+  input:
+    path: Severance (2022)/Severance 2x05 [WEBDL-1080p][EAC3 5.1][h264][-NTb] - Hello, Ms. Cobel.mkv
+  expect:
+    episodes:
+    - 5
+
+- name: a talk show NxNN token followed by a bracketed release tag and a guest name resolves to the episode (`Last Week Tonight 9x14`)
+  operation: parse_episode_name
+  input:
+    path: Last Week Tonight/Last Week Tonight 9x14 - [WEBDL-720p][AAC 2.0][x264] Some Guest.mkv
+  expect:
+    episodes:
+    - 14
+
+- name: a Spanish episode title after a compact NxNN token does not change the episode (`Money Heist 4x01 Lo que es justo`)
+  operation: parse_episode_name
+  input:
+    path: Money Heist 4x01 Lo que es justo [WEB-DL NF 1080p h264 Dual DD 5.1 Sub].mkv
+  expect:
+    episodes:
+    - 1
+
+- name: a localized episode word with a number inside the title does not replace the episode token (`Gomorra 3x08 Episodio 2`)
+  operation: parse_episode_name
+  input:
+    path: Gomorra 3x08 Episodio 2 [WEB-DL 1080p h264 Sub].mkv
+  expect:
+    episodes:
+    - 8
+
+- name: an S-and-E token with a free-text tail inside a season folder resolves to the episode (`Season 02/S02E03 Some Words`)
+  operation: parse_episode_name
+  input:
+    path: Season 02/S02E03 Some Words.avi
+  expect:
+    episodes:
+    - 3
+
+- name: a list of repeated season-and-episode tokens resolves to every episode, never the season (`02x03 - 02x04 - 02x15`, T15)
+  operation: parse_episode_name
+  input:
+    path: Season 2/Arrested Development 2x03 - 2x04 - 2x15 - Ep Name.mp4
+  expect:
+    episodes:
+    - 3
+    - 4
+    - 15
+
+- name: a list whose later tokens drop the season (`02x03 - x04 - x15`) resolves to the same episodes (T15)
+  operation: parse_episode_name
+  input:
+    path: Season 02/Scrubs - 02x03 - x04 - x15 - Ep Name.mp4
+  expect:
+    episodes:
+    - 3
+    - 4
+    - 15
+
+- name: a compact list of episodes after one season token resolves to each episode (`02x03x04x15`, T15)
+  operation: parse_episode_name
+  input:
+    path: Season 02/Scrubs - 02x03x04x15 - Ep Name.mp4
+  expect:
+    episodes:
+    - 3
+    - 4
+    - 15
+
+- name: a dash-joined run of episodes after NxNN resolves to the episodes listed (`04x03-04-15`, T15)
+  operation: parse_episode_name
+  input:
+    path: Season 4/04x03-04-15 - Hostile Takeover.mp4
+  expect:
+    episodes:
+    - 3
+    - 4
+    - 15
+
+- name: a dash and E-token range after NxNN is an inclusive range from the first episode to the last (`02x03-E15`, T15)
+  operation: parse_episode_name
+  input:
+    path: Season 02/Scrubs - 02x03-E15 - Ep Name.mp4
+  expect:
+    first_episode: 3
+    last_episode: 15
+
+- name: an explicit E-token list with a gap does not fill the gap, so the episodes are 23, 24 and 26 and not 25 (T15)
+  operation: parse_episode_name
+  input:
+    path: Season 1/Ghost Whisperer - S01E23-E24-E26 - Some Title.mp4
+  expect:
+    episodes:
+    - 23
+    - 24
+    - 26
+
+- name: an E-token range inside a year-numbered season folder does not fill the gap (`S2009E23-E24-E26`, T9, T15)
+  operation: parse_episode_name
+  input:
+    path: The Twilight Zone/Season 2009/The Twilight Zone S2009E23-E24-E26 - Some Title.mp4
+  expect:
+    episodes:
+    - 23
+    - 24
+    - 26
+
+- name: a 2009x02 token in a year-numbered season folder is season 2009 and episode 2 (T9)
+  operation: parse_episode_name
+  input:
+    path: The Twilight Zone/Season 2009/The Twilight Zone 2009x02 blah.avi
+  expect:
+    season: 2009
+    episodes:
+    - 2
+
+- name: a year-numbered season token with an S prefix and an x-E separator resolves to the episode (`S2009xE02`, T9)
+  operation: parse_episode_name
+  input:
+    path: The Twilight Zone/Season 2009/The Twilight Zone S2009xE02 blah.avi
+  expect:
+    episodes:
+    - 2
+
+- name: a year-numbered season with a dash-joined run resolves to each episode (`2009x03-04-15`, T15)
+  operation: parse_episode_name
+  input:
+    path: The Twilight Zone/Season 2009/The Twilight Zone - 2009x03-04-15 - Ep Name.mp4
+  expect:
+    episodes:
+    - 3
+    - 4
+    - 15
+
+- name: a leading number before ` - ` is the episode, not a dash-number later in the title (`02 - Pilot-02 a`)
+  operation: parse_episode_name
+  input:
+    path: Season 1/02 - Pilot-02 a.avi
+  expect:
+    episodes:
+    - 2
+
+- name: a number inside the title after a leading ` - NN` does not change the episode (`02 - Room 14 Cleanup`)
+  operation: parse_episode_name
+  input:
+    path: Season 2/02 - Room 14 Cleanup.avi
+  expect:
+    episodes:
+    - 2
+
+- name: a bare number followed by a dot and a title is the episode (`4. Hard Landing`)
+  operation: parse_episode_name
+  input:
+    path: Season 4/4. Hard Landing.avi
+  expect:
+    episodes:
+    - 4
+
+- name: a bare two-digit file name in a season folder is the episode (`07.avi`)
+  operation: parse_episode_name
+  input:
+    path: Season 3/07.avi
+  expect:
+    episodes:
+    - 7
+
+- name: a season-and-episode token in a release-pack folder resolves to the episode, not the pack name (`Cheers.S03.DVDRip`)
+  operation: parse_episode_name
+  input:
+    path: Cheers/Cheers.S03.DVDRip.XviD-SAiNTS/Cheers s03e07 Holiday Party NTSC DVDRip.avi
+  expect:
+    episodes:
+    - 7
+
+- name: a year as the season in an S-E token resolves to the episode (`Jeopardy S2017E368`, T9)
+  operation: parse_episode_name
+  input:
+    path: Jeopardy/Jeopardy S2017E368.mkv
+  expect:
+    episodes:
+    - 368
+
+- name: a bracketed release group before a ` - NN` number in a season folder is absolute when the number does not match the season (`Season 2/[SubsPlease] Demon Slayer - 136`, T14)
+  operation: parse_episode_name
+  input:
+    path: Season 2/[SubsPlease] Demon Slayer - 136 [1080p].mkv
+  expect:
+    episodes: null
+    absolute:
+    - 136
+
+- name: a three-digit absolute number after ` - ` in a season folder is not an episode when its leading digit is not the season (`Season 2/Jujutsu Kaisen - 101`, T6)
+  operation: parse_episode_name
+  input:
+    path: Season 2/Jujutsu Kaisen - 101.mkv
+  expect:
+    episodes: null
+    absolute:
+    - 101
+
+- name: a four-digit number in a season 1 folder is absolute (`Season 1/Detective Conan - 1094`, T6)
+  operation: parse_episode_name
+  input:
+    path: Detective Conan/Season 1/Detective Conan - 1094 [1080p].mkv
+  expect:
+    episodes: null
+    absolute:
+    - 1094
+
+- name: a number after ` - ` in a folder whose title ends in a number is the episode, not the title number (`Fate Zero 2 - 03`, T6)
+  operation: parse_episode_name
+  input:
+    path: Fate Zero 2/[Gaia] Fate Zero 2 - 03 [720p].mkv
+  expect:
+    episodes:
+    - 3
+
+- name: a bracketed checksum and release group are dropped from a root-level absolute number (`[Sakurato] Ranma ½ - 147 [2BFE9A10]`, T14)
+  operation: parse_episode_name
+  input:
+    path: '[Sakurato] Ranma ½ - 147 [2BFE9A10].mkv'
+  expect:
+    episodes: null
+    absolute:
+    - 147
+
+- name: the episode of an episode word with a number and a title that contains a number is the first number (`Episode 21 - 94 Meetings`)
+  operation: parse_episode_name
+  input:
+    path: Season 3/Episode 21 - 94 Meetings.mp4
+  expect:
+    episodes:
+    - 21
+
+- name: a dotted release name with a year in the title and a version tag resolves to the episode of its token (`Dark.Cloud.2017.E07.V2`)
+  operation: parse_episode_name
+  input:
+    path: Dark.Cloud.2017.V2.web-dl.1080p.h264.aac-hqmtv/Dark.Cloud.2017.E07.V2.web-dl.1080p.h264.aac-hqmtv.mkv
+  expect:
+    episodes:
+    - 7
+
+- name: a season word and an episode word in a title resolve to the episode (`Murphy Brown Season 3 Episode 9`)
+  operation: parse_episode_name
+  input:
+    path: Season 3/Murphy Brown Season 3 Episode 9 - Title.avi
+  expect:
+    episodes:
+    - 9
+
+- name: a short S-and-E form with a spaced episode number resolves to the episode (`S3 E9`)
+  operation: parse_episode_name
+  input:
+    path: Season 3/Murphy Brown S3 E9 - Title.avi
+  expect:
+    episodes:
+    - 9
+
+- name: a zero-padded season and episode split by a space resolves to the episode (`S003 E009`)
+  operation: parse_episode_name
+  input:
+    path: Season 3/S003 E009 Title.avi
+  expect:
+    season: 3
+    episodes:
+    - 9
+
+- name: a bare Season-and-Episode name with no show title resolves to the episode (`Season 3 Episode 9`)
+  operation: parse_episode_name
+  input:
+    path: Season 3/Season 3 Episode 9.mkv
+  expect:
+    episodes:
+    - 9
+
+- name: a bracketed episode number after the group and title is the episode, with codec tags after it (`[11][Hi10p_720p]`)
+  operation: parse_episode_name
+  input:
+    path: '[Kaitou] Ghost Hunt [11][Hi10p_720p][x264_FLAC].mkv'
+  expect:
+    episodes:
+    - 11
+
+- name: a bracketed episode number before dimensions and a checksum is the episode (`[09][BDRIP][1280x720]`)
+  operation: parse_episode_name
+  input:
+    path: '[Chihiro] Tenchi Muyo [09][BDRIP][1280x720][x265_AAC][3A1F9C02].mp4'
+  expect:
+    episodes:
+    - 9
+
+- name: a three-digit number after a series folder with a year, and no season folder, is absolute (`Lupin the Third - 317`, T14)
+  operation: parse_episode_name
+  input:
+    path: Lupin the Third (1971)/Lupin the Third - 317.mkv
+  expect:
+    episodes: null
+    absolute:
+    - 317
+
+- name: a two-digit number after ` - ` in a year-named series folder is the episode (`Hyouka - 07`)
+  operation: parse_episode_name
+  input:
+    path: Hyouka (2012)/Hyouka - 07.mkv
+  expect:
+    episodes:
+    - 7
+
+- name: a series name, ` - NN ` and an episode title with no season folder resolve to the episode (`Futurama - 02 - Ep Name`)
+  operation: parse_episode_name
+  input:
+    path: Futurama/Futurama - 02 - Ep Name.avi
+  expect:
+    episodes:
+    - 2
+
+- name: a two-digit number joined to the title by a dash is the episode (`02-Ep Name`)
+  operation: parse_episode_name
+  input:
+    path: Futurama/02-Ep Name.avi
+  expect:
+    episodes:
+    - 2
+
+- name: a two-digit number joined to the title by dots is the episode (`02.EpName`)
+  operation: parse_episode_name
+  input:
+    path: Futurama/02.EpName.avi
+  expect:
+    episodes:
+    - 2
+
+- name: a season digit in the series title before ` - NN` does not replace the episode number (`Futurama 5 - 02 Ep Name`)
+  operation: parse_episode_name
+  input:
+    path: Futurama 5/Futurama 5 - 02 Ep Name.avi
+  expect:
+    episodes:
+    - 2
+
+- name: a dotted release name with an S-E token and dots in the title resolves to the episode (`Futurama.S12E09`)
+  operation: parse_episode_name
+  input:
+    path: Season 12/Futurama.S12E09.Some Title.mp4
+  expect:
+    episodes:
+    - 9
+
+- name: an episode word and number as the whole name resolves to the episode (`Episode - 12`)
+  operation: parse_episode_name
+  input:
+    path: Season 3/Episode - 12.avi
+  expect:
+    episodes:
+    - 12
+
+- name: an episode word and number followed by a title resolves to the episode (`Episode 14 - Long Road Home`)
+  operation: parse_episode_name
+  input:
+    path: Season 3/Episode 14 - Long Road Home.avi
+  expect:
+    episodes:
+    - 14
+
+- name: a bare number followed by a title is the episode (`16 Dead Air`)
+  operation: parse_episode_name
+  input:
+    path: Season 3/16 Dead Air.avi
+  expect:
+    episodes:
+    - 16
+
+- name: a leading number before ` - ` is the episode, not the number after the dash (`16 - 12 Night Shift`)
+  operation: parse_episode_name
+  input:
+    path: Season 3/16 - 12 Night Shift.avi
+  expect:
+    episodes:
+    - 16
+
+- name: an NxNN token in a folder named for the show with a 01 leading zero resolves to the episode (`Twin Peaks 01x02`)
+  operation: parse_episode_name
+  input:
+    path: Season 1/Twin Peaks 01x02 blah.avi
+  expect:
+    episodes:
+    - 2
+
+- name: an S-prefixed NxNN token resolves to the episode (`Northern Exposure S01x02`)
+  operation: parse_episode_name
+  input:
+    path: Season 1/Northern Exposure S01x02 blah.avi
+  expect:
+    episodes:
+    - 2
+
+- name: an S-and-E token with an x between the letters resolves to the episode (`Hill Street Blues S01xE02`)
+  operation: parse_episode_name
+  input:
+    path: Season 1/Hill Street Blues S01xE02 blah.avi
+  expect:
+    episodes:
+    - 2
+
+- name: a series name followed by an S-and-E token resolves to the episode (`Cheers S01E02`)
+  operation: parse_episode_name
+  input:
+    path: Season 1/Cheers S01E02 blah.avi
+  expect:
+    episodes:
+    - 2
+
+- name: a directory named for a series and an S-E token resolves to the series, season and episode
+  operation: parse_episode_name
+  input:
+    path: Lucifer/Lucifer-S01E01
+    kind: directory
+  expect:
+    series_name: Lucifer
+    season: 1
+    episodes:
+    - 1
+
+- name: a directory with a three-digit episode number after a spaced dash resolves to the episode as a number (`S04E011`)
+  operation: parse_episode_name
+  input:
+    path: Lucifer - S04E011
+    kind: directory
+  expect:
+    series_name: Lucifer
+    season: 4
+    episodes:
+    - 11
+
+- name: a directory with a lowercase x token resolves to the series, season and episode (`s01x01`)
+  operation: parse_episode_name
+  input:
+    path: Brooklyn Nine-Nine/Brooklyn Nine-Nine s01x01
+    kind: directory
+  expect:
+    series_name: Brooklyn Nine-Nine
+    season: 1
+    episodes:
+    - 1
+
+- name: a directory with a year in its series title and a season folder resolves to the series without the year token (`The Mandalorian (2015)/Season 4`)
+  operation: parse_episode_name
+  input:
+    path: The Mandalorian (2015)/Season 4/The Mandalorian (2015).S04E03
+    kind: directory
+  expect:
+    series_name: The Mandalorian
+    season: 4
+    episodes:
+    - 3
+
+- name: a year in a series folder title is the series year, and the season folder number is the season (`Severance (2022)/Season 2`)
+  operation: parse_episode_name
+  input:
+    path: Severance (2022)/Season 2/Severance (2022).S02E03
+    kind: directory
+  expect:
+    series_name: Severance
+    series_year: 2022
+    season: 2
+    episodes:
+    - 3
+
+- name: a series name before a dash and an NxNN-list resolves to the series name and the first episode (`Hannibal - 02x03-04-15`)
+  operation: parse_episode_name
+  input:
+    path: Season 2/Hannibal - 02x03-04-15 - Ep Name.mp4
+  expect:
+    series_name: Hannibal
+    season: 2
+    first_episode: 3
+
+- name: a series name with a spaced dash and a dotted list resolves to the series name and the first episode (`Hannibal - 02x03 - 02x04 - 02x15`)
+  operation: parse_episode_name
+  input:
+    path: Season 2/Hannibal - 02x03 - 02x04 - 02x15 - Ep Name.mp4
+  expect:
+    series_name: Hannibal
+    season: 2
+    first_episode: 3
+
+- name: a series name with a shorthand list after a dash resolves to the series name and the first episode (`Hannibal - 02x03 - x04 - x15`)
+  operation: parse_episode_name
+  input:
+    path: Season 02/Hannibal - 02x03 - x04 - x15 - Ep Name.mp4
+  expect:
+    series_name: Hannibal
+    season: 2
+    first_episode: 3
+
+- name: a series name with a compact list resolves to the series name and the first episode (`Hannibal - 02x03x04x15`)
+  operation: parse_episode_name
+  input:
+    path: Season 02/Hannibal - 02x03x04x15 - Ep Name.mp4
+  expect:
+    series_name: Hannibal
+    season: 2
+    first_episode: 3
+
+- name: a series name with a dash-E range resolves to the series name and the first episode (`Hannibal - 02x03-E15`)
+  operation: parse_episode_name
+  input:
+    path: Season 02/Hannibal - 02x03-E15 - Ep Name.mp4
+  expect:
+    series_name: Hannibal
+    season: 2
+    first_episode: 3
+
+- name: a series name with a gapped E-token list resolves to the series name and the first episode (`Ghost Whisperer - S01E23-E24-E26`)
+  operation: parse_episode_name
+  input:
+    path: Season 1/Ghost Whisperer - S01E23-E24-E26 - Some Title.mp4
+  expect:
+    series_name: Ghost Whisperer
+    season: 1
+    first_episode: 23
+
+- name: a series name with a token and a free tail resolves to the series name, season and episode (`seriesname S01E02 blah`)
+  operation: parse_episode_name
+  input:
+    path: Season 1/Northern Exposure S01E02 blah.avi
+  expect:
+    series_name: Northern Exposure
+    season: 1
+    episodes:
+    - 2
+
+- name: a dotted series name with an S-E token resolves to the series name with spaces and the season (`Frasier.S09E12`)
+  operation: parse_episode_name
+  input:
+    path: Season 9/Frasier.S09E12.Dinner Party.mp4
+  expect:
+    series_name: Frasier
+    season: 9
+    episodes:
+    - 12
+
+- name: a series folder named by the show, with a dotted season folder, resolves to the series, the season and the episode (`Mad.Men/Season 3`)
+  operation: parse_episode_name
+  input:
+    path: Mad.Men/Season 3/Mad Men Season 3 Episode 09 - Flight Path.avi
+  expect:
+    series_name: Mad Men
+    season: 3
+    episodes:
+    - 9
+
+- name: a series title with a leading article and an NxNN token resolves to the series name and the episode (`The Crown 2x09`)
+  operation: parse_episode_name
+  input:
+    path: The Crown/Season 2/The Crown 2x09 Lessons.avi
+  expect:
+    series_name: The Crown
+    season: 2
+    episodes:
+    - 9
+
+- name: a non-English series with a Spanish episode title resolves to the series name and the episode (`Ozark 2x01`)
+  operation: parse_episode_name
+  input:
+    path: Ozark 2x01 Mañana en el lago [WEB-DL AMZN 1080p h264 Dual DD5.1 Subs].mkv
+  expect:
+    series_name: Ozark
+    season: 2
+    episodes:
+    - 1
+
+- name: a non-English series title with a localized episode word and number resolves to the series name and the episode (`Elite 1x06 Episodio 6`)
+  operation: parse_episode_name
+  input:
+    path: Elite 1x06 Episodio 6 [WEB-DL NF 1080p h264 Dual DD 5.1 Sub].mkv
+  expect:
+    series_name: Elite
+    season: 1
+    episodes:
+    - 6
+
+- name: a space-titled series with a year before a space-free episode code includes the year in the series name (`Space Battleship Yamato 2199.E03`)
+  operation: parse_episode_name
+  input:
+    path: Season 4/Space.Battleship.Yamato.2199.E03.avi
+  expect:
+    series_name: Space Battleship Yamato 2199
+    season: 4
+    episodes:
+    - 3
+
+- name: a talk show with a two-digit season and an NxNN token resolves to the season and the episode (`The Daily Mad Men 25x22`)
+  operation: parse_episode_name
+  input:
+    path: The Daily Mad Men/The Daily Mad Men 25x22 - [WEBDL-720p][AAC 2.0][x264] Noah Baumbach-TBS.mkv
+  expect:
+    series_name: The Daily Mad Men
+    season: 25
+    episodes:
+    - 22
+
+- name: a dotted title with a year and an E-token and no season resolves to the series year and no season (`Saga.of.Ash.2017.E07`, T7)
+  operation: parse_episode_name
+  input:
+    path: Saga.of.Ash.2017.V2.web-dl.1080p.h264.aac-hqmtv/Saga.of.Ash.2017.E07.V2.web-dl.1080p.h264.aac-hqmtv.mkv
+  expect:
+    series_name: Saga of Ash
+    season: null
+    episodes:
+    - 7
+    series_year: 2017
+
+- name: a leading N-NN pair outside a season folder is season and episode, so 01-03 is an episode (T6)
+  operation: parse_episode_name
+  input:
+    path: 01-03.avi
+  expect:
+    is_episode: true
+
+- name: a 1920x1080 resolution in a special is not read as season 1920 and episode 1080 (T16)
+  operation: parse_episode_name
+  input:
+    path: Spartacus Special (1920x1080).mkv
+  expect:
+    is_episode: false
+
+- name: a music file named like a theme is not an episode
+  operation: parse_episode_name
+  input:
+    path: Mad Men Theme.mp3
+  expect:
+    is_episode: false
+
+- name: a .disc stub file is not an episode, because stubs are not supported (M14)
+  operation: parse_episode_name
+  input:
+    path: Planet Earth.disc
+  expect:
+    is_episode: false
+
+- name: an en dash between the episode code and the title, with a copy suffix, is one episode (`2x04`, en dash, `Quiet Hours (1)`)
+  operation: parse_episode_name
+  input:
+    path: Season 2/2x04 – Quiet Hours (1).mkv
+  expect:
+    episodes:
+    - 4
+    last_episode: null
+
+- name: a single NxNN token with a leading zero is one episode of season 1 with no ending episode (`01x04`)
+  operation: parse_episode_name
+  input:
+    path: Season 1/01x04 Crossroads.avi
+  expect:
+    season: 1
+    last_episode: null
+
+- name: a single S-prefixed NxNN token is one episode with no ending episode (`S01x02`)
+  operation: parse_episode_name
+  input:
+    path: Season 1/Northern Exposure S01x02 blah.avi
+  expect:
+    last_episode: null
+
+- name: a single S-and-E token with an x between the letters is one episode (`S01xE02`)
+  operation: parse_episode_name
+  input:
+    path: Season 1/Hill Street Blues S01xE02 blah.avi
+  expect:
+    last_episode: null
+
+- name: a single S-and-E token is one episode with no ending episode (`S01E06`)
+  operation: parse_episode_name
+  input:
+    path: Season 1/S01E06 Pilot Errors.avi
+  expect:
+    last_episode: null
+
+- name: a single S-prefixed token in a year-numbered season folder is one episode (`S2009xE02`)
+  operation: parse_episode_name
+  input:
+    path: The Twilight Zone/Season 2009/The Twilight Zone S2009xE02 blah.avi
+  expect:
+    last_episode: null
+
+- name: a single NxNN token in a year-numbered season folder is one episode (`2009x02`)
+  operation: parse_episode_name
+  input:
+    path: The Twilight Zone/Season 2009/The Twilight Zone 2009x02 blah.avi
+  expect:
+    last_episode: null
+
+- name: a year-numbered season with a series-prefixed S-E token is one episode (`S2009E02`)
+  operation: parse_episode_name
+  input:
+    path: Season 2009/Metro S2009E02 Riverside.avi
+  expect:
+    last_episode: null
+
+- name: a series name with an NxNN token and a bare number after the dash is one episode, not a range
+  operation: parse_episode_name
+  input:
+    path: Season 2/Hannibal 02x03 - 04 Ep Name.mp4
+  expect:
+    last_episode: null
+
+- name: a dash pair of bare numbers after a leading number is an inclusive range (`02-03 - Fork in the Road`, T15)
+  operation: parse_episode_name
+  input:
+    path: Season 1/02-03 - Fork in the Road.avi
+  expect:
+    first_episode: 2
+    last_episode: 3
+
+- name: a dash pair of bare numbers is a range even with a number in the title (`02-04 - Safe House 14 Miles`, T15)
+  operation: parse_episode_name
+  input:
+    path: Season 2/02-04 - Safe House 14 Miles.avi
+  expect:
+    first_episode: 2
+    last_episode: 4
+
+- name: a dash pair of bare numbers before a dashed title word is a range (`02-05 - Dead Calm-02 a`, T15)
+  operation: parse_episode_name
+  input:
+    path: Season 1/02-05 - Dead Calm-02 a.avi
+  expect:
+    first_episode: 2
+    last_episode: 5
+
+- name: a dash pair of bare numbers with no title is a range (`03-05.avi`, T15)
+  operation: parse_episode_name
+  input:
+    path: Season 2/03-05.avi
+  expect:
+    first_episode: 3
+    last_episode: 5
+
+- name: a bracketed absolute number glued to its dimensions has no range (`Bleach - 136[720p]`, T14)
+  operation: parse_episode_name
+  input:
+    path: Season 2 /[Tsundere-Subs] Bleach - 136[720p].mkv
+  expect:
+    episodes: null
+    absolute:
+    - 136
+    last_episode: null
+
+- name: a series with a hyphen before its S-E token and a resolution tag is one episode (`series-s09e14-1080p`)
+  operation: parse_episode_name
+  input:
+    path: Season 1/The Twilight Zone-s09e14-1080p.mkv
+  expect:
+    episodes:
+    - 14
+    last_episode: null
+
+- name: an underscore-joined series name with an S-E range ending in a bare E token ends at episode 4 (`s01e01-e04`)
+  operation: parse_episode_name
+  input:
+    path: Season 1/The Usual Suspects to Hart_s02e01-e04.mkv
+  expect:
+    first_episode: 1
+    last_episode: 4
+
+- name: a title with a dash-number range after the S-E token is title text, not an episode range (`S01E01 The 6-10 to Lubbock`)
+  operation: parse_episode_name
+  input:
+    path: Season 1/Justified S01E01 The 6-10 to Lubbock [WEBRip-1080p][AV1 Opus].mkv
+  expect:
+    episodes:
+    - 1
+    last_episode: null
+
+- name: a title with a dash-number range after the S-E token is not a range (`S05E23 11-59`)
+  operation: parse_episode_name
+  input:
+    path: Season 5/Angel S05E23 11-59 [HDTV-1080p][x265 AC3].mkv
+  expect:
+    episodes:
+    - 23
+    last_episode: null
+
+- name: a dash E2 after an S-E token is a title, so the list ends at the first episode (`S03E21 - E2`, T15)
+  operation: parse_episode_name
+  input:
+    path: Season 03/Stargate Atlantis (2004) - S03E21 - E2 (1080p BluRay x265).mkv
+  expect:
+    episodes:
+    - 21
+    last_episode: null
+
+- name: the season of a file in a zero-padded season folder is the season of the S-E token in the file name (`Frasier/Season 02/S02E03`)
+  operation: parse_episode_name
+  input:
+    path: Frasier/Season 02/S02E03 blah.avi
+  expect:
+    season: 2
+    episodes:
+    - 3
+
+
+
+- name: a series folder year and a bracketed release name resolve to the series year, the season and the episode (`Severance (2022)`)
+  operation: parse_episode_name
+  input:
+    path: Severance (2022)/Severance 1x03 [WEBDL-720p][EAC3 5.1][h264][-TBS] - Defiant Jazz.mkv
+  expect:
+    series_name: Severance
+    series_year: 2022
+    season: 1
+    episodes:
+    - 3
+
+- name: an S-E token of a year-numbered season in a year folder resolves to that season and the episode (`s2016e1`)
+  operation: parse_episode_name
+  input:
+    path: Top Gear/2016/Top Gear Season s2016e1.mp4
+  expect:
+    season: 2016
+    episodes:
+    - 1
+
+- name: a leading N-NN pair outside a season folder is season and episode, so `4-12` is season 4, episode 12 (T6)
+  operation: parse_episode_name
+  input:
+    path: Lost/4-12 - The Woman.mp4
+  expect:
+    season: 4
+    episodes:
+    - 12
+
+- name: an underscore-joined series name with an S-E token resolves to the series name with spaces (M6)
+  operation: parse_episode_name
+  input:
+    path: the_bear_s02e05.mp4
+  expect:
+    series_name: the bear
+    season: 2
+    episodes:
+    - 5
+
+- name: a one-digit season and episode after an underscore-joined name resolve to the series, season and episode (`scrubs_s1e2`)
+  operation: parse_episode_name
+  input:
+    path: scrubs_s1e2.mp4
+  expect:
+    series_name: scrubs
+    season: 1
+    episodes:
+    - 2
+
+- name: an S-E token with a dot between the season and episode resolves to the episode (`gilmore_girls_s01.e02`)
+  operation: parse_episode_name
+  input:
+    path: gilmore_girls_s01.e02.mp4
+  expect:
+    series_name: gilmore girls
+    season: 1
+    episodes:
+    - 2
+
+- name: an underscore-joined name with a three-digit number and no season folder is absolute, not a season (`the_bear_102`, T6)
+  operation: parse_episode_name
+  input:
+    path: the_bear_102.mp4
+  expect:
+    episodes: null
+    absolute:
+    - 102
+
+- name: an underscore-joined name with an NxNN token resolves to the series name and the episode (`mythbusters_1x02`)
+  operation: parse_episode_name
+  input:
+    path: mythbusters_1x02.mp4
+  expect:
+    series_name: mythbusters
+    season: 1
+    episodes:
+    - 2
+
+- name: a series title with spaces and an NxNN token at the root resolves to the series name and the episode (`Arrested Development 4x01`)
+  operation: parse_episode_name
+  input:
+    path: Arrested Development 4x01.mp4
+  expect:
+    series_name: Arrested Development
+    season: 4
+    episodes:
+    - 1
+
+- name: a hyphen before a lowercase S-E token and an underscore checksum id resolve to the series name with spaces (`the_crown-s03e04_48213`, M6)
+  operation: parse_episode_name
+  input:
+    path: the_crown-s03e04_48213.mp4
+  expect:
+    series_name: the crown
+    season: 3
+    episodes:
+    - 4
+
+- name: the series name of a loose file with no series name is the name of the folder that contains it (T2)
+  operation: parse_episode_name
+  input:
+    path: Unsorted/S01E02 Dinner Plans.mp4
+  expect:
+    series_name: Unsorted
+    season: 1
+    episodes:
+    - 2
+
+- name: the series name of an NxNN file under a series folder with no season folder is the folder name (T1, T2)
+  operation: parse_episode_name
+  input:
+    path: Mad Men/4x12 - The Woman.mp4
+  expect:
+    series_name: Mad Men
+    season: 4
+    episodes:
+    - 12
+
+- name: an underscore-joined title with a comma and a period includes them in the series name (`LA X, Pt. 1_s06e32`)
+  operation: parse_episode_name
+  input:
+    path: Law & Order, SVU_s06e32.mp4
+  expect:
+    series_name: Law & Order, SVU
+    season: 6
+    episodes:
+    - 32
+
+- name: a file with its own episode number in a bracketed group folder with an episode range name resolves to the series and episode (`[Foo] Dungeon Meshi - 05`)
+  operation: parse_episode_name
+  input:
+    path: '[Foo] Dungeon Meshi - 01 - 12 [1080p][Multiple Subtitle]/[Foo] Dungeon Meshi - 05 [1080p][Multiple Subtitle].mkv'
+  expect:
+    series_name: Dungeon Meshi
+    season: null
+    episodes:
+    - 5
+
+- name: a dotted release name with a bracketed group and an S-E token resolves to the series name in its letter case (`the.bear.s02e04`, M6)
+  operation: parse_episode_name
+  input:
+    path: The.Bear.S02.WEBRip.x264-Baz[Bar]/the.bear.s02e04.webrip.x264-Baz[Bar].mkv
+  expect:
+    series_name: The Bear
+    season: 2
+    episodes:
+    - 4
+
+- name: the series and season of a file with a dotted S-E name are read from its dotted release-pack folder (`Severance.S02`)
+  operation: parse_episode_name
+  input:
+    path: Severance.S02.1080p.ATVP.WEB-DL.DDP5.1.x264-NTb/Severance.S02E03.Trojan.Horse.1080p.ATVP.WEB-DL.DDP5.1.x264-NTb.mkv
+  expect:
+    series_name: Severance
+    season: 2
+    episodes:
+    - 3
+
+- name: a bracketed group, a title with a dash, and a number after the last dash resolve to the series title and the episode (`[Hatsuyuki] Kuroko no Basuke - 12`)
+  operation: parse_episode_name
+  input:
+    path: '[Hatsuyuki] Kuroko no Basuke - 12 (NVENC H.265 1080p).mkv'
+  expect:
+    series_name: Kuroko no Basuke
+    season: null
+    episodes:
+    - 12
+
+- name: the series of a file whose title differs from an untrusted folder is the file title, not the folder (T1, T2)
+  operation: parse_episode_name
+  input:
+    path: Shirobako/Shirobako 2 - 11 - Some Title.mkv
+  expect:
+    series_name: Shirobako 2
+    season: null
+    episodes:
+    - 11
+
+- name: the series of an S-E file in a season folder is read from the folder, and the episode title is the text after the code (`The Grand Tour`, T19)
+  operation: parse_episode_name
+  input:
+    path: The Pacific (2001)/Season 1/S01E01 Currahee.mkv
+  expect:
+    series_name: The Pacific
+    season: 1
+    episodes:
+    - 1
+    episode_title: Currahee
+
+- name: a tvdb id in brackets with an equals sign is the episode tvdb id
+  operation: parse_episode_name
+  input:
+    path: Twin Peaks/Season 01/Twin Peaks S01E01 [tvdbid=12345].mkv
+  expect:
+    provider_ids:
+      tvdb: '12345'
+
+- name: a tvdb id in parentheses with an equals sign is the episode tvdb id
+  operation: parse_episode_name
+  input:
+    path: Cheers/Season 01/Cheers S01E01 (tvdbid=12345).mkv
+  expect:
+    provider_ids:
+      tvdb: '12345'
+
+- name: a tvmaze id in brackets with a dash is the episode tvmaze id
+  operation: parse_episode_name
+  input:
+    path: Columbo/Season 02/Columbo S02E03 [tvmazeid-67890].mkv
+  expect:
+    provider_ids:
+      tvmaze: '67890'
+
+- name: a tmdb id in brackets with an equals sign is the episode tmdb id
+  operation: parse_episode_name
+  input:
+    path: Scrubs/Season 03/Scrubs S03E04 [tmdbid=99999].mkv
+  expect:
+    provider_ids:
+      tmdb: '99999'
+
+- name: an imdb id with a dash is the episode imdb id
+  operation: parse_episode_name
+  input:
+    path: The Leftovers/Season 04/The Leftovers S04E05 [imdbid-tt1234567].mkv
+  expect:
+    provider_ids:
+      imdb: tt1234567
+
+- name: the provider ids of an episode are read only from its own file tag, not from the series or season folder tags
+  operation: parse_episode_name
+  input:
+    path: Arcane [tvdbid=11111]/Season 01 [tvdbid=22222]/Arcane S01E01 [tvdbid=33333].mkv
+  expect:
+    provider_ids:
+      tvdb: '33333'
+
+- name: an episode file with two provider tags resolves to both ids
+  operation: parse_episode_name
+  input:
+    path: Narcos/Season 01/Narcos S01E01 [tvdbid=12345][tmdbid=99999].mkv
+  expect:
+    provider_ids:
+      tvdb: '12345'
+      tmdb: '99999'
+
+- name: the season and episode marker in a dotted name with a resolution tag resolves to season 3 episode 7 (`The Leftovers.S03E07.1080p`)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers.S03E07.1080p.mkv
+  expect:
+    season: 3
+    episodes:
+    - 7
+
+- name: the season and episode marker with spaces resolves to season 3 episode 7 (`The Leftovers S03 E07`)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers S03 E07.mkv
+  expect:
+    season: 3
+    episodes:
+    - 7
+
+- name: the season and episode marker with a dot before the episode resolves to season 3 episode 7 (`The Leftovers.S03.E07`)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers.S03.E07.mkv
+  expect:
+    season: 3
+    episodes:
+    - 7
+
+- name: the season and episode marker in NxNN form resolves to season 3 episode 7 (`The Leftovers 3x07`)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers 3x07.mkv
+  expect:
+    season: 3
+    episodes:
+    - 7
+
+- name: the season of an episode-only marker is the season folder season (`The Leftovers E07`)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers E07.mkv
+    season_folder_number: 3
+  expect:
+    season: 3
+    episodes:
+    - 7
+
+- name: the season of an Ep-prefixed marker is the season folder season (`The Leftovers Ep07`)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers Ep07.mkv
+    season_folder_number: 3
+  expect:
+    season: 3
+    episodes:
+    - 7
+
+- name: the season of a bare Episode word and number is the season folder season (`Episode - 7`)
+  operation: parse_episode_name
+  input:
+    path: Episode - 7.mkv
+    season_folder_number: 3
+  expect:
+    season: 3
+    episodes:
+    - 7
+
+- name: the season of a leading episode number inside a season folder is the folder season (`07 - The Final Country`)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers/Season 3/07 - The Final Country.mkv
+    season_folder_number: 3
+  expect:
+    season: 3
+    episodes:
+    - 7
+
+- name: a leading number outside a season folder is an episode of unknown season (T6, T7)
+  operation: parse_episode_name
+  input:
+    path: 07 - The Final Country.mkv
+  expect:
+    season: null
+    episodes:
+    - 7
+
+- name: season zero in an S-E marker is the specials season (`The Leftovers S00E02`)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers S00E02.mkv
+  expect:
+    season: 0
+    episodes:
+    - 2
+
+- name: a resolution is not an episode marker (`The Leftovers 720p`)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers 720p.mkv
+  expect:
+    is_episode: false
+
+- name: an interlaced resolution is not an episode marker (`The Leftovers 1080i`)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers 1080i.mkv
+  expect:
+    is_episode: false
+
+- name: a bare year is not an episode marker (`The Leftovers 2014`)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers 2014.mkv
+  expect:
+    is_episode: false
+
+- name: an NxNN marker with no separator before it is not an episode marker (`Severance1x04`)
+  operation: parse_episode_name
+  input:
+    path: Severance1x04.mkv
+  expect:
+    is_episode: false
+
+- name: an S-marker with a year as the season is season and episode (`The Leftovers S2009E01`, T16)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers S2009E01.mkv
+  expect:
+    season: 2009
+    episodes:
+    - 1
+
+- name: an NxNN marker with a year as the season is season and episode (`The Leftovers 2009x01`, T16)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers 2009x01.mkv
+  expect:
+    season: 2009
+    episodes:
+    - 1
+
+- name: a descending second episode is not a range (`The Leftovers.S03E08-E07`)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers.S03E08-E07.mkv
+  expect:
+    episodes:
+    - 8
+    last_episode: null
+
+- name: a second marker in another season is not a range (`The Leftovers.S01E10-S02E01`)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers.S01E10-S02E01.mkv
+  expect:
+    episodes:
+    - 10
+    last_episode: null
+
+- name: an episode number after other words is not a range (`The Leftovers.S03E07 - Part E08`)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers.S03E07 - Part E08.mkv
+  expect:
+    episodes:
+    - 7
+    last_episode: null
+
+- name: a resolution after a dash is not a range end (`The Leftovers.S01E01-1080p`)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers.S01E01-1080p.mkv
+  expect:
+    episodes:
+    - 1
+    last_episode: null
+
+- name: the season of an S-E file in a matching season folder is the file season
+  operation: parse_episode_name
+  input:
+    path: The Leftovers/Season 3/The Leftovers.S03E07.mkv
+    season_folder_number: 3
+  expect:
+    season: 3
+    episodes:
+    - 7
+
+- name: the season of a file with its own season marker in a season folder with a different number is the file season (`The Leftovers.S04E01` in Season 3)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers/Season 3/The Leftovers.S04E01.mkv
+    season_folder_number: 3
+  expect:
+    season: 4
+    episodes:
+    - 1
+
+- name: the season of an episode-only file is the season folder season (`E07` in Season 3)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers/Season 3/E07.mkv
+    season_folder_number: 3
+  expect:
+    season: 3
+    episodes:
+    - 7
+
+- name: an episode-only file without a season folder has no season (T7)
+  operation: parse_episode_name
+  input:
+    path: Dark/Dark E02.mkv
+  expect:
+    season: null
+    episodes:
+    - 2
+
+- name: a trailing bare number after the series name is an episode of unknown season (T6, T7)
+  operation: parse_episode_name
+  input:
+    path: Dark/Dark 02.mkv
+  expect:
+    season: null
+    episodes:
+    - 2
+
+- name: an episode-named file inside an Extras folder is parsed as an episode, with its title after the spaced dash (T19)
+  operation: parse_episode_name
+  input:
+    path: Cheers/Season 01/Extras/Cheers S01E01 - Behind The Scenes.mkv
+    season_folder_number: 1
+  expect:
+    episodes:
+    - 1
+    episode_title: Behind The Scenes
+
+- name: a loose episode with a dotted acronym includes the acronym in the show name (`C.S.I.S01E02`)
+  operation: parse_episode_name
+  input:
+    path: C.S.I.S01E02.mkv
+  expect:
+    series_name: C.S.I.
+    season: 1
+    episodes:
+    - 2
+
+- name: a loose episode with a dotted acronym inside a longer show name includes the acronym (`Law.and.Order.S.V.U.S01E02`)
+  operation: parse_episode_name
+  input:
+    path: Law.and.Order.S.V.U.S01E02.mkv
+  expect:
+    series_name: Law and Order S.V.U.
+    season: 1
+    episodes:
+    - 2
+
+- name: a loose file whose name starts with an S-E token has no series name and resolves to the episode (`S01E02 Pilot`)
+  operation: parse_episode_name
+  input:
+    path: S01E02 Pilot.mkv
+  expect:
+    series_name: null
+    season: 1
+    episodes:
+    - 2
+
+- name: a loose file whose name starts with an NxNN token has no series name and resolves to the episode (`4x12 - Ice Cream Man`)
+  operation: parse_episode_name
+  input:
+    path: 4x12 - Ice Cream Man.mkv
+  expect:
+    series_name: null
+    season: 4
+    episodes:
+    - 12
+
+- name: a loose anime file with a bracketed group and a spaced dash number resolves to the series name and the episode (`[Judas] Bleach - 05`)
+  operation: parse_episode_name
+  input:
+    path: '[Judas] Bleach - 05 [1080p][HEVC].mkv'
+  expect:
+    series_name: Bleach
+    episodes:
+    - 5
+
+- name: a loose fansub file with underscored tags and a checksum resolves to the series name with spaces and the episode (`[Commie][Hunter_x_Hunter][12]`)
+  operation: parse_episode_name
+  input:
+    path: '[Commie][Hunter_x_Hunter][12][BD 720p][3F5C6A11].mkv'
+  expect:
+    series_name: Hunter x Hunter
+    episodes:
+    - 12
+
+- name: a Korean series with an E-range and a release tag resolves to the series name and the first and last episodes (`응답하라 1988.E01-E16`)
+  operation: parse_episode_name
+  input:
+    path: '[tvN] 응답하라 1988.E01-E16.720p-NEXT.mkv'
+  expect:
+    series_name: 응답하라 1988
+    first_episode: 1
+    last_episode: 16
+
+- name: a Korean series with a tilde E-range resolves to the series name and the first and last episodes (`또 오해영 E01~E16`)
+  operation: parse_episode_name
+  input:
+    path: '[tvN] 또 오해영 E01~E16 END HDTV.H264.720p-WITH.mkv'
+  expect:
+    series_name: 또 오해영
+    first_episode: 1
+    last_episode: 16
+
+- name: a series named by a number includes the number in its title, and the spaced dash number is the episode (`86 - 03`)
+  operation: parse_episode_name
+  input:
+    path: '[Group] 86 - 03 [1080p].mkv'
+  expect:
+    series_name: '86'
+    episodes:
+    - 3
+
+- name: a bare year at the end of a series name is part of the series name (`Galactica 1980 S02E05`)
+  operation: parse_episode_name
+  input:
+    path: Galactica 1980 S02E05.mkv
+  expect:
+    series_name: Galactica 1980
+    season: 2
+    episodes:
+    - 5
+
+- name: a bracketed group before a spaced dash number, with a bracketed resolution after, resolves to the episode
+  operation: parse_episode_name
+  input:
+    path: '[Group] Justified - 12 [1080p AAC5.1].mkv'
+  expect:
+    series_name: Justified
+    episodes:
+    - 12
+
+- name: a spaced dash number before a dotted codec tag is the episode, and the codec is not (`Angel - 12 H.265`)
+  operation: parse_episode_name
+  input:
+    path: Angel - 12 H.265.mkv
+  expect:
+    series_name: Angel
+    episodes:
+    - 12
+
+- name: a version suffix on a dash number resolves to the episode without the version (`Lost - 12v2`)
+  operation: parse_episode_name
+  input:
+    path: '[Group] Lost - 12v2 [1080p].mkv'
+  expect:
+    series_name: Lost
+    episodes:
+    - 12
+
+- name: a version suffix after an S-E token resolves to the episode without the version (`S01E12v2`)
+  operation: parse_episode_name
+  input:
+    path: Community S01E12v2.mkv
+  expect:
+    series_name: Community
+    season: 1
+    episodes:
+    - 12
+
+- name: a spaced and parenthesised NxNN token resolves to the episode, with the title after it (`Sherlock ( 1x02 ) - Second`)
+  operation: parse_episode_name
+  input:
+    path: Sherlock ( 1x02 ) - Second.mkv
+  expect:
+    series_name: Sherlock
+    episodes:
+    - 2
+
+- name: a 1920x1080 picture size in a season folder is not an episode code (T16)
+  operation: parse_episode_name
+  input:
+    path: Deadwood/Season 1/1920x1080.mkv
+  expect:
+    episodes: null
+
+- name: a 1080p tag in a season folder is not an episode code (T16)
+  operation: parse_episode_name
+  input:
+    path: Veep/Season 1/1080p H.265 AAC5.1.mkv
+  expect:
+    episodes: null
+
+- name: a picture size with a dash-E token is not an episode code, because the picture size is invalid as a code (T16)
+  operation: parse_episode_name
+  input:
+    path: Spartacus/Season 1/1920x1080-E15.mkv
+  expect:
+    episodes: null
+
+- name: an NxNN token with a season that is not 0-99 or a year is not an episode code (T16)
+  operation: parse_episode_name
+  input:
+    path: Bones/Season 1/999x03-E15.mkv
+  expect:
+    episodes: null
+
+- name: a date written with day, month and year in a season folder is ambiguous, not an episode (T13)
+  operation: parse_episode_name
+  input:
+    path: Mad Men/Season 1/Mad Men.03.04.2020.mkv
+  expect:
+    episodes: null
+
+- name: a date with dashes and day-first numbers in a season folder is not an episode (T13)
+  operation: parse_episode_name
+  input:
+    path: Frasier/Season 1/Frasier 03-04-2020.mkv
+  expect:
+    episodes: null
+
+- name: a film title with a dash and a year in a season folder is not an episode code
+  operation: parse_episode_name
+  input:
+    path: Twin Peaks/Season 1/2001 - A Space Odyssey.mkv
+  expect:
+    episodes: null
+
+- name: a series title ending in a year in a season folder is not an episode code (`Galactica 1980`)
+  operation: parse_episode_name
+  input:
+    path: Cheers/Season 1/Galactica 1980.mkv
+  expect:
+    episodes: null
+
+- name: an E-token glued to a word is not an episode code (`E02video`)
+  operation: parse_episode_name
+  input:
+    path: Columbo/Season 1/Columbo E02video.mkv
+  expect:
+    episodes: null
+
+- name: an S-E token with a glued word suffix is not an episode code (`S01E02foo`)
+  operation: parse_episode_name
+  input:
+    path: Scrubs/Season 1/Scrubs S01E02foo.mkv
+  expect:
+    episodes: null
+
+- name: an E02 file inside an Extras folder under a season has no episode (T11)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers/Season 1/Extras/E02 - Bonus.mkv
+  expect:
+    episodes: null
+
+- name: an E02 file inside a Behind_the_scenes folder under a season has no episode (T11)
+  operation: parse_episode_name
+  input:
+    path: Arcane/Season 1/Behind_the_scenes/E02 - Bonus.mkv
+  expect:
+    episodes: null
+
+- name: an S00E02 marker under the series folder is season 0
+  operation: parse_episode_name
+  input:
+    path: Narcos/Narcos S00E02.mkv
+  expect:
+    season: 0
+
+- name: an E02 file under a Specials folder is season 0
+  operation: parse_episode_name
+  input:
+    path: Specials/E02.mkv
+  expect:
+    season: 0
+    episodes:
+    - 2
+
+- name: an E02 file under a localised Staffel 2 folder is season 2 (T9)
+  operation: parse_episode_name
+  input:
+    path: Staffel 2/E02.mkv
+  expect:
+    season: 2
+    episodes:
+    - 2
+
+- name: a file with a spaced dash number under a series folder has no season (T7)
+  operation: parse_episode_name
+  input:
+    path: Justified/Justified - 12.mkv
+  expect:
+    season: null
+    episodes:
+    - 12
+
+- name: an E02 episode-only file directly under a series folder has no season (T7)
+  operation: parse_episode_name
+  input:
+    path: Angel/E02.mkv
+  expect:
+    season: null
+    episodes:
+    - 2
+
+- name: an S-E token with a range and an episode title after it resolves to every episode and the title (`S01E02E03E04 - Arrival`)
+  operation: parse_episode_name
+  input:
+    path: Lost/Season 1/S01E02E03E04 - Arrival.mkv
+  expect:
+    episodes:
+    - 2
+    - 3
+    - 4
+    episode_title: Arrival
+
+- name: a version-marked E range after an S token resolves to every episode and the title (`S01E02v2-E04v2 - Arrival`)
+  operation: parse_episode_name
+  input:
+    path: Community/Season 1/S01E02v2-E04v2 - Arrival.mkv
+  expect:
+    episodes:
+    - 2
+    - 3
+    - 4
+    episode_title: Arrival
+
+- name: a compact NxNN chain before a title resolves to every episode and the title (`1x02x03x04 - Arrival`)
+  operation: parse_episode_name
+  input:
+    path: Sherlock/Season 1/1x02x03x04 - Arrival.mkv
+  expect:
+    episodes:
+    - 2
+    - 3
+    - 4
+    episode_title: Arrival
+
+- name: a list of NxNN tokens before a title resolves to every episode and the title (`01x02 - 01x03 - 01x04 - Arrival`)
+  operation: parse_episode_name
+  input:
+    path: Deadwood/Season 1/01x02 - 01x03 - 01x04 - Arrival.mkv
+  expect:
+    episodes:
+    - 2
+    - 3
+    - 4
+    episode_title: Arrival
+
+- name: a dash pair of bare numbers in a season folder is a range, and the title follows it (`02-04 - Arrival`, T15)
+  operation: parse_episode_name
+  input:
+    path: Veep/Season 1/02-04 - Arrival.mkv
+  expect:
+    first_episode: 2
+    last_episode: 4
+    episode_title: Arrival
+
+- name: a bracketed NxNN token before a title resolves to the episode and the title (`Spartacus - [1x02] - Arrival`)
+  operation: parse_episode_name
+  input:
+    path: Spartacus/Season 1/Spartacus - [1x02] - Arrival.mkv
+  expect:
+    episodes:
+    - 2
+    episode_title: Arrival
+
+- name: a parenthesised NxNN token before a title resolves to the episode and the title (`Bones (1x02) Arrival`)
+  operation: parse_episode_name
+  input:
+    path: Bones/Season 1/Bones (1x02) Arrival.mkv
+  expect:
+    episodes:
+    - 2
+    episode_title: Arrival
+
+- name: the episode title of an air date with a show title that contains an exclamation mark is the text after the date (T19)
+  operation: parse_episode_name
+  input:
+    path: Jeopardy! (1984)/Season 2026/Jeopardy! (1984) - 2026-04-24 - Ken Jennings Brad Rutter.mkv
+  expect:
+    date: '2026-04-24'
+    episode_title: Ken Jennings Brad Rutter
+
+- name: the episode title of a dotted daily show with an air date is the cleaned text after the date (T19)
+  operation: parse_episode_name
+  input:
+    path: The Daily Mad Men/Season 2026/The.Daily.Mad Men.2024.02.15.Guest.Name.mkv
+  expect:
+    date: '2024-02-15'
+    episode_title: Guest Name
+
+- name: the episode title of an underscore-joined air date with a title is the cleaned text (T19)
+  operation: parse_episode_name
+  input:
+    path: Frasier/Season 2026/Frasier 2024_02_15_Guest_Name.mkv
+  expect:
+    date: '2024-02-15'
+    episode_title: Guest Name
+
+- name: an air date with nothing after it has no episode title (T19)
+  operation: parse_episode_name
+  input:
+    path: Twin Peaks/Season 2026/Twin Peaks - 2026-04-24.mkv
+  expect:
+    date: '2026-04-24'
+    episode_title: null
+
+- name: a bare number range end inside an underscore checksum is not a range (`S01E01_1234`)
+  operation: parse_episode_name
+  input:
+    path: Cheers S01E01_1234.mkv
+  expect:
+    episodes:
+    - 1
+    last_episode: null
+
+- name: a five-digit episode number after an S-E token is the episode alone (T16)
+  operation: parse_episode_name
+  input:
+    path: Columbo S01E12345-E123456.mkv
+  expect:
+    episodes:
+    - 12345
+
+- name: six-digit episode numbers are not an episode (T16)
+  operation: parse_episode_name
+  input:
+    path: Scrubs S01E123456-E123457.mkv
+  expect:
+    episodes: null
+
+- name: a range end with a letter suffix is not an episode, and the file is the first episode alone (`S01E02-E03p`)
+  operation: parse_episode_name
+  input:
+    path: The Leftovers S01E02-E03p.mkv
+  expect:
+    episodes:
+    - 2
+    last_episode: null
+
+- name: an absolute three-digit number in a season folder whose season is 21 is absolute 301 (T14)
+  operation: parse_episode_name
+  input:
+    path: Bleach/Season 21/301.mkv
+  expect:
+    season: 21
+    episodes: null
+    absolute:
+    - 301
+
+- name: a three-digit number in a localised season folder resolves to absolute 105 for that season (T6, T9)
+  operation: parse_episode_name
+  input:
+    path: Arcane/Staffel 2/105 - Pilot.mkv
+  expect:
+    season: 2
+    episodes: null
+    absolute:
+    - 105
+
+- name: an absolute number in a Specials folder is season 0 and absolute (T6)
+  operation: parse_episode_name
+  input:
+    path: Narcos/Specials/105.mkv
+  expect:
+    season: 0
+    episodes: null
+    absolute:
+    - 105
+
+- name: a three-digit number in a season folder whose leading digit matches the season is season and episode (`Season 3/301`, T6)
+  operation: parse_episode_name
+  input:
+    path: Justified/Season 3/301.mkv
+  expect:
+    season: 3
+    episodes:
+    - 1
+
+- name: a dash range of three-digit absolute numbers without a season folder resolves to absolute 301 alone (T6, T15)
+  operation: parse_episode_name
+  input:
+    path: Angel/Angel.301-405.mkv
+  expect:
+    episodes: null
+    absolute:
+    - 301
+
+- name: a season marker with a three-digit season is not an episode, because seasons are 0-99 or a year (T16)
+  operation: parse_episode_name
+  input:
+    path: Lost/Season 200/Lost.S200E02.1080p.mkv
+  expect:
+    episodes: null
+
+- name: a season marker of 345 with a spelled episode word is not an episode (T16)
+  operation: parse_episode_name
+  input:
+    path: Community/Season 345/Community Season 345 Episode 8.mkv
+  expect:
+    episodes: null
+
+- name: a season marker with a 999 season and a spaced episode is not an episode (T16)
+  operation: parse_episode_name
+  input:
+    path: Incoming/Sherlock S999 E01.mkv
+  expect:
+    episodes: null
+
+- name: a year as the season in an S-E token is valid, so the file is season 1920, episode 1 (T16)
+  operation: parse_episode_name
+  input:
+    path: Incoming/Deadwood.S1920E01.mkv
+  expect:
+    season: 1920
+    episodes:
+    - 1
+
+- name: a single-letter part suffix after an S-E token resolves to the episode alone (`S03E01B 1080p`)
+  operation: parse_episode_name
+  input:
+    path: Veep/Season 3/Veep S03E01B 1080p.mkv
+  expect:
+    season: 3
+    episodes:
+    - 1
+    last_episode: null
+
+- name: a single-letter part suffix on a bare E token resolves to the episode alone (`E01a`)
+  operation: parse_episode_name
+  input:
+    path: Spartacus/Season 3/E01a.mkv
+  expect:
+    season: 3
+    episodes:
+    - 1
+    last_episode: null
+
+- name: a word glued after an S-E token is not an episode code (`S03E01another`)
+  operation: parse_episode_name
+  input:
+    path: Bones/Season 3/Bones S03E01another.mkv
+  expect:
+    episodes: null
+
+- name: a word glued after an NxNN token is not an episode code (`3x01bonus`)
+  operation: parse_episode_name
+  input:
+    path: Mad Men/Season 3/Mad Men 3x01bonus.mkv
+  expect:
+    episodes: null
+
+- name: a word glued after an E token is not an episode code (`E01abc`)
+  operation: parse_episode_name
+  input:
+    path: Frasier/Season 3/E01abc.mkv
+  expect:
+    episodes: null
+
+- name: a dated show folder includes a coordinate-like title, and the season folder number is the season (`4x4 Adventure Club`)
+  operation: parse_episode_name
+  input:
+    path: Top Gear 4x4 Adventure Club (2022) {tvdb-12345}/Season 01/Top Gear 4x4 Adventure Club (2022) - S01E02.mkv
+  expect:
+    series_name: Top Gear 4x4 Adventure Club
+    season: 1
+    episodes:
+    - 2
+
+- name: an NxNN token with a four-digit season and a three-digit episode is season 2024 episode 246 (T9)
+  operation: parse_episode_name
+  input:
+    path: Newsroom - 2024x246.mkv
+  expect:
+    season: 2024
+    episodes:
+    - 246
+
+- name: a two-digit NxNN token with a two-digit episode resolves to both numbers (`Cheers 12x96`)
+  operation: parse_episode_name
+  input:
+    path: Cheers 12x96.mkv
+  expect:
+    season: 12
+    episodes:
+    - 96
+
+- name: a 16x9 aspect ratio is not season 16 and episode 9 (T16)
+  operation: parse_episode_name
+  input:
+    path: Frasier/Frasier.16x9.mkv
+  expect:
+    episodes: null
+
+- name: a number inside the series title with no separator is not a trailing episode (`The 4400/Season 01/The 4400`)
+  operation: parse_episode_name
+  input:
+    path: The 4400/Season 01/The 4400.mkv
+  expect:
+    episodes: null
+
+- name: a dash number after a series title that begins with a number is the episode (`The 4400 - 05`)
+  operation: parse_episode_name
+  input:
+    path: The 4400/Season 01/The 4400 - 05.mkv
+  expect:
+    season: 1
+    episodes:
+    - 5
+
+- name: a dash-numbered episode with a part marker after the title resolves to the episode (`Twin Peaks - 05 - Part 2`)
+  operation: parse_episode_name
+  input:
+    path: Twin Peaks/Season 1/Twin Peaks - 05 - Part 2.mkv
+  expect:
+    season: 1
+    episodes:
+    - 5
+
+- name: a number in a title after ` - NN ` does not change the episode, and a title word can be a number (`Narcos - 02 - 24 Hours`)
+  operation: parse_episode_name
+  input:
+    path: Narcos/Season 1/Narcos - 02 - 24 Hours.mkv
+  expect:
+    season: 1
+    episodes:
+    - 2
+
+- name: a title that is an area number after ` - NN ` does not change the episode (`Twin Peaks - 06 - Area 51`)
+  operation: parse_episode_name
+  input:
+    path: Twin Peaks/Season 1/Twin Peaks - 06 - Area 51.mkv
+  expect:
+    season: 1
+    episodes:
+    - 6
+
+- name: the episode of a series title that begins with a number, in a season folder, is the dash number (`90 Day Fiancé - 01`)
+  operation: parse_episode_name
+  input:
+    path: 90 Day Fiancé/Season 1/90 Day Fiancé - 01 - Pilot.mkv
+  expect:
+    season: 1
+    episodes:
+    - 1
+
+- name: a dash-numbered episode in a show named with dashes resolves to the episode (`9-1-1 - 01 - Love Is a Battlefield`)
+  operation: parse_episode_name
+  input:
+    path: 9-1-1/Season 2/9-1-1 - 01 - Love Is a Battlefield.mkv
+  expect:
+    season: 2
+    episodes:
+    - 1
+
+- name: the title of a show titled 24 includes the number, and the dash number after it is the episode (`24 - 05 - Part 2`, T6)
+  operation: parse_episode_name
+  input:
+    path: 24/Season 3/24 - 05 - Part 2.mkv
+  expect:
+    season: 3
+    episodes:
+    - 5
+
+- name: a show titled 24 with a time after the episode number resolves to the episode, not the time (`24 - 24 - 11-00 PM`)
+  operation: parse_episode_name
+  input:
+    path: 24/Season 3/24 - 24 - 11-00 PM.mkv
+  expect:
+    season: 3
+    episodes:
+    - 24
+
+- name: a show titled 24 with only a title after it has no episode, because 24 is part of the title (T6)
+  operation: parse_episode_name
+  input:
+    path: 24/Season 3/24 - Title.mkv
+  expect:
+    episodes: null
+
+- name: a show titled 24 with a clock time after the title has no episode (`24 - 12-00 AM`)
+  operation: parse_episode_name
+  input:
+    path: 24/Season 3/24 - 12-00 AM.mkv
+  expect:
+    episodes: null
+
+- name: a show titled 24 with a spaced clock time has no episode (`24 - 12 00 AM`)
+  operation: parse_episode_name
+  input:
+    path: 24/Season 3/24 - 12 00 AM.mkv
+  expect:
+    episodes: null
+
+- name: a dash pair of clock times in a show titled 24 has no episode (T6)
+  operation: parse_episode_name
+  input:
+    path: 24/Season 3/24 - 11-00 PM - 12-00 AM.mkv
+  expect:
+    episodes: null
+
+- name: a dash pair of numbers after a series title that starts with a number is a range from the first episode (`24 - 05-06`, T15)
+  operation: parse_episode_name
+  input:
+    path: 24/Season 3/24 - 05-06 - Title.mkv
+  expect:
+    season: 3
+    first_episode: 5
+    last_episode: 6
+
+- name: a series titled with a number and no season folder resolves to the episode after the title dash (`24 - 03`)
+  operation: parse_episode_name
+  input:
+    path: 24 - 03.mkv
+  expect:
+    season: null
+    episodes:
+    - 3
+
+- name: a series title with a dash and a number, under no season folder, resolves to the episode after the last dash (`Cobra Kai - 3 - 05`)
+  operation: parse_episode_name
+  input:
+    path: Cobra Kai - 3/Cobra Kai - 3 - 05.mkv
+  expect:
+    season: null
+    episodes:
+    - 5
+
+- name: a series title with a dash number before the episode resolves to the season folder season and the episode (`Ghost Hunters - 2 - 05`)
+  operation: parse_episode_name
+  input:
+    path: Ghost Hunters/Season 2/Ghost Hunters - 2 - 05.mkv
+  expect:
+    season: 2
+    episodes:
+    - 5
+
+- name: a dash-numbered episode with a version suffix on the number in a bracketed group resolves to the episode (`[Group] Ghosts - 07v2`)
+  operation: parse_episode_name
+  input:
+    path: Ghosts/[Group] Ghosts - 07v2 [1080p].mkv
+  expect:
+    series_name: Ghosts
+    episodes:
+    - 7
+
+- name: an audio layout with a dot in a bracket is not a coordinate, so the dash number is the episode (`[1080p AAC 2.0x2]`)
+  operation: parse_episode_name
+  input:
+    path: Ghosts/Season 1/[Group] Ghosts - 05 [1080p AAC 2.0x2].mkv
+  expect:
+    season: 1
+    episodes:
+    - 5
+
+- name: a 5.1 audio layout in brackets is not a coordinate, so the dash number is the episode (`[DTS 5.1x2]`)
+  operation: parse_episode_name
+  input:
+    path: Ghosts/Season 1/[Group] Ghosts - 05 [DTS 5.1x2].mkv
+  expect:
+    season: 1
+    episodes:
+    - 5
+
+- name: a bracketed 2048x1080 picture size is not a coordinate, and the dash number is the episode (T16)
+  operation: parse_episode_name
+  input:
+    path: Ghosts/[Group] Ghosts - 01 [2048x1080].mkv
+  expect:
+    season: null
+    episodes:
+    - 1
+
+- name: a dotted year in the title and a later NxNN token resolve to the season and episode, not the year (`The.Twilight.Zone.2019.1x02`)
+  operation: parse_episode_name
+  input:
+    path: Incoming/The.Twilight.Zone.2019.1x02.mkv
+  expect:
+    season: 1
+    episodes:
+    - 2
+
+- name: a dotted audio layout before an NxNN token does not change the season and episode (`Channel.5.1x01`)
+  operation: parse_episode_name
+  input:
+    path: Channel 5 News/Channel.5.1x01.Title.mkv
+  expect:
+    season: 1
+    episodes:
+    - 1
+
+- name: a hyphenated title with a dotted SG-1 name and an NxNN token resolves to the season and episode (`Stargate.SG-1.2x05`)
+  operation: parse_episode_name
+  input:
+    path: Stargate SG-1/Stargate.SG-1.2x05.mkv
+  expect:
+    season: 2
+    episodes:
+    - 5
+
+- name: a bracketed 16x9 aspect ratio before a dash number is not a coordinate (`[16x9 1080p]`)
+  operation: parse_episode_name
+  input:
+    path: Ghosts/Season 1/[Group] Ghosts - 02 [16x9 1080p].mkv
+  expect:
+    season: 1
+    episodes:
+    - 2
+
+- name: a bracketed 4x3 aspect ratio after a dash number is not a coordinate (`[4x3]`)
+  operation: parse_episode_name
+  input:
+    path: Ghosts/Season 1/Ghosts - 02 [4x3].mkv
+  expect:
+    season: 1
+    episodes:
+    - 2
+
+- name: a bracketed NxNN token at the end of a title is a trailing bracket, not the episode (`Lost - 03 - Title (2x14)`, T6)
+  operation: parse_episode_name
+  input:
+    path: Lost/Season 1/Lost - 03 - Title (2x14).mkv
+  expect:
+    season: 1
+    episodes:
+    - 3
+
+- name: an E-token episode with a bracketed NxNN token after the title resolves to the E-token episode (`E03 - Title [2x14]`)
+  operation: parse_episode_name
+  input:
+    path: Lost/Season 1/Lost - E03 - Title [2x14].mkv
+  expect:
+    season: 1
+    episodes:
+    - 3
+
+- name: a bracketed NxNN token directly after a short title is the episode, and the season folder resolves a title that is a number (`24 [3x02]`)
+  operation: parse_episode_name
+  input:
+    path: 24/Season 3/24 [3x02].mkv
+  expect:
+    season: 3
+    episodes:
+    - 2
+
+- name: a folder named 03 under a series folder is season 3, and the file with a parenthesised NxNN is episode 3 (`Columbo/03/03 (2x14)`)
+  operation: parse_episode_name
+  input:
+    path: Lost/03/03 (2x14).mkv
+  expect:
+    season: 3
+    episodes:
+    - 3
+
+- name: a bracketed NxNN token after a year in the title resolves to the episode (`[1x02] - Arrival (2018)`)
+  operation: parse_episode_name
+  input:
+    path: Lost/Season 1/[1x02] - Arrival (2018).mkv
+  expect:
+    season: 1
+    episodes:
+    - 2
+
+- name: repeated bracketed codes after the episode number do not change the episode (`(11x11)` five times)
+  operation: parse_episode_name
+  input:
+    path: Ghosts/Season 1/Ghosts - 05 (11x11) (11x11) (11x11) (11x11) (11x11).mkv
+  expect:
+    season: 1
+    episodes:
+    - 5
+
+- name: a 1920x1080 dimension in a dotted name is not a coordinate, and the E token is the episode (`Scrubs.1920x1080.E02`)
+  operation: parse_episode_name
+  input:
+    path: Arcane/Season 1/Arcane.1920x1080.E02.mkv
+  expect:
+    season: 1
+    episodes:
+    - 2
+
+- name: a 16x9 dimension in a dotted name is not a coordinate, and the E token is the episode (`The Leftovers.16x9.E02`)
+  operation: parse_episode_name
+  input:
+    path: Arcane/Season 1/Arcane.16x9.E02.mkv
+  expect:
+    season: 1
+    episodes:
+    - 2
+
+- name: an audio codec with a number before an x264 tag is not a coordinate, and the E token is the episode (`DD5.1x264.E03`)
+  operation: parse_episode_name
+  input:
+    path: Arcane/Season 1/Arcane.DD5.1x264.E03.mkv
+  expect:
+    season: 1
+    episodes:
+    - 3
+
+- name: a cinema aspect ratio is not a coordinate, and the E token is the episode (`2.35x1.E02`)
+  operation: parse_episode_name
+  input:
+    path: Arcane/Season 1/Arcane.2.35x1.E02.mkv
+  expect:
+    season: 1
+    episodes:
+    - 2
+
+- name: an aspect ratio with a dash number and no season folder resolves to no season and no episode (`Arcane - 4x3 - Title`)
+  operation: parse_episode_name
+  input:
+    path: Ghosts/Ghosts - 4x3 - Title.mkv
+  expect:
+    season: null
+    episodes: null
+
+- name: a series folder directly under the library root resolves to the series name, the season and the episode (`Narcos - S01E01`)
+  operation: parse_episode_name
+  input:
+    path: Narcos/Narcos - S01E01.mkv
+  expect:
+    series_name: Narcos
+    season: 1
+    episodes:
+    - 1
+
+- name: a season-episode dash form is a code only at the start of the name, so `1-05` under a series folder is season 1 episode 5
+  operation: parse_episode_name
+  input:
+    path: Lost/1-05 - Title.mkv
+  expect:
+    season: 1
+    episodes:
+    - 5
+
+- name: a dash-form range inside a title is not read as a season-episode code (`01 - 7-11 Heist`)
+  operation: parse_episode_name
+  input:
+    path: Ocean Heist/Season 1/Ocean Heist - 01 - 7-11 Heist.mkv
+  expect:
+    season: 1
+    episodes:
+    - 1
+
+- name: a clock-time range after a dash number is not a season-episode code (`02 - 1-00 A.M.-2-00 A.M.`)
+  operation: parse_episode_name
+  input:
+    path: Ghost Hunters/Season 2/Ghost Hunters - 02 - 1-00 A.M.-2-00 A.M..mkv
+  expect:
+    season: 2
+    episodes:
+    - 2
+
+- name: a dotted NxNN release name with a title after it resolves to the series, season and episode (`Mad.Men.1x02.The.Arrival`)
+  operation: parse_episode_name
+  input:
+    path: Mad Men/Season 1/Mad.Men.1x02.The.Arrival.mkv
+  expect:
+    series_name: Mad Men
+    season: 1
+    episodes:
+    - 2
+
+- name: a dotted NxNN token with a codec suffix after a dash is not a range end (`Mad.Men.1x02-x264`)
+  operation: parse_episode_name
+  input:
+    path: Mad Men/Season 1/Mad.Men.1x02-x264.mkv
+  expect:
+    episodes:
+    - 2
+    last_episode: null
+
+- name: an NxNN token followed by a spaced dash codec tag is not a range end (`Mad Men 1x02 - x265`)
+  operation: parse_episode_name
+  input:
+    path: Mad Men/Season 1/Mad Men 1x02 - x265.mkv
+  expect:
+    episodes:
+    - 2
+    last_episode: null
+
+- name: an NxNN token followed by a dash and a Xvid codec tag is not a range end (`Mad.Men.1x02-XviD`)
+  operation: parse_episode_name
+  input:
+    path: Mad Men/Season 1/Mad.Men.1x02-XviD.mkv
+  expect:
+    episodes:
+    - 2
+    last_episode: null
+
+- name: a compact NxNN list with a dash and a codec tag ends at the last listed episode (`1x02x03-x264`)
+  operation: parse_episode_name
+  input:
+    path: Mad Men/Season 1/Mad.Men.1x02x03-x264.mkv
+  expect:
+    episodes:
+    - 2
+    - 3
+    last_episode: 3
+
+- name: a dash pair of NxNN tokens is an inclusive range that ends at episode 3 (`1x02-x03`, T15)
+  operation: parse_episode_name
+  input:
+    path: Mad Men/Season 1/Mad.Men.1x02-x03.mkv
+  expect:
+    first_episode: 2
+    last_episode: 3
+
+- name: a compact NxNN chain of two-and-three-digit episodes resolves to both episodes (`1x263x264`)
+  operation: parse_episode_name
+  input:
+    path: Mad Men/Season 1/Mad.Men.1x263x264.mkv
+  expect:
+    season: 1
+    episodes:
+    - 263
+    - 264
+
+- name: a file year that agrees with a folder title fills the folder year (`Star.Trek.The.Next.Generation.2009.S01E01`)
+  operation: parse_episode_name
+  input:
+    path: Star Trek The Next Generation/Season 01/Star.Trek.The.Next.Generation.2009.S01E01.mkv
+  expect:
+    series_name: Star Trek The Next Generation
+    series_year: 2009
+    season: 1
+    episodes:
+    - 1
+
+- name: a file year for a different title does not fill the folder year (`Lost.2009.S01E01`)
+  operation: parse_episode_name
+  input:
+    path: Narcos/Season 01/Lost.2009.S01E01.mkv
+  expect:
+    series_name: Narcos
+    series_year: null
+    season: 1
+    episodes:
+    - 1
+
+- name: a year-in-title series with a file year that repeats the title has no series year (`Galactica.1980`)
+  operation: parse_episode_name
+  input:
+    path: Galactica 1980/Season 01/Galactica.1980.S01E01.mkv
+  expect:
+    series_name: Galactica 1980
+    series_year: null
+    season: 1
+    episodes:
+    - 1
+
+- name: a file year that agrees with the folder title despite a ligature difference fills the folder year (`Æon Flux (2005)`)
+  operation: parse_episode_name
+  input:
+    path: Aeon Flux/Season 01/Æon Flux (2005) - S01E03.mkv
+  expect:
+    series_name: Aeon Flux
+    series_year: 2005
+    season: 1
+    episodes:
+    - 3
+
+- name: a file title with a ligature spelling confirms the folder year when the words match (`Cœur de Lion`)
+  operation: parse_episode_name
+  input:
+    path: Cœur de Lion/Season 01/Coeur de Lion (2019) - S01E03.mkv
+  expect:
+    series_name: Cœur de Lion
+    series_year: 2019
+    season: 1
+    episodes:
+    - 3
+
+- name: a file for a different title with a year does not fill the folder year (`Æon Another (2019)`)
+  operation: parse_episode_name
+  input:
+    path: Aeon Flux/Season 01/Æon Another (2019) - S01E03.mkv
+  expect:
+    series_name: Aeon Flux
+    series_year: null
+
+- name: the show, year and season of a bare episode file are read from its dated release pack folder (`The.Twilight.Zone.(2005).S02.COMPLETE`)
+  operation: parse_episode_name
+  input:
+    path: The.Twilight.Zone.(2005).S02.COMPLETE/E03.mkv
+  expect:
+    series_name: The Twilight Zone
+    series_year: 2005
+    season: 2
+    episodes:
+    - 3
+
+- name: the show, year and season of a bare episode file are read from its dated folder with a season range (`Ghost Hunters (2020) S02E01-E03`)
+  operation: parse_episode_name
+  input:
+    path: Ghost Hunters (2020) S02E01-E03/E03.mkv
+  expect:
+    series_name: Ghost Hunters
+    series_year: 2020
+    season: 2
+    episodes:
+    - 3
+
+- name: a folder with a title that appears in a dotted name with a three-digit season and a year is not an episode code (`Showtime S200E02`)
+  operation: parse_episode_name
+  input:
+    path: Showtime/Season 200/Showtime.S200E02.1080p.mkv
+  expect:
+    episodes: null
+
+- name: a three-digit number after a season-folder title is a season-episode code when its leading digit matches (`003.The.Arrival` in Season 2)
+  operation: parse_episode_name
+  input:
+    path: Arcane/Season 2/003.The.Arrival.mkv
+  expect:
+    season: 2
+    episodes:
+    - 3
+
+- name: the season of a nested archive path is the nearest season folder number (`archive/Season 1/Arcane/Season 2/E03`)
+  operation: parse_episode_name
+  input:
+    path: archive/Season 1/Arcane/Season 2/E03.mkv
+  expect:
+    season: 2
+    episodes:
+    - 3
+
+- name: the season of an episode-only file in a short season folder S02 is the folder season (`S02/E03`)
+  operation: parse_episode_name
+  input:
+    path: Arcane/S02/E03.mkv
+  expect:
+    season: 2
+    episodes:
+    - 3
+
+- name: the season of an episode-only file in an underscore season folder is the folder season (`Season_02/E03`)
+  operation: parse_episode_name
+  input:
+    path: Arcane/Season_02/E03.mkv
+  expect:
+    season: 2
+    episodes:
+    - 3
+
+- name: a dotted S-E release inside a dotted show folder resolves to the series name with spaces (`Narcos`)
+  operation: parse_episode_name
+  input:
+    path: The.Mandalorian/Season 1/The.Mandalorian.S01E02.mkv
+  expect:
+    series_name: The Mandalorian
+    season: 1
+    episodes:
+    - 2
+
+- name: a show written as season x episode with a title resolves to the series, season, episode and title (`3x01 - Nosedive`)
+  operation: parse_episode_name
+  input:
+    path: Black Mirror/Season 3/3x01 - Nosedive.mkv
+  expect:
+    series_name: Black Mirror
+    season: 3
+    episodes:
+    - 1
+    episode_title: Nosedive
+
+- name: a scene-style dotted release name with a lowercase S-E token resolves to the series, season and episode (`Arcane.s01e01.Welcome to the Playground`)
+  operation: parse_episode_name
+  input:
+    path: Arcane/Season 1/Arcane.s01e01.Welcome to the Playground.720p.x264.ac3.mkv
+  expect:
+    series_name: Arcane
+    season: 1
+    episodes:
+    - 1
+
+- name: a spaced S-E token with spaces inside it resolves to the episode (`S 01 E 02`)
+  operation: parse_episode_name
+  input:
+    path: Justified/Justified S 01 E 02.mkv
+  expect:
+    season: 1
+    episodes:
+    - 2
+
+- name: a written season and episode with the words spelled out resolves to the series, season and episode
+  operation: parse_episode_name
+  input:
+    path: Ghosts/Ghosts Season 1 Episode 2.mkv
+  expect:
+    series_name: Ghosts
+    season: 1
+    episodes:
+    - 2
+
+- name: a spaced dash title with release-quality words after it resolves to the episode and the cleaned title (`Mad Men - S05E14 - Ozymandias HDTV-720p`)
+  operation: parse_episode_name
+  input:
+    path: Mad Men/Season 5/Mad Men - S05E14 - Ozymandias HDTV-720p.mkv
+  expect:
+    season: 5
+    episodes:
+    - 14
+    episode_title: Ozymandias
+
+- name: a year-first date with no title is a date reference with no season and no episode (T13)
+  operation: parse_episode_name
+  input:
+    path: The Daily Angel/Season 2020/2020-03-04.mkv
+  expect:
+    date: '2020-03-04'
+    episodes: null
+
+- name: a numbered file in an Extras folder is not an episode, even with a dash title (T11)
+  operation: parse_episode_name
+  input:
+    path: Ghosts/Extras/01 - Making Of.mkv
+  expect:
+    episodes: null
+
+- name: a bare number after a series title in a season folder is the episode (`Season 1/Columbo 05`)
+  operation: parse_episode_name
+  input:
+    path: Columbo/Season 1/Columbo 05.mkv
+  expect:
+    season: 1
+    episodes:
+    - 5
+
+- name: a colon in a folder name is ordinary text and does not end the series name (`D:/media/Foo/Foo-S01E01`)
+  operation: parse_episode_name
+  input:
+    path: Lost/D:/media/Foo/Foo-S01E01.mkv
+  expect:
+    series_name: Foo
+    season: 1
+    episodes:
+    - 1
+
+- name: a French season folder with a title before the code resolves to the series, season and episode (`Saison 1`)
+  operation: parse_episode_name
+  input:
+    path: Lupin/Saison 1/Lupin - S01E02.mkv
+  expect:
+    series_name: Lupin
+    season: 1
+    episodes:
+    - 2
+
+- name: an ordinal season folder is the season, and the series is read from the folder above it (`1st Season`)
+  operation: parse_episode_name
+  input:
+    path: Mad Men/1st Season/Episode 03.mkv
+  expect:
+    series_name: Mad Men
+    season: 1
+    episodes:
+    - 3
+
+- name: a Spanish season folder with an accent resolves to the season (`Série 3`)
+  operation: parse_episode_name
+  input:
+    path: La Casa de Papel/Série 3/La Casa de Papel - 01.mkv
+  expect:
+    series_name: La Casa de Papel
+    season: 3
+    episodes:
+    - 1
+
+- name: a season folder whose accent is decomposed into base letter and combining mark resolves to the same season (NFC, `Série 3`)
+  operation: parse_episode_name
+  input:
+    path: La Casa de Papel/Série 3/La Casa de Papel - 01.mkv
+  expect:
+    series_name: La Casa de Papel
+    season: 3
+    episodes:
+    - 1
+
+- name: a Polish season folder resolves to the season (`Seria 2`)
+  operation: parse_episode_name
+  input:
+    path: Ranczo/Seria 2/Ranczo - 01.mkv
+  expect:
+    series_name: Ranczo
+    season: 2
+    episodes:
+    - 1
+
+- name: a season folder with a series word and a title after the number is a season folder (`Series 5 Rod Serling`)
+  operation: parse_episode_name
+  input:
+    path: The Twilight Zone/Series 5 Rod Serling/Episode 01.mkv
+  expect:
+    series_name: The Twilight Zone
+    season: 5
+    episodes:
+    - 1
+
+- name: the title of a series whose title is a season word is unchanged, and its season folder number is the season (`Serie A`)
+  operation: parse_episode_name
+  input:
+    path: Serie A/Season 1/Serie A - S01E02.mkv
+  expect:
+    series_name: Serie A
+    season: 1
+    episodes:
+    - 2
+
+- name: an episode directly in a show folder named like a season word belongs to that show (`Seria`)
+  operation: parse_episode_name
+  input:
+    path: Seria/Seria - S01E02.mkv
+  expect:
+    series_name: Seria
+    season: 1
+    episodes:
+    - 2
+
+- name: a show folder that looks like a season label is the show, and an untitled episode inside it has no season (`Series 4 Stories`)
+  operation: parse_episode_name
+  input:
+    path: Series 4 Stories/Episode 08.mkv
+  expect:
+    series_name: Series 4 Stories
+    season: null
+    episodes:
+    - 8
+
+- name: the season of a file that names the show, in a folder with a series word and a title, is read from the folder (`The Twilight Zone S05E03`)
+  operation: parse_episode_name
+  input:
+    path: Series 5 Rod Serling/The Twilight Zone S05E03.mkv
+  expect:
+    series_name: The Twilight Zone
+    season: 5
+    episodes:
+    - 3
+
+- name: a show title that contains a season label is not split when the file repeats it (`La Série 2`)
+  operation: parse_episode_name
+  input:
+    path: La Série 2/La Série 2 S01E03.mkv
+  expect:
+    series_name: La Série 2
+    season: 1
+    episodes:
+    - 3
+
+- name: a day-first date with a day above 12 is an unambiguous date, not an episode (T13)
+  operation: parse_episode_name
+  input:
+    path: Daily Community/Daily.Community.31.03.2020.720p.mkv
+  expect:
+    date: '2020-03-31'
+    episodes: null
+
+- name: an SPnn token is season 0 and episode nn (T12)
+  operation: parse_episode_name
+  input:
+    path: The Twilight Zone/The Twilight Zone SP02.mkv
+  expect:
+    season: 0
+    episodes:
+    - 2
+
+- name: the series path of a single loose name is its own file, because only the interpreter knows the root (T2)
+  operation: parse_episode_name
+  input:
+    path: Mad.Men.S01E01.mkv
+  expect:
+    series_name: Mad Men
+    series_path: Mad.Men.S01E01.mkv
+    season: 1
+    episodes:
+    - 1
+
+- name: a dotted year in parentheses in a loose file name is the series year, not part of the title (`The.Twilight.Zone.(2005)`)
+  operation: parse_episode_name
+  input:
+    path: The.Twilight.Zone.(2005).S01E01.mkv
+  expect:
+    series_name: The Twilight Zone
+    series_year: 2005
+    season: 1
+    episodes:
+    - 1
+
+- name: the series path of a file in a show folder is that folder (`Mad Men/Mad.Men.S01E01`)
+  operation: parse_episode_name
+  input:
+    path: Mad Men/Mad.Men.S01E01.mkv
+  expect:
+    series_name: Mad Men
+    series_path: Mad Men
+    season: 1
+    episodes:
+    - 1
+
+- name: a release folder with a season and quality tags is the series folder for its file (`Mad.Men.S01.1080p.WEB-DL`)
+  operation: parse_episode_name
+  input:
+    path: Mad.Men.S01.1080p.WEB-DL/Mad.Men.S01E01.mkv
+  expect:
+    series_name: Mad Men
+    series_path: Mad.Men.S01.1080p.WEB-DL
+    season: 1
+    episodes:
+    - 1
+
+- name: a show folder with a year is the series folder, and the file title that differs does not change it (`Chernobyl (2019)`)
+  operation: parse_episode_name
+  input:
+    path: Chernobyl (2019)/Alternate Name S01E01.mkv
+  expect:
+    series_name: Chernobyl
+    series_year: 2019
+    series_path: Chernobyl (2019)
+    season: 1
+    episodes:
+    - 1
+
+- name: the episode title of a file in a season folder under an untrusted show folder is read from the text before the code (T2)
+  operation: parse_episode_name
+  input:
+    path: Chernobyl/Season 1/Episode Title S01E01.mkv
+  expect:
+    series_name: Chernobyl
+    season: 1
+    episodes:
+    - 1
+    episode_title: Episode Title
+
+- name: the series path of a single loose anime name is its own file, and the interpreter clears it at the root (T2)
+  operation: parse_episode_name
+  input:
+    path: '[Judas] Fullmetal Alchemist - 12 [1080p].mkv'
+  expect:
+    series_name: Fullmetal Alchemist
+    series_path: '[Judas] Fullmetal Alchemist - 12 [1080p].mkv'
+    episodes:
+    - 12
+
+- name: the series of a file in an episode folder under a release folder with a season is the release folder (`The.Crown.S01/E01`)
+  operation: parse_episode_name
+  input:
+    path: The.Crown.S01/E01.mkv
+  expect:
+    series_name: The Crown
+    series_path: The.Crown.S01
+    season: 1
+    episodes:
+    - 1
+
+- name: an underscore-joined season folder resolves to the series and the season (`The_Crown_Season_1/E01`)
+  operation: parse_episode_name
+  input:
+    path: The_Crown_Season_1/E01.mkv
+  expect:
+    series_name: The Crown
+    series_path: The_Crown_Season_1
+    season: 1
+    episodes:
+    - 1
+
+- name: a German season folder with a word-form name resolves to the season (`Staffel 1`)
+  operation: parse_episode_name
+  input:
+    path: Der Tatort/Staffel 1/E01.mkv
+  expect:
+    series_name: Der Tatort
+    season: 1
+    episodes:
+    - 1
+
+- name: a German ordinal season folder with a dot resolves to the season (`3.Staffel`)
+  operation: parse_episode_name
+  input:
+    path: Der Tatort/3.Staffel/E01.mkv
+  expect:
+    series_name: Der Tatort
+    season: 3
+    episodes:
+    - 1
+
+- name: a Japanese season folder resolves to the season (`シーズン 1`)
+  operation: parse_episode_name
+  input:
+    path: Naruto/シーズン 1/E01.mkv
+  expect:
+    series_name: Naruto
+    season: 1
+    episodes:
+    - 1
+
+- name: a bare two-digit file in a show folder has an episode and no known season (T6, T7)
+  operation: parse_episode_name
+  input:
+    path: Columbo/01.mkv
+  expect:
+    season: null
+    episodes:
+    - 1
+
+- name: a season folder above the show folder does not set the season (`archive/Season 1/Columbo`, T9)
+  operation: parse_episode_name
+  input:
+    path: archive/Season 1/Columbo/E01.mkv
+  expect:
+    season: null
+    episodes:
+    - 1
+
+- name: the episode title of a Norwegian show with accents and a year is the text after the code (`Øyeblikket (2019)`)
+  operation: parse_episode_name
+  input:
+    path: Øyeblikket (2019)/Season 01/Øyeblikket (2019) - S01E01 - Første møte.mkv
+  expect:
+    series_name: Øyeblikket
+    series_year: 2019
+    season: 1
+    episodes:
+    - 1
+    episode_title: Første møte
+
+- name: the alternate series identity of a loose release with a year before its season token includes the year (`The.Twilight.Zone.2020.S02E03`)
+  operation: parse_episode_name
+  input:
+    path: The.Twilight.Zone.2020.S02E03.1080p.WEB-DL.mkv
+  expect:
+    series_name: The Twilight Zone 2020
+    season: 2
+    episodes:
+    - 3
+    alternate_identity:
+      title: The Twilight Zone
+      year: 2020
+
+- name: the alternate identity of an underscore-joined release with a year before a bare NxNN token includes the year (`Ghost_Hunters_2020_2x03`)
+  operation: parse_episode_name
+  input:
+    path: Ghost_Hunters_2020_2x03.mkv
+  expect:
+    alternate_identity:
+      title: Ghost Hunters
+      year: 2020
+
+- name: the alternate identity of a loose release with a bare year at the end of the title is the title and year (`Galactica.1980.S01E01`)
+  operation: parse_episode_name
+  input:
+    path: Galactica.1980.S01E01.mkv
+  expect:
+    series_name: Galactica 1980
+    alternate_identity:
+      title: Galactica
+      year: 1980
+
+- name: a loose release with no season token has no alternate identity, even with a bare year (`1899.S01E01`)
+  operation: parse_episode_name
+  input:
+    path: 1899.S01E01.mkv
+  expect:
+    alternate_identity: null
+
+- name: a loose release with a year and no season token has no alternate identity (`Sherlock.2020.E03`)
+  operation: parse_episode_name
+  input:
+    path: Sherlock.2020.E03.mkv
+  expect:
+    alternate_identity: null
+
+- name: a parenthesised year is a year, not a bare release year, so the file has no alternate identity (`Deadwood.(2020)`)
+  operation: parse_episode_name
+  input:
+    path: Deadwood.(2020).S01E01.mkv
+  expect:
+    alternate_identity: null
+
+- name: a file in a show folder whose title is the series name has no alternate identity (`Class of 1984`)
+  operation: parse_episode_name
+  input:
+    path: Class of 1984/Season 1/Class.of.1984.S01E01.mkv
+  expect:
+    alternate_identity: null
+
+- name: the season and series of a disc folder below a season folder are the season folder season and series (T18)
+  operation: parse_episode_name
+  input:
+    path: The Pacific/Season 01/Disc 1/The Pacific - 03.mkv
+  expect:
+    series_name: The Pacific
+    season: 1
+    episodes:
+    - 3
+
+- name: the episode of a file with no episode in its name, in a per-episode folder below a season folder, is read from the folder (T18)
+  operation: parse_episode_name
+  input:
+    path: Narcos/Season 01/Narcos S01E03/video.mkv
+  expect:
+    season: 1
+    episodes:
+    - 3
+

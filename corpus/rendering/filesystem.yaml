@@ -1,0 +1,134 @@
+- name: a colon is replaced with a spaced dash on the portable target
+  operation: render_names
+  input:
+    facts: { library: movies, title: 'Mission: Unbreakable', year: 2011, container: mkv }
+  expect:
+    path: Mission - Unbreakable (2011)/Mission - Unbreakable (2011).mkv
+
+- name: a colon after a space is replaced with a single spaced dash
+  operation: render_names
+  input:
+    facts: { library: movies, title: 'Mission : Unbreakable', year: 2011, container: mkv }
+  expect:
+    path: Mission - Unbreakable (2011)/Mission - Unbreakable (2011).mkv
+
+- name: a slash in a title is replaced with a dash instead of creating a folder
+  operation: render_names
+  input:
+    facts: { library: movies, title: Live at Volts/Amps, year: 1991, container: mkv }
+  expect:
+    path: Live at Volts-Amps (1991)/Live at Volts-Amps (1991).mkv
+
+- name: a backslash and a pipe are replaced with dashes
+  operation: render_names
+  input:
+    facts: { library: movies, title: 'Left\Right|Center', year: 1991, container: mkv }
+  expect:
+    path: Left-Right-Center (1991)/Left-Right-Center (1991).mkv
+
+- name: question marks, asterisks and angle brackets are dropped
+  operation: render_names
+  input:
+    facts: { library: movies, title: 'Who Goes There? <Uncut*>', year: 1982, container: mkv }
+  expect:
+    path: Who Goes There Uncut (1982)/Who Goes There Uncut (1982).mkv
+
+- name: double quotes are replaced with single quotes
+  operation: render_names
+  input:
+    facts: { library: movies, title: 'The "Quiet" Year', year: 2005, container: mkv }
+  expect:
+    path: The 'Quiet' Year (2005)/The 'Quiet' Year (2005).mkv
+
+- name: a control character is replaced with a space and repeated spaces are collapsed
+  operation: render_names
+  input:
+    facts: { library: movies, title: "Tab\tSeparated  Title", year: 2005, container: mkv }
+  expect:
+    path: Tab Separated Title (2005)/Tab Separated Title (2005).mkv
+
+- name: a trailing dot is removed from a folder name on the portable target
+  operation: render_names
+  input:
+    facts: { library: movies, title: Smith Jr., container: mkv }
+  expect:
+    path: Smith Jr/Smith Jr..mkv
+
+- name: an episode title is cleaned like any other text
+  operation: render_names
+  input:
+    facts: { library: tv, title: Harbor Lights, year: 2019, season: 1, episodes: [4], episode_title: 'Why? Because: Reasons', container: mkv }
+  expect:
+    path: Harbor Lights (2019)/Season 01/Harbor Lights (2019) - S01E04 - Why Because - Reasons.mkv
+
+- name: a reserved device name as a folder is blocked
+  operation: render_names
+  input:
+    facts: { library: movies, title: Con, container: mkv }
+  expect:
+    path: null
+    blocked_reasons: [reserved_name]
+
+- name: reserved device names are matched ignoring case and before the first dot
+  operation: render_names
+  input:
+    facts: { library: movies, title: com1, container: mkv }
+  expect:
+    path: null
+    blocked_reasons: [reserved_name]
+
+- name: a reserved word followed by more text is an ordinary name
+  operation: render_names
+  input:
+    facts: { library: movies, title: Con Air, year: 1997, container: mkv }
+  expect:
+    path: Con Air (1997)/Con Air (1997).mkv
+
+- name: a component longer than the profile's byte limit is blocked
+  operation: render_names
+  input:
+    facts: { library: movies, title: Northern Passage, year: 2021, container: mkv }
+    profile: { max_component_bytes: 20 }
+  expect:
+    path: null
+    blocked_reasons: [component_too_long]
+
+- name: the byte limit is measured in UTF-8 bytes, not characters
+  operation: render_names
+  input:
+    facts: { library: movies, title: Ωμέγα, container: mkv }
+    profile: { max_component_bytes: 12 }
+  expect:
+    path: null
+    blocked_reasons: [component_too_long]
+
+- name: the posix target allows colons and question marks
+  operation: render_names
+  input:
+    facts: { library: movies, title: 'Mission: Unbreakable?', year: 2011, container: mkv }
+    profile: { target_filesystem: posix }
+  expect:
+    path: 'Mission: Unbreakable? (2011)/Mission: Unbreakable? (2011).mkv'
+
+- name: the posix target replaces a slash
+  operation: render_names
+  input:
+    facts: { library: movies, title: Live at Volts/Amps, year: 1991, container: mkv }
+    profile: { target_filesystem: posix }
+  expect:
+    path: Live at Volts-Amps (1991)/Live at Volts-Amps (1991).mkv
+
+- name: the posix target allows reserved device names
+  operation: render_names
+  input:
+    facts: { library: movies, title: Con, container: mkv }
+    profile: { target_filesystem: posix }
+  expect:
+    path: Con/Con.mkv
+
+- name: decomposed text is written composed
+  operation: render_names
+  input:
+    facts: { library: movies, title: "Amélie", year: 2001, container: mkv }
+  expect:
+    path: "Amélie (2001)/Amélie (2001).mkv"

@@ -1,0 +1,131 @@
+- name: a dash followed by a second E token is an inclusive two-episode range, and S02E07-E08 covers episodes 7 and 8
+  operation: parse_episode_name
+  input:
+    path: Severance.S02E07-E08.1080p.WEB.h264-ETHEL.mkv
+  expect:
+    season: 2
+    episodes: [7, 8]
+
+- name: two episode codes joined with no separator are a two-episode range, and S01E09E10 covers 9 and 10
+  operation: parse_episode_name
+  input:
+    path: Shogun.S01E09E10.mkv
+  expect:
+    season: 1
+    episodes: [9, 10]
+
+- name: a dash before a short second number is a two-episode range, and S04E07-08 covers episodes 7 and 8
+  operation: parse_episode_name
+  input:
+    path: Slow.Horses.S04E07-08.mkv
+  expect:
+    season: 4
+    episodes: [7, 8]
+
+- name: an NxNN range written with the season twice, 3x07-3x08, covers episodes 7 and 8
+  operation: parse_episode_name
+  input:
+    path: Succession 3x07-3x08.mkv
+  expect:
+    season: 3
+    episodes: [7, 8]
+
+- name: a chain of three E tokens lists its episodes without filling the gap (T15)
+  operation: parse_episode_name
+  input:
+    path: Yellowstone.S03E07-E08-E10.mkv
+  expect:
+    season: 3
+    episodes: [7, 8, 10]
+
+- name: a chain written as x tokens, 3x07x08x10, lists its episodes without filling the gap (T15)
+  operation: parse_episode_name
+  input:
+    path: Ted Lasso 3x07x08x10.mkv
+  expect:
+    season: 3
+    episodes: [7, 8, 10]
+
+- name: a chain of bare numbers after a dash, 3x07-08-10, lists its episodes without filling the gap (T15)
+  operation: parse_episode_name
+  input:
+    path: Sherlock 3x07-08-10.mkv
+  expect:
+    season: 3
+    episodes: [7, 8, 10]
+
+- name: a four-digit episode range, S23E1162-E1163, spans episodes 1162 and 1163
+  operation: parse_episode_name
+  input:
+    path: Bleach.S23E1162-E1163.1080p.mkv
+  expect:
+    season: 23
+    episodes: [1162, 1163]
+
+- name: a five-digit episode range, S01E12345-E12346, spans episodes 12345 and 12346 (T16, at most five digits per episode)
+  operation: parse_episode_name
+  input:
+    path: Sesame Street S01E12345-E12346.mkv
+  expect:
+    season: 1
+    episodes: [12345, 12346]
+
+- name: a codec right after a range is not an episode, S01E02-E03x264 spans episodes 2 and 3 (T16)
+  operation: parse_episode_name
+  input:
+    path: Gravity Falls S01E02-E03x264.mkv
+  expect:
+    season: 1
+    episodes: [2, 3]
+
+- name: without a season folder, a bare absolute range 301-305 is the absolute episodes 301 to 305 (T6)
+  operation: parse_episode_name
+  input:
+    path: Detective Conan/Detective.Conan.301-305.mkv
+  expect:
+    season: null
+    episodes: null
+    absolute: [301, 302, 303, 304, 305]
+
+- name: without a season folder, a bare absolute list 301-302-305 resolves to episodes 301, 302 and 305 with the gap not filled (T6, T15)
+  operation: parse_episode_name
+  input:
+    path: Crayon Shin-chan/Crayon.Shin-chan.301-302-305.mkv
+  expect:
+    season: null
+    episodes: null
+    absolute: [301, 302, 305]
+
+- name: under Season 21, 301-305 is the absolute range 301-305 because its leading digit is not 21 (T6)
+  operation: parse_episode_name
+  input:
+    path: Gintama/Season 21/301-305.mkv
+  expect:
+    season: 21
+    episodes: null
+    absolute: [301, 302, 303, 304, 305]
+
+- name: a delimited 05-06 before the episode title spans episodes 5 and 6
+  operation: parse_episode_name
+  input:
+    path: Mythbusters/Season 01/Mythbusters - 05-06 - Explosive Myths.mkv
+  expect:
+    episodes: [5, 6]
+
+- name: without a season folder, Bleach.301-E05 is absolute episode 301; an E-marker does not continue a bare number (T6)
+  operation: parse_episode_name
+  input:
+    path: Bleach.301-E05.mkv
+  expect:
+    series_name: Bleach
+    season: null
+    episodes: null
+    absolute: [301]
+
+- name: a dot-separated s01.e01-e02 range in a season folder is a multi-episode file of episodes 1 and 2
+  operation: parse_episode_name
+  input:
+    path: Terminator.Lower.Decks/Season 01/Terminator.Lower.Decks.s01.e01-e02.mkv
+  expect:
+    presentation_kind: multi_episode
+    episodes: [1, 2]

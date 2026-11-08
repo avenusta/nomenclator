@@ -1,0 +1,65 @@
+# A season release folder that contains its episodes and its extras directly, as downloaded.
+
+- name: a season release folder with extras resolves to its series, season, episode titles, versions and stills
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/backdrop.jpg
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/01. Seeing Walt.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/01. Adrift.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Secrets from the Hatch.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (MP4)-thumb.jpeg
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (MP4).mp4
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E08 - Collision (a.k.a. Old Habits) (1080p BluRay x265 Simmers).mkv
+  expect:
+    items:
+    - kind: series
+      title: House
+      year: 2004
+      path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+      extras:
+      - paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/01. Seeing Walt.mkv
+        extra: deleted_scene
+        title: 01. Seeing Walt
+      - paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/01. Adrift.mkv
+        extra: featurette
+        title: 01. Adrift
+      - paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Secrets from the Hatch.mkv
+        extra: featurette
+        title: Secrets from the Hatch
+      artwork:
+      - path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/backdrop.jpg
+        role: backdrop
+    - kind: season
+      series_name: House
+      season: 2
+      path: null
+    - kind: episode
+      series_name: House
+      series_year: 2004
+      season: 2
+      episodes: [1]
+      episode_title: Man of Science, Acceptance
+      versions:
+      - paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (1080p BluRay x265 Simmers).mkv
+        label: 1080p BluRay x265 Simmers
+      - paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (MP4).mp4
+        label: MP4
+      artwork:
+      - path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (MP4)-thumb.jpeg
+        role: episode_still
+    - kind: episode
+      season: 2
+      episodes: [8]
+      episode_title: Collision (a.k.a. Old Habits)
+      versions:
+      - paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E08 - Collision (a.k.a. Old Habits) (1080p BluRay x265 Simmers).mkv
+        label: null

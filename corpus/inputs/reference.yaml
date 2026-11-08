@@ -1,0 +1,88 @@
+# Reference metadata (decision X18): caller-supplied movie years and episode
+# lists, in `reference`, read by validation only; interpretation does not read them.
+
+- name: a movie year that differs from the reference year is reported
+  operation: validate
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv]
+    reference:
+      movies: [{ path: Arrival (2016), year: 2017 }]
+  expect:
+    diagnostics:
+      - { rule: missing_provider_id }
+      - { rule: reference_year_mismatch, severity: warning, paths: [Arrival (2016)/Arrival (2016).mkv], reason: "2017" }
+    input_diagnostics: []
+
+- name: a reference movie can be identified by a provider ID
+  operation: validate
+  input:
+    library: movies
+    paths: ['Arrival (2016) {tmdb-329865}/Arrival (2016) {tmdb-329865}.mkv']
+    reference:
+      movies: [{ provider_ids: { tmdb: "329865" }, year: 2016 }]
+  expect:
+    diagnostics: []
+    input_diagnostics: []
+
+- name: a reference year never fills a missing year
+  operation: validate
+  input:
+    library: movies
+    paths: [Arrival/Arrival.mkv]
+    reference:
+      movies: [{ path: Arrival, year: 2016 }]
+  expect:
+    diagnostics:
+      - { rule: missing_year, paths: [Arrival/Arrival.mkv] }
+      - { rule: missing_provider_id }
+
+- name: reference episodes that are missing from the library are reported
+  operation: validate
+  input:
+    library: tv
+    paths: [Show (2009)/Season 01/Show (2009) - S01E01 - Pilot.mkv]
+    reference:
+      series: [{ series: Show (2009), episodes: [[1, 1], [1, 2]] }]
+  expect:
+    diagnostics:
+      - { rule: missing_provider_id }
+      - { rule: missing_episode, severity: info, paths: [Show (2009)], reason: S01E02 }
+
+- name: an episode the reference does not list is reported
+  operation: validate
+  input:
+    library: tv
+    paths: [Show (2009)/Season 01/Show (2009) - S01E01 - Pilot.mkv, Show (2009)/Season 01/Show (2009) - S01E09 - Lost.mkv]
+    reference:
+      series: [{ series: Show (2009), episodes: [[1, 1]] }]
+  expect:
+    diagnostics:
+      - { rule: missing_provider_id }
+      - { rule: unexpected_episode, severity: warning, paths: [Show (2009)/Season 01/Show (2009) - S01E09 - Lost.mkv], reason: S01E09 }
+
+- name: an episode in another order is not compared with the aired reference
+  operation: validate
+  input:
+    library: tv
+    paths: [Show (2009)/Season 01/Show (2009) - S01E09 - Lost.mkv]
+    inputs:
+      series: [{ series: Show (2009), order: dvd }]
+    reference:
+      series: [{ series: Show (2009), episodes: [[1, 1]] }]
+  expect:
+    diagnostics:
+      - { rule: missing_provider_id }
+
+- name: reference entries that match no item are input diagnostics
+  operation: validate
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv]
+    reference:
+      movies: [{ path: The Usual Suspects (1995), year: 1995 }]
+      series: [{ series: Show, episodes: [[1, 1]] }]
+  expect:
+    input_diagnostics:
+      - { input: reference_movie, path: The Usual Suspects (1995), reason: not_applicable }
+      - { input: reference_series, path: Show, reason: not_applicable }

@@ -1,0 +1,248 @@
+- name: an .mkv file is a video file
+  operation: is_video_file
+  input:
+    path: Arrival (2016)/Arrival (2016) - 1080p.mkv
+  expect:
+    result: true
+
+- name: an upper-case .MOV file is a video file
+  operation: is_video_file
+  input:
+    path: Home Videos/Beach Day.MOV
+  expect:
+    result: true
+
+- name: a .webm video is a supported video, not reported as unsupported
+  operation: is_video_file
+  input:
+    path: Shorts/Tide Pool.webm
+  expect:
+    result: true
+    unsupported_video: false
+
+- name: an extension with mixed capitals is matched without regard to case
+  operation: is_video_file
+  input:
+    path: Harbor Lights/Harbor Lights.Mkv
+  expect:
+    result: true
+
+- name: a .srt subtitle is a subtitle file
+  operation: is_subtitle_file
+  input:
+    path: Arrival (2016)/Arrival (2016).en.srt
+  expect:
+    result: true
+
+- name: an upper-case .SRT subtitle is a subtitle file
+  operation: is_subtitle_file
+  input:
+    path: Arrival (2016)/Arrival (2016).SRT
+  expect:
+    result: true
+
+- name: a .sub file with no .idx beside it is a subtitle file
+  operation: is_subtitle_file
+  input:
+    path: Dunes (1984)/Dunes.sub
+  expect:
+    result: true
+
+- name: an .idx file beside its .sub is a subtitle file
+  operation: is_subtitle_file
+  input:
+    path: Dunes (1984)/Dunes.idx
+    sibling_paths:
+      - Dunes (1984)/Dunes.sub
+  expect:
+    result: true
+
+- name: an .idx file without a .sub beside it is not a subtitle file
+  operation: is_subtitle_file
+  input:
+    path: Dunes (1984)/Dunes.idx
+  expect:
+    result: false
+
+- name: the .sub half of an .idx and .sub pair is not counted as a subtitle of its own
+  operation: is_subtitle_file
+  input:
+    path: Dunes (1984)/Dunes.sub
+    sibling_paths:
+      - Dunes (1984)/Dunes.idx
+  expect:
+    result: false
+
+- name: a .iso disc image is not a video file but is reported as an unsupported video
+  operation: is_video_file
+  input:
+    path: Death Race (1982)/Death Race (1982).iso
+  expect:
+    result: false
+    unsupported_video: true
+    unsupported_video_reason: disc_image
+
+- name: an .img disc image is not a video file but is reported as an unsupported video
+  operation: is_video_file
+  input:
+    path: Dune (1984)/Dune (1984).img
+  expect:
+    result: false
+    unsupported_video: true
+    unsupported_video_reason: disc_image
+
+- name: an .m2ts file in a STREAM folder outside a disc structure is a video
+  operation: is_video_file
+  input:
+    path: Home Videos/STREAM/00000.m2ts
+  expect:
+    result: true
+    unsupported_video: false
+
+- name: a clip inside a Blu-ray BDMV folder is not a video title
+  operation: is_video_file
+  input:
+    path: Death Race (1982)/BDMV/STREAM/00000.m2ts
+  expect:
+    result: false
+    unsupported_video: true
+    unsupported_video_reason: disc_structure
+
+- name: a clip inside an AVCHD bdmv folder is not a video title
+  operation: is_video_file
+  input:
+    path: Camcorder/PRIVATE/AVCHD/bdmv/stream/00001.MTS
+  expect:
+    result: false
+    unsupported_video: true
+    unsupported_video_reason: disc_structure
+
+- name: a clip inside a DVD VIDEO_TS folder is not a video title
+  operation: is_video_file
+  input:
+    path: The Lighthouse (2019)/VIDEO_TS/VTS_01_1.VOB
+  expect:
+    result: false
+    unsupported_video: true
+    unsupported_video_reason: disc_structure
+
+- name: a .vob file is recognised as an unsupported video container
+  operation: is_video_file
+  input:
+    path: Old Home Movie 1978.vob
+  expect:
+    result: false
+    unsupported_video: true
+    unsupported_video_reason: unsupported_container
+
+- name: a .rm file is recognised as an unsupported video container
+  operation: is_video_file
+  input:
+    path: Radio Plays/Concert 1999.rm
+  expect:
+    result: false
+    unsupported_video: true
+    unsupported_video_reason: unsupported_container
+
+- name: the .strm extension is not a video extension
+  operation: is_video_file
+  input:
+    path: Harbor Lights/Harbor Lights.strm
+  expect:
+    result: false
+
+- name: an .nfo file is not a video file
+  operation: is_video_file
+  input:
+    path: Harbor Lights/Harbor Lights.nfo
+  expect:
+    result: false
+
+- name: an .mp3 file is not a video file
+  operation: is_video_file
+  input:
+    path: Harbor Lights/soundtrack.mp3
+  expect:
+    result: false
+
+- name: an .ogg file is not a video file
+  operation: is_video_file
+  input:
+    path: Harbor Lights/soundtrack.ogg
+  expect:
+    result: false
+
+- name: a file with no extension is not a video file
+  operation: is_video_file
+  input:
+    path: Harbor Lights/README
+  expect:
+    result: false
+
+- name: a blank path is not a video file
+  operation: is_video_file
+  input:
+    path: ' '
+  expect:
+    result: false
+
+- name: a subtitle is not reported as an unsupported video
+  operation: is_video_file
+  input:
+    path: Arrival (2016)/Arrival (2016).srt
+  expect:
+    result: false
+    unsupported_video: false
+
+- name: a jpg poster is not reported as an unsupported video
+  operation: is_video_file
+  input:
+    path: Arrival (2016)/poster.jpg
+  expect:
+    result: false
+    unsupported_video: false
+
+- name: an upper-case .EAC3 file is an audio file
+  operation: is_audio_file
+  input:
+    path: Arrival (2016)/Arrival.EAC3
+  expect:
+    result: true
+
+- name: an .mp3 file is an audio file
+  operation: is_audio_file
+  input:
+    path: Harbor Lights/Theme Song.mp3
+  expect:
+    result: true
+
+- name: the .jpg extension is an image extension
+  operation: is_image_file
+  input:
+    path: Arrival (2016)/poster.jpg
+  expect:
+    result: true
+
+- name: an upper-case .PNG file is an image file
+  operation: is_image_file
+  input:
+    path: Shogun (2024)/logo.PNG
+  expect:
+    result: true
+
+- name: a .rmvb file is recognised as an unsupported video container
+  operation: is_video_file
+  input:
+    path: Radio Plays/Concert 2001.rmvb
+  expect:
+    result: false
+    unsupported_video: true
+    unsupported_video_reason: unsupported_container
+
+- name: an episode-named mkv is a video file
+  operation: is_video_file
+  input:
+    path: Lantern Street - S02E01.mkv
+  expect:
+    result: true
+    unsupported_video: false

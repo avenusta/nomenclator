@@ -1,0 +1,1352 @@
+- name: a file named exactly trailer.m4v is a trailer extra
+  operation: classify_extra
+  input:
+    path: trailer.m4v
+    kind: file
+  expect:
+    extra: trailer
+
+- name: a file with a dash trailer suffix after a title is a trailer extra
+  operation: classify_extra
+  input:
+    path: Whiplash-trailer.mp4
+    kind: file
+  expect:
+    extra: trailer
+
+- name: a file with a dot trailer suffix after a title is a trailer extra
+  operation: classify_extra
+  input:
+    path: Arrival.trailer.mp4
+    kind: file
+  expect:
+    extra: trailer
+
+- name: a file with an underscore trailer suffix after a title is a trailer extra
+  operation: classify_extra
+  input:
+    path: Mad_Max_Fury_Road_trailer.mp4
+    kind: file
+  expect:
+    extra: trailer
+
+- name: a file with a spaced dash trailer suffix after a title is a trailer extra
+  operation: classify_extra
+  input:
+    path: Whiplash - trailer.mp4
+    kind: file
+  expect:
+    extra: trailer
+
+- name: a flac file named trailer is audio and no video trailer
+  operation: classify_extra
+  input:
+    path: trailer.flac
+    kind: file
+  expect:
+    extra: null
+
+- name: a file with trailer inside a longer word is not an extra
+  operation: classify_extra
+  input:
+    path: Lakeside trailerhouse.mkv
+    kind: file
+  expect:
+    extra: null
+
+- name: an audio file with the exact name theme is a theme song extra
+  operation: classify_extra
+  input:
+    path: theme.ogg
+    kind: file
+  expect:
+    extra: theme_song
+
+- name: a file named theme with a video extension is no theme song
+  operation: classify_extra
+  input:
+    path: theme.m4v
+    kind: file
+  expect:
+    extra: null
+
+- name: a file with a dash scene suffix is a scene extra
+  operation: classify_extra
+  input:
+    path: The Usual Suspects-scene.mp4
+    kind: file
+  expect:
+    extra: scene
+
+- name: a file with a numbered scene suffix is a scene extra
+  operation: classify_extra
+  input:
+    path: The Usual Suspects-scene2.mp4
+    kind: file
+  expect:
+    extra: scene
+
+- name: a file with a dash clip suffix is a clip extra
+  operation: classify_extra
+  input:
+    path: Apocalypse Now-clip.mp4
+    kind: file
+  expect:
+    extra: clip
+
+- name: a file with a dash deleted suffix is a deleted scene extra
+  operation: classify_extra
+  input:
+    path: Jurassic.Park-deleted.mp4
+    kind: file
+  expect:
+    extra: deleted_scene
+
+- name: a file with a dash deletedscene suffix is a deleted scene extra
+  operation: classify_extra
+  input:
+    path: Jurassic.Park-deletedscene.mp4
+    kind: file
+  expect:
+    extra: deleted_scene
+
+- name: a file with a dash interview suffix is an interview extra
+  operation: classify_extra
+  input:
+    path: Spirited.Away-interview.mp4
+    kind: file
+  expect:
+    extra: interview
+
+- name: a file with a glued behindthescenes suffix is a behind the scenes extra
+  operation: classify_extra
+  input:
+    path: Mad.Men-behindthescenes.mkv
+    kind: file
+  expect:
+    extra: behind_the_scenes
+
+- name: a file with a dash featurette suffix is a featurette extra
+  operation: classify_extra
+  input:
+    path: The.Matrix-featurette.mkv
+    kind: file
+  expect:
+    extra: featurette
+
+- name: a file with a dash short suffix is a short extra
+  operation: classify_extra
+  input:
+    path: Whiplash-short.mp4
+    kind: file
+  expect:
+    extra: short
+
+- name: a file with a dash extra suffix is an extra of kind extra
+  operation: classify_extra
+  input:
+    path: The Usual Suspects-extra.mp4
+    kind: file
+  expect:
+    extra: extra
+
+- name: a file with a dash other suffix is an other extra
+  operation: classify_extra
+  input:
+    path: The Usual Suspects-other.mp4
+    kind: file
+  expect:
+    extra: other
+
+- name: an audio file in a vocabulary folder at the library root is not an extra, since that folder owns nothing
+  operation: classify_extra
+  input:
+    path: theme-music/Whiplash.mp3
+    kind: file
+  expect:
+    extra: null
+
+- name: a video in a vocabulary folder at the library root is not an extra, since that folder owns nothing
+  operation: classify_extra
+  input:
+    path: Deleted Scenes/The Usual Suspects (1995).mkv
+    kind: file
+  expect:
+    extra: null
+
+- name: an audio file in a theme music folder inside a movie folder is a theme song of that movie
+  operation: classify_extra
+  input:
+    path: Whiplash (2014)/theme-music/Cornfield Chase.mp3
+    kind: file
+    context_paths:
+    - Whiplash (2014)/Whiplash (2014).mkv
+  expect:
+    extra: theme_song
+
+- name: a file in a behind the scenes folder inside a movie folder is a behind the scenes extra
+  operation: classify_extra
+  input:
+    path: Shutter Island (2010)/behind the scenes/Making Shutter Island.mkv
+    kind: file
+    context_paths:
+    - Shutter Island (2010)/Shutter Island (2010).mkv
+  expect:
+    extra: behind_the_scenes
+
+- name: a file in a deleted scenes folder inside a movie folder is a deleted scene extra
+  operation: classify_extra
+  input:
+    path: The Usual Suspects (1995)/deleted scenes/The Usual Suspects deleted scene 1.mkv
+    kind: file
+    context_paths:
+    - The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+  expect:
+    extra: deleted_scene
+
+- name: a file in an interviews folder inside a movie folder is an interview extra
+  operation: classify_extra
+  input:
+    path: Apocalypse Now (1979)/interviews/Sigourney Weaver interview.mkv
+    kind: file
+    context_paths:
+    - Apocalypse Now (1979)/Apocalypse Now (1979).mkv
+  expect:
+    extra: interview
+
+- name: a file in a scenes folder inside a movie folder is a scene extra
+  operation: classify_extra
+  input:
+    path: Death Race 2000 (2017)/scenes/Joi in the rain.mkv
+    kind: file
+    context_paths:
+    - Death Race 2000 (2017)/Death Race 2000 (2017).mkv
+  expect:
+    extra: scene
+
+- name: a file in a samples folder inside a movie folder is a sample extra
+  operation: classify_extra
+  input:
+    path: Arrival (2016)/samples/Arrival sample.mkv
+    kind: file
+    context_paths:
+    - Arrival (2016)/Arrival (2016).mkv
+  expect:
+    extra: sample
+
+- name: a file in a shorts folder inside a movie folder is a short extra
+  operation: classify_extra
+  input:
+    path: Whiplash (2014)/shorts/Whiplash short film.mkv
+    kind: file
+    context_paths:
+    - Whiplash (2014)/Whiplash (2014).mkv
+  expect:
+    extra: short
+
+- name: a file in a trailers folder inside a movie folder is a trailer extra
+  operation: classify_extra
+  input:
+    path: Mad Max Fury Road (2015)/trailers/Teaser trailer.mp4
+    kind: file
+    context_paths:
+    - Mad Max Fury Road (2015)/Mad Max Fury Road (2015).mkv
+  expect:
+    extra: trailer
+
+- name: a file in a featurettes folder inside a movie folder is a featurette extra
+  operation: classify_extra
+  input:
+    path: The Matrix (1999)/featurettes/The Matrix Revisited.mkv
+    kind: file
+    context_paths:
+    - The Matrix (1999)/The Matrix (1999).mkv
+  expect:
+    extra: featurette
+
+- name: a file in a clips folder inside a movie folder is a clip extra
+  operation: classify_extra
+  input:
+    path: Spirited Away (2001)/clips/Yubaba clip.mkv
+    kind: file
+    context_paths:
+    - Spirited Away (2001)/Spirited Away (2001).mkv
+  expect:
+    extra: clip
+
+- name: a file in a backdrops folder inside a movie folder is a theme video extra
+  operation: classify_extra
+  input:
+    path: The Usual Suspects (1995)/backdrops/The Usual Suspects backdrop.mkv
+    kind: file
+    context_paths:
+    - The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+  expect:
+    extra: theme_video
+
+- name: a file in an extra folder inside a movie folder is an extra of kind extra
+  operation: classify_extra
+  input:
+    path: Whiplash (2014)/extra/Docking scene.mkv
+    kind: file
+    context_paths:
+    - Whiplash (2014)/Whiplash (2014).mkv
+  expect:
+    extra: extra
+
+- name: a file in an extras folder at the library root is not an extra, since that folder owns nothing
+  operation: classify_extra
+  input:
+    path: extras/Arrival (2016).mp4
+    kind: file
+  expect:
+    extra: null
+
+- name: any file in an extras folder inside a movie folder is an extra, whatever its name
+  operation: classify_extra
+  input:
+    path: Death Race 2000 (2017)/extras/Director Q and A.mkv
+    kind: file
+    context_paths:
+    - Death Race 2000 (2017)/Death Race 2000 (2017).mkv
+  expect:
+    extra: extra
+
+- name: a file in an other folder inside a movie folder is an other extra
+  operation: classify_extra
+  input:
+    path: Gladiator (2000)/Other/Gladiator stunt reel.mkv
+    kind: file
+    context_paths:
+    - Gladiator (2000)/Gladiator (2000).mkv
+  expect:
+    extra: other
+
+- name: a file in a folder whose name is not in the extras vocabulary is not an extra, even inside a movie folder
+  operation: classify_extra
+  input:
+    path: Moneyball (2011)/Random Stuff/Stunt reel.mkv
+    kind: file
+    context_paths:
+    - Moneyball (2011)/Moneyball (2011).mkv
+  expect:
+    extra: null
+
+- name: a vocabulary folder name matches only whole words, so a folder named not a scene is not a scene folder
+  operation: classify_extra
+  input:
+    path: Moneyball (2011)/not a scene/Stunt reel.mkv
+    kind: file
+    context_paths:
+    - Moneyball (2011)/Moneyball (2011).mkv
+  expect:
+    extra: null
+
+- name: a video named after its own title folder is not an extra
+  operation: classify_extra
+  input:
+    path: Moneyball/Moneyball.mp4
+    kind: file
+  expect:
+    extra: null
+
+- name: a video at the library root is never an extra
+  operation: classify_extra
+  input:
+    path: Whiplash (2014).mkv
+    kind: file
+  expect:
+    extra: null
+
+- name: a file named exactly sample.mkv is a sample extra
+  operation: classify_extra
+  input:
+    path: sample.mkv
+    kind: file
+  expect:
+    extra: sample
+
+- name: a file with a spaced dash sample suffix is a sample extra
+  operation: classify_extra
+  input:
+    path: Gravity - sample.mp4
+    kind: file
+  expect:
+    extra: sample
+
+- name: a title ending in trailer with no separator is not an extra
+  operation: classify_extra
+  input:
+    path: Trailer Park Boys.mkv
+    kind: file
+  expect:
+    extra: null
+
+- name: a title ending in sample after a space is not an extra
+  operation: classify_extra
+  input:
+    path: Minority Report Sample.mkv
+    kind: file
+  expect:
+    extra: null
+
+- name: a file with a spaced dash behind the scenes suffix in spaced words is a behind the scenes extra
+  operation: classify_extra
+  input:
+    path: Jaws - Behind The Scenes.mkv
+    kind: file
+  expect:
+    extra: behind_the_scenes
+
+- name: a file with an underscore behind the scenes suffix and a trailing index is a behind the scenes extra
+  operation: classify_extra
+  input:
+    path: Gladiator_behind the scenes2.mkv
+    kind: file
+  expect:
+    extra: behind_the_scenes
+
+- name: a file with a dash deleted scene suffix in spaced words is a deleted scene extra
+  operation: classify_extra
+  input:
+    path: Jaws-deleted scene.mkv
+    kind: file
+  expect:
+    extra: deleted_scene
+
+- name: a file with no media extension is no extra, even with an extras suffix
+  operation: classify_extra
+  input:
+    path: Severance-trailer.txt
+    kind: file
+  expect:
+    extra: null
+
+- name: a file in a Deleted Scenes folder inside a movie folder, given as a directory, is a deleted scene extra
+  operation: classify_extra
+  input:
+    path: Dune (2021)/Deleted Scenes/
+    kind: directory
+    context_paths:
+    - Dune (2021)/Dune (2021).mkv
+  expect:
+    extra: deleted_scene
+
+- name: a file with a capitalised -Trailer suffix is a trailer, since suffix words match regardless of case
+  operation: classify_extra
+  input:
+    path: Oppenheimer (2023)-Trailer.mkv
+    kind: file
+  expect:
+    extra: trailer
+
+- name: a file with a dot-joined behindthescenes suffix in a release name is a behind the scenes extra
+  operation: classify_extra
+  input:
+    path: Top.Gun.1986.behindthescenes.mkv
+    kind: file
+  expect:
+    extra: behind_the_scenes
+
+- name: a type word inside a title with no separator before it is not an extra suffix
+  operation: classify_extra
+  input:
+    path: The Deleted (2009).mkv
+    kind: file
+  expect:
+    extra: null
+
+- name: an extras suffix at the start of a name, with no title before it, does not count
+  operation: classify_extra
+  input:
+    path: -interview.mkv
+    kind: file
+  expect:
+    extra: null
+
+- name: the title of an extra with a suffix is the text before that suffix
+  operation: classify_extra
+  input:
+    path: Dune (2021)/Dune (2021)-trailer.mkv
+    kind: file
+  expect:
+    title: Dune (2021)
+
+- name: the file name gives the title of an extra inside an Extras folder
+  operation: classify_extra
+  input:
+    path: Dune (2021)/Extras/Making Of.mkv
+    kind: file
+    context_paths:
+    - Dune (2021)/Dune (2021).mkv
+  expect:
+    title: Making Of
+
+- name: dots and underscores in an extra's file name become spaces in its title
+  operation: classify_extra
+  input:
+    path: Dune (2021)/Extras/the.sand.tank_reel.mkv
+    kind: file
+    context_paths:
+    - Dune (2021)/Dune (2021).mkv
+  expect:
+    title: the sand tank reel
+
+- name: the title of an accented extra excludes its behind the scenes suffix
+  operation: classify_extra
+  input:
+    path: Kon-Tiki (2012)/extras/Bak kulissene på settet-behindthescenes.mkv
+    kind: file
+    context_paths:
+    - Kon-Tiki (2012)/Kon-Tiki (2012).mkv
+  expect:
+    title: Bak kulissene på settet
+
+- name: the title folder owns the files of its Trailers folder as trailers
+  operation: classify_extra
+  input:
+    path: The Usual Suspects (1995)/Trailers/teaser.mkv
+    kind: file
+    library: movies
+    context_paths:
+    - The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+    - The Usual Suspects (1995)/Trailers/teaser.mkv
+    - The Usual Suspects (1995)/Behind The Scenes/doc.mkv
+    - The Usual Suspects (1995)/Extras/Making Of.mkv
+    - The Usual Suspects (1995)/Other/making-of.mkv
+    - The Usual Suspects (1995)/Extras/Sub/clip.mkv
+    - Collection/The Truman Show (1998)/The Truman Show (1998).mkv
+    - Collection/The Truman Show (1998)/Other/interview.mkv
+    - other/stray file.mkv
+  expect:
+    extra: trailer
+    supplemental_dir: The Usual Suspects (1995)/Trailers
+
+- name: a file in a title's Behind The Scenes folder is a behind the scenes extra
+  operation: classify_extra
+  input:
+    path: The Usual Suspects (1995)/Behind The Scenes/doc.mkv
+    kind: file
+    library: movies
+    context_paths:
+    - The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+    - The Usual Suspects (1995)/Trailers/teaser.mkv
+    - The Usual Suspects (1995)/Behind The Scenes/doc.mkv
+    - The Usual Suspects (1995)/Extras/Making Of.mkv
+    - The Usual Suspects (1995)/Other/making-of.mkv
+    - The Usual Suspects (1995)/Extras/Sub/clip.mkv
+    - Collection/The Truman Show (1998)/The Truman Show (1998).mkv
+    - Collection/The Truman Show (1998)/Other/interview.mkv
+    - other/stray file.mkv
+  expect:
+    extra: behind_the_scenes
+    supplemental_dir: The Usual Suspects (1995)/Behind The Scenes
+
+- name: a file in a title's Extras folder is an extra of kind extra
+  operation: classify_extra
+  input:
+    path: The Usual Suspects (1995)/Extras/Making Of.mkv
+    kind: file
+    library: movies
+    context_paths:
+    - The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+    - The Usual Suspects (1995)/Trailers/teaser.mkv
+    - The Usual Suspects (1995)/Behind The Scenes/doc.mkv
+    - The Usual Suspects (1995)/Extras/Making Of.mkv
+    - The Usual Suspects (1995)/Other/making-of.mkv
+    - The Usual Suspects (1995)/Extras/Sub/clip.mkv
+    - Collection/The Truman Show (1998)/The Truman Show (1998).mkv
+    - Collection/The Truman Show (1998)/Other/interview.mkv
+    - other/stray file.mkv
+  expect:
+    extra: extra
+    supplemental_dir: The Usual Suspects (1995)/Extras
+
+- name: a file in the Other folder of a title is an extra of the generic kind
+  operation: classify_extra
+  input:
+    path: The Usual Suspects (1995)/Other/making-of.mkv
+    kind: file
+    library: movies
+    context_paths:
+    - The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+    - The Usual Suspects (1995)/Trailers/teaser.mkv
+    - The Usual Suspects (1995)/Behind The Scenes/doc.mkv
+    - The Usual Suspects (1995)/Extras/Making Of.mkv
+    - The Usual Suspects (1995)/Other/making-of.mkv
+    - The Usual Suspects (1995)/Extras/Sub/clip.mkv
+    - Collection/The Truman Show (1998)/The Truman Show (1998).mkv
+    - Collection/The Truman Show (1998)/Other/interview.mkv
+    - other/stray file.mkv
+  expect:
+    extra: other
+    supplemental_dir: The Usual Suspects (1995)/Other
+
+- name: a file one folder below a title's Extras folder is an extra of that folder
+  operation: classify_extra
+  input:
+    path: The Usual Suspects (1995)/Extras/Sub/clip.mkv
+    kind: file
+    library: movies
+    context_paths:
+    - The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+    - The Usual Suspects (1995)/Trailers/teaser.mkv
+    - The Usual Suspects (1995)/Behind The Scenes/doc.mkv
+    - The Usual Suspects (1995)/Extras/Making Of.mkv
+    - The Usual Suspects (1995)/Other/making-of.mkv
+    - The Usual Suspects (1995)/Extras/Sub/clip.mkv
+    - Collection/The Truman Show (1998)/The Truman Show (1998).mkv
+    - Collection/The Truman Show (1998)/Other/interview.mkv
+    - other/stray file.mkv
+  expect:
+    extra: extra
+    supplemental_dir: The Usual Suspects (1995)/Extras
+
+- name: the Other folder of a title belongs to that title when the title is inside a collection
+  operation: classify_extra
+  input:
+    path: Collection/The Truman Show (1998)/Other/interview.mkv
+    kind: file
+    library: movies
+    context_paths:
+    - The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+    - Collection/The Truman Show (1998)/The Truman Show (1998).mkv
+    - Collection/The Truman Show (1998)/Other/interview.mkv
+    - other/stray file.mkv
+  expect:
+    extra: other
+    supplemental_dir: Collection/The Truman Show (1998)/Other
+
+- name: a file with a -trailer suffix beside the movie is a trailer with no extras folder
+  operation: classify_extra
+  input:
+    path: The Usual Suspects (1995)/The Usual Suspects (1995)-trailer.mkv
+    kind: file
+    library: movies
+    context_paths:
+    - The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+    - The Usual Suspects (1995)/The Usual Suspects (1995)-trailer.mkv
+    - The Usual Suspects (1995)/Trailers/teaser.mkv
+  expect:
+    extra: trailer
+    supplemental_dir: null
+
+- name: a file with a -featurette suffix beside the movie is a featurette extra
+  operation: classify_extra
+  input:
+    path: The Usual Suspects (1995)/The Usual Suspects (1995)-featurette.mkv
+    kind: file
+    library: movies
+    context_paths:
+    - The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+    - The Usual Suspects (1995)/The Usual Suspects (1995)-featurette.mkv
+  expect:
+    extra: featurette
+
+- name: the main movie file in its title folder is not an extra, even beside its trailer folder
+  operation: classify_extra
+  input:
+    path: The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+    kind: file
+    library: movies
+    context_paths:
+    - The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+    - The Usual Suspects (1995)/Trailers/teaser.mkv
+    - The Usual Suspects (1995)/The Usual Suspects (1995)-featurette.mkv
+    - The Usual Suspects (1995)/Extras/Making Of.mkv
+  expect:
+    extra: null
+
+- name: the main movie of a title folder stays a movie when the title is inside a collection
+  operation: classify_extra
+  input:
+    path: Collection/The Truman Show (1998)/The Truman Show (1998).mkv
+    kind: file
+    library: movies
+    context_paths:
+    - The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+    - Collection/The Truman Show (1998)/The Truman Show (1998).mkv
+    - Collection/The Truman Show (1998)/Other/interview.mkv
+  expect:
+    extra: null
+
+- name: a movie stays a movie when an Extras folder is several levels above its title folder
+  operation: classify_extra
+  input:
+    path: data/Extras/Movies/The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+    kind: file
+    library: movies
+    context_paths:
+    - The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+    - The Usual Suspects (1995)/Trailers/teaser.mkv
+  expect:
+    extra: null
+
+- name: a title under a library-level folder named other is a main movie
+  operation: classify_extra
+  input:
+    path: other/The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+    kind: file
+    library: movies
+  expect:
+    extra: null
+
+- name: a title under a nested category folder named other is a main movie
+  operation: classify_extra
+  input:
+    path: 4K/other/Apocalypse Now (1979)/Apocalypse Now (1979).mkv
+    kind: file
+    library: movies
+  expect:
+    extra: null
+
+- name: a clip under chained extras folder names at library level is not an extra, since no title folder owns them
+  operation: classify_extra
+  input:
+    path: extras/behind the scenes/clip.mkv
+    kind: file
+    library: movies
+  expect:
+    extra: null
+
+- name: a sample video in a parent folder does not give that folder ownership of its other folder
+  operation: classify_extra
+  input:
+    path: Boxed Set/other/Amadeus (1984)/Amadeus (1984).mkv
+    kind: file
+    library: movies
+    context_paths:
+    - Boxed Set/other/Amadeus (1984)/Amadeus (1984).mkv
+    - Boxed Set/other/Ran (1985)/Ran (1985).mkv
+    - Boxed Set/sample.mp4
+  expect:
+    extra: null
+
+- name: a video that an ignore rule excludes does not give its folder ownership of the other folder
+  operation: classify_extra
+  input:
+    path: Anthology/other/Raging Bull (1980)/Raging Bull (1980).mkv
+    kind: file
+    library: movies
+    context_paths:
+    - Anthology/other/Raging Bull (1980)/Raging Bull (1980).mkv
+    - Anthology/leftover.mkv
+    ignore_files:
+    - path: Anthology/.ignore
+      contents: "leftover.mkv\n"
+  expect:
+    extra: null
+
+- name: a video under a nomedia marker does not give its folder ownership of the other folder
+  operation: classify_extra
+  input:
+    path: Boxed Set/other/Toy Story (1995)/Toy Story (1995).mkv
+    kind: file
+    library: movies
+    context_paths:
+    - Boxed Set/other/Toy Story (1995)/Toy Story (1995).mkv
+    - Boxed Set/other/Heat Wave (1995)/Heat Wave (1995).mkv
+    - Boxed Set/leftover one.mp4
+    ignore_files:
+    - path: Boxed Set/.nomedia
+      contents: ''
+  expect:
+    extra: null
+
+- name: an episode-coded file directly under a show's Extras folder is an extra, never a season 0 episode
+  operation: classify_extra
+  input:
+    path: Severance/Extras/Severance S00E01 Special.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Severance/Season 01/Severance S01E01.mkv
+    - Severance/Extras/Severance S00E01 Special.mkv
+    - Severance/Extras/01 - Making Of.mkv
+    - Severance/Season 01/Trailers/E02 - Preview.mkv
+    - Severance/Trailers/season-preview.mkv
+  expect:
+    extra: extra
+    series_path: Severance
+
+- name: a numbered file without an episode code under a show's Extras folder is an extra
+  operation: classify_extra
+  input:
+    path: Severance/Extras/01 - Making Of.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Severance/Season 01/Severance S01E01.mkv
+    - Severance/Extras/Severance S00E01 Special.mkv
+    - Severance/Extras/01 - Making Of.mkv
+    - Severance/Season 01/Trailers/E02 - Preview.mkv
+    - Severance/Trailers/season-preview.mkv
+  expect:
+    extra: extra
+
+- name: a bare E number in a season's Trailers folder is a trailer, not an episode
+  operation: classify_extra
+  input:
+    path: Severance/Season 01/Trailers/E02 - Preview.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Severance/Season 01/Severance S01E01.mkv
+    - Severance/Extras/01 - Making Of.mkv
+    - Severance/Season 01/Trailers/E02 - Preview.mkv
+    - Severance/Trailers/season-preview.mkv
+  expect:
+    extra: trailer
+
+- name: a show-level Trailers folder makes a file without an episode code a trailer
+  operation: classify_extra
+  input:
+    path: Severance/Trailers/season-preview.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Severance/Season 01/Severance S01E01.mkv
+    - Severance/Trailers/season-preview.mkv
+  expect:
+    extra: trailer
+
+- name: a file with a -trailer suffix beside the season folders is a show trailer even when its title has a number
+  operation: classify_extra
+  input:
+    path: Severance/Season 03 Recap-trailer.mp4
+    kind: file
+    library: tv
+    context_paths:
+    - Severance/Season 01/Severance S01E01.mkv
+    - Severance/Season 03 Recap-trailer.mp4
+  expect:
+    extra: trailer
+
+- name: a -trailer file in a show folder with a number as its name is a trailer, because the number is the show and no season
+  operation: classify_extra
+  input:
+    path: 24/05-trailer.mp4
+    kind: file
+    library: tv
+    context_paths:
+    - 24/Season 05/24 S05E01.mkv
+  expect:
+    extra: trailer
+
+- name: an episode-coded file with a -clip suffix is a clip extra of that episode
+  operation: classify_extra
+  input:
+    path: Severance/Severance S01E02-clip.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Severance/Season 01/Severance S01E01.mkv
+    - Severance/Severance S01E02-clip.mkv
+  expect:
+    extra: clip
+
+- name: an episode file with a -short suffix inside a season folder is a short extra of that episode
+  operation: classify_extra
+  input:
+    path: Severance/Season 01/E02-short.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Severance/Season 01/Severance S01E01.mkv
+    - Severance/Season 01/E02-short.mkv
+  expect:
+    extra: short
+
+- name: a file in a lowercase extras folder beside the movie file is an extra
+  operation: classify_extra
+  input:
+    path: The Usual Suspects (1995)/extras/making-of.mkv
+    kind: file
+    library: movies
+    context_paths:
+    - The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+  expect:
+    extra: extra
+
+- name: a video in the extras folder of a title folder without a feature file is not an extra
+  operation: classify_extra
+  input:
+    path: Empty Shell (2003)/extras/reel.mkv
+    kind: file
+    library: movies
+    context_paths:
+    - Empty Shell (2003)/extras/reel.mkv
+  expect:
+    extra: null
+
+- name: a file in a show's Extras folder is an extra when the show's episodes are in a season folder
+  operation: classify_extra
+  input:
+    path: Ted Lasso (2020)/Extras/making-of.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Ted Lasso (2020)/Season 01/Ted Lasso S01E01.mkv
+    - Ted Lasso (2020)/Extras/making-of.mkv
+  expect:
+    extra: extra
+
+- name: the show owns an episode inside one of its season folders
+  operation: classify_extra
+  input:
+    path: Severance/Season 01/Severance - S01E01.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Severance/Season 01/Severance - S01E01.mkv
+    - Severance/other/Severance - S00E01 - Making of.mkv
+  expect:
+    extra: null
+    series_path: Severance
+
+- name: a file with an episode code in the other folder of a show is an extra of the generic kind
+  operation: classify_extra
+  input:
+    path: Severance/other/Severance - S00E01 - Making of.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Severance/Season 01/Severance - S01E01.mkv
+    - Severance/other/Severance - S00E01 - Making of.mkv
+    - Severance/other/Extras/Severance.S00E02.mkv
+  expect:
+    extra: other
+
+- name: an episode-coded file in an Extras folder inside a show's other folder is an extra of kind extra
+  operation: classify_extra
+  input:
+    path: Severance/other/Extras/Severance.S00E02.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Severance/Season 01/Severance - S01E01.mkv
+    - Severance/other/Extras/Severance.S00E02.mkv
+  expect:
+    extra: extra
+
+- name: a file with an episode code in the Featurettes folder of a show is a featurette
+  operation: classify_extra
+  input:
+    path: The Bear/Featurettes/The Bear S00E04 Featurette.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - The Bear/Season 01/The Bear - S01E01.mkv
+    - The Bear/Featurettes/The Bear S00E04 Featurette.mkv
+  expect:
+    extra: featurette
+
+- name: a file in Behind The Scenes inside a show's Extras folder is a behind the scenes extra
+  operation: classify_extra
+  input:
+    path: Severance/Extras/Behind The Scenes/clip.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Severance/Season 01/Severance - S01E01.mkv
+  expect:
+    extra: behind_the_scenes
+
+- name: a file with an episode code below a subfolder of the Trailers folder of a show is a trailer
+  operation: classify_extra
+  input:
+    path: Severance/Trailers/1080p/Severance S00E05.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Severance/Season 01/Severance - S01E01.mkv
+  expect:
+    extra: trailer
+
+- name: the Trailers folder of a season makes its files trailers
+  operation: classify_extra
+  input:
+    path: Severance/Season 01/Trailers/Preview.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Severance/Season 01/Severance - S01E01.mkv
+  expect:
+    extra: trailer
+
+- name: an episode code under a season's Extras folder is an extra, not a second version of the episode
+  operation: classify_extra
+  input:
+    path: Severance/Season 01/Extras/Severance S01E05 Deleted.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Severance/Season 01/Severance - S01E01.mkv
+  expect:
+    extra: extra
+
+- name: an episode one folder below a season's disc folder belongs to the show
+  operation: classify_extra
+  input:
+    path: Lost/Season 01/Disc 1/Lost - S01E01.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Lost
+
+- name: a season folder whose episodes are in a disc subfolder owns its Trailers folder
+  operation: classify_extra
+  input:
+    path: Lost/Season 01/Trailers/Preview.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Lost/Season 01/Disc 1/Lost - S01E01.mkv
+  expect:
+    extra: trailer
+
+- name: a show whose episodes are deeper than a season folder owns its other folder
+  operation: classify_extra
+  input:
+    path: Lost/other/Behind the camera.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Lost/Season 01/Disc 1/Lost - S01E01.mkv
+  expect:
+    extra: other
+
+- name: a file in a trailers folder of a show with no episodes is in a series of its own
+  operation: classify_extra
+  input:
+    path: Foundation (2021)/trailers/Foundation trailer.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Foundation (2021)/trailers
+
+- name: the parent show owns an episode inside a Season folder without a number
+  operation: classify_extra
+  input:
+    path: Dark/Season/Dark S01E01.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Dark
+
+- name: the parent show owns a Specials folder inside a Season folder without a number
+  operation: classify_extra
+  input:
+    path: Dark/Season/Specials/Dark S00E01.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Dark
+
+- name: a show below a category folder is a series of its own
+  operation: classify_extra
+  input:
+    path: Tots/Gravity Falls/Season 01/Gravity Falls S01E01.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Tots/Gravity Falls
+
+- name: a bare show folder inside a category folder is its own series
+  operation: classify_extra
+  input:
+    path: Tots/Paw Patrol/Paw Patrol S01E01.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Tots/Paw Patrol
+
+- name: a category's Shorts folder that contains season folders is a show of its own
+  operation: classify_extra
+  input:
+    path: Tots/Shorts/Season 01/S01E01.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Tots/Shorts
+
+- name: the specials of a show called Shorts below a category folder belong to that show
+  operation: classify_extra
+  input:
+    path: Tots/Shorts/Specials/S00E01.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Tots/Shorts
+
+- name: a category's Clips folder that contains episodes is a show of its own
+  operation: classify_extra
+  input:
+    path: Tots/Clips/Paw Patrol S01E02.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Tots/Clips
+
+- name: a category's Other folder that contains episodes is a series of its own
+  operation: classify_extra
+  input:
+    path: Tots/Other/Other.2024.S01E02.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Tots/Other
+
+- name: a category's Interviews folder that contains episodes is a show of its own
+  operation: classify_extra
+  input:
+    path: Documentation/Interviews/Interviews S01E01.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Documentation/Interviews
+
+- name: a dotted release name in a show folder called Interviews belongs to that show
+  operation: classify_extra
+  input:
+    path: Documentation/Interviews/The.Interviews.S01E03.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Documentation/Interviews
+
+- name: a show folder under a library-level other folder is the show
+  operation: classify_extra
+  input:
+    path: other/Bare Show/pilot.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: other/Bare Show
+
+- name: the category folder of a loose episode is its series folder
+  operation: classify_extra
+  input:
+    path: Anime/Paw Patrol S01E01.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Anime
+
+- name: a file in a Specials folder inside a show's other folder is an other extra
+  operation: classify_extra
+  input:
+    path: Severance/other/Specials/Making of.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Severance/Season 01/Severance - S01E01.mkv
+  expect:
+    extra: other
+
+- name: a file in a season-named folder inside a show's Featurettes folder is a featurette
+  operation: classify_extra
+  input:
+    path: Severance/Featurettes/Season 1 Featurettes/Making of.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Severance/Season 01/Severance - S01E01.mkv
+  expect:
+    extra: featurette
+
+- name: same-title show folders from different years inside a franchise folder are separate series
+  operation: classify_extra
+  input:
+    path: The Twilight Zone/The Twilight Zone (1959)/Season 01/The Twilight Zone S01E01.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - The Twilight Zone/The Twilight Zone (2019)/Season 01/The Twilight Zone S01E01.mkv
+  expect:
+    extra: null
+    series_path: The Twilight Zone/The Twilight Zone (1959)
+
+- name: a franchise folder does not claim an Interviews folder that holds episodes
+  operation: classify_extra
+  input:
+    path: The Twilight Zone/Interviews/Interview S01E01.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: The Twilight Zone/Interviews
+
+- name: a wrapper folder with the show's name is the show
+  operation: classify_extra
+  input:
+    path: Twin Peaks/Twin Peaks/Season 01/Twin Peaks S01E01.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Twin Peaks
+
+- name: a wrapper folder with the show's name owns the Trailers folder inside it
+  operation: classify_extra
+  input:
+    path: Twin Peaks/Trailers/teaser.mkv
+    kind: file
+    library: tv
+    context_paths:
+    - Twin Peaks/Twin Peaks/Season 01/Twin Peaks S01E01.mkv
+  expect:
+    extra: trailer
+
+- name: an Extras folder of episodes under a category that owns nothing is a series of its own
+  operation: classify_extra
+  input:
+    path: Animated/Extras/Paw Patrol S01E01.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Animated/Extras
+
+- name: a show called Extras below a category folder is a series of its own
+  operation: classify_extra
+  input:
+    path: Cinema/Extras/Season 01/Extras S01E01.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Cinema/Extras
+
+- name: the specials of a show called Extras belong to that show
+  operation: classify_extra
+  input:
+    path: Cinema/Extras/Specials/Extras S00E01.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Cinema/Extras
+
+- name: a show called Extras at the library root is a series of its own
+  operation: classify_extra
+  input:
+    path: Extras/Season 01/Extras S01E01.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Extras
+
+- name: a year in a category folder's name does not make that folder a show that owns its Shorts folder
+  operation: classify_extra
+  input:
+    path: Midwinter (2023)/Shorts/Klaus/E01.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Midwinter (2023)/Shorts/Klaus
+
+- name: a show below a category folder with a year is a series of its own
+  operation: classify_extra
+  input:
+    path: Midwinter (2023)/The Polar Express/Season 01/The Polar Express S01E01.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Midwinter (2023)/The Polar Express
+
+- name: a show with a number as its title is a series and no season
+  operation: classify_extra
+  input:
+    path: Plays/1883/Season 01/1883 S01E01.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+    series_path: Plays/1883
+
+- name: a theme.mp3 in a title folder is a theme song
+  operation: classify_extra
+  input:
+    path: The Usual Suspects (1995)/theme.mp3
+    kind: file
+    context_paths:
+    - The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+  expect:
+    extra: theme_song
+
+- name: an audio file in a theme-music folder is a theme song whatever the case of its extension
+  operation: classify_extra
+  input:
+    path: The Usual Suspects (1995)/theme-music/Main Title.MP3
+    kind: file
+    context_paths:
+    - The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+  expect:
+    extra: theme_song
+
+- name: an audio file with an ordinary name in a title folder is no theme song
+  operation: classify_extra
+  input:
+    path: The Usual Suspects (1995)/ordinary.mp3
+    kind: file
+    context_paths:
+    - The Usual Suspects (1995)/The Usual Suspects (1995).mkv
+  expect:
+    extra: null
+
+- name: an audio file in a theme-music folder that also contains a video is a theme song of the parent title folder
+  operation: classify_extra
+  input:
+    path: Whiplash (2014)/theme-music/Cornfield Chase.mp3
+    kind: file
+    context_paths:
+    - Whiplash (2014)/theme-music/Whiplash trailer.mkv
+    - Whiplash (2014)/Whiplash (2014).mkv
+  expect:
+    extra: theme_song
+    owner: Whiplash (2014)
+
+- name: a spaced dash extras word after an episode code is the episode's title in a TV library, not an extra
+  operation: classify_extra
+  input:
+    path: Severance/Season 1/Severance S01E01 - Behind The Scenes.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: null
+
+- name: a glued extras suffix after an episode code is an extra in a TV library
+  operation: classify_extra
+  input:
+    path: Severance/Season 1/Severance S01E05-deleted.mkv
+    kind: file
+    library: tv
+  expect:
+    extra: deleted_scene
+
+- name: a spaced dash extras word after an episode-like code is an extra in a movie library
+  operation: classify_extra
+  input:
+    path: Arrival (2016)/Arrival S01E01 - Behind The Scenes.mkv
+    kind: file
+    library: movies
+  expect:
+    extra: behind_the_scenes

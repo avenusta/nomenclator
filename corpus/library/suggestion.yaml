@@ -1,0 +1,61 @@
+# Library type suggestion (decision X21): `suggest_library_type` reports
+# whether a folder's names look like movies or TV, with the videos as evidence. The
+# suggestion never changes the library type that another call receives.
+
+- name: a folder of episode-coded videos is suggested as TV
+  operation: suggest_library_type
+  input:
+    paths:
+      - Quiet Hours/Season 01/Quiet Hours S01E01.mkv
+      - Quiet Hours/Season 01/Quiet Hours S01E02.mkv
+      - Northern Line/Northern.Line.2x04.mkv
+  expect:
+    library: tv
+    episode_videos: [Northern Line/Northern.Line.2x04.mkv, Quiet Hours/Season 01/Quiet Hours S01E01.mkv, Quiet Hours/Season 01/Quiet Hours S01E02.mkv]
+    movie_videos: []
+
+- name: a folder of movie videos is suggested as movies
+  operation: suggest_library_type
+  input:
+    paths:
+      - Arrival (2016)/Arrival (2016).mkv
+      - Northern.Passage.2021.1080p.BluRay.x264-NPX.mkv
+      - Quiet Room (2019)/Quiet Room (2019).mkv
+      - Quiet Room (2019)/Trailers/Teaser.mkv
+  expect:
+    library: movies
+    episode_videos: []
+    movie_videos: [Arrival (2016)/Arrival (2016).mkv, Northern.Passage.2021.1080p.BluRay.x264-NPX.mkv, Quiet Room (2019)/Quiet Room (2019).mkv]
+
+- name: videos in season folders count as episodes without episode codes
+  operation: suggest_library_type
+  input:
+    paths: [Quiet Hours/Season 1/Pilot.mkv, Quiet Hours/Season 1/The Second One.mkv]
+  expect:
+    library: tv
+
+- name: dated videos and specials count as episodes
+  operation: suggest_library_type
+  input:
+    paths: [Late Show/Late Show 2024-05-17.mkv, "Quiet Hours/[Lantern] Quiet Hours - OVA [1080p].mkv"]
+  expect:
+    library: tv
+
+- name: a mix of movie and episode videos is ambiguous
+  operation: suggest_library_type
+  input:
+    paths:
+      - Arrival (2016)/Arrival (2016).mkv
+      - Quiet Room (2019)/Quiet Room (2019).mkv
+      - Quiet Hours/Season 01/Quiet Hours S01E01.mkv
+  expect:
+    library: { status: ambiguous, candidates: [movies, tv] }
+
+- name: a folder without videos gives no suggestion
+  operation: suggest_library_type
+  input:
+    paths: [Notes/readme.txt, poster.jpg]
+  expect:
+    library: null
+    episode_videos: []
+    movie_videos: []

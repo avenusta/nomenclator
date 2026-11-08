@@ -1,0 +1,2278 @@
+- name: 'a dated season pack with nested extras folders, artwork and a second container version of one episode: one series with its extras, 24 titled episodes, a plan into a series and season folder, and the hidden file excluded'
+  operation: end_to_end
+  input:
+    library: tv
+    paths:
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/.DS_Store
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Channel 4 UK Promo Directed by David LaChapelle.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/01. Seeing Walt.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/02. Kate's Choice.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/03. Good With Kids.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/04. A Little You Time.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/05. Sawyer's Visitor.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/06. Dinner Time.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/07. Special Delivery.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/08. Ana Lucia's Prisoner.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/09. The Saw.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/10. Libby & Claire.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/11. Giving Care.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/12. Connected.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/13. I Need to Know.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/14. Scissors.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/15. The Doctor's Solution.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/16. What's Your Story.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/17. Weakness.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/18. Are You All Right.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/19. I Miss.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Fire + Water - Anatomy Of An Episode.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Bernard in a Tree.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Dharma Cookies.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/History of Jeronimo Jackson.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Hurley's Sweat.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Jack's Trip.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/On The Beach with Evi.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Rain Delays.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/01. Adrift.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/02. Everybody Hates Hugo.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/03. Abandoned.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/04. The Other 48 Days.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/05. Collision.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/06. What Kate Did.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/07. The 23rd Psalm.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/08. The Whole Truth.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/09. Dave.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/10. S.O.S.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/11. Two For The Road.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/12. Live Together, Die Alone.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/13. Canine Castaways.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House Bloopers.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House Connections.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Mysteries, Conspiracies and Theories.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Secrets from the Hatch.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The House Flashbacks/
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The House Flashbacks/01. The Wake.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The House Flashbacks/02. The New Au Pair.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The House Flashbacks/03. Locke's Father.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The World According to Sawyer.mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (MP4)-thumb.jpeg
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (MP4).mp4
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E02 - Adrift (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E03 - Orientation (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E04 - Everybody Hates Hugo (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E05 - ...And Found (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E06 - Abandoned (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E07 - The Other 48 Days (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E08 - Collision (a.k.a. Old Habits) (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E09 - What Kate Did (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E10 - The 23rd Psalm (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E11 - The Hunting Party (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E12 - Fire + Water (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E13 - The Long Con (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E14 - One of Them (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E15 - Maternity Leave (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E16 - The Whole Truth (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E17 - Lockdown (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E18 - Dave (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E19 - S.O.S. (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E20 - Two for the Road (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E21 - Questionmark (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E22 - Three Minutes (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E23 - Live Together, Die Alone (1) (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E24 - Live Together, Die Alone (2) (1080p BluRay x265 Simmers).mkv
+    - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/backdrop.jpg
+  expect:
+    interpretation:
+      items:
+      - kind: series
+        title: House
+        year: 2004
+        path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        provider_ids: {}
+        extras:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Channel 4 UK Promo Directed by David LaChapelle.mkv
+          extra: featurette
+          title: Channel 4 UK Promo Directed by David LaChapelle
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/01. Seeing Walt.mkv
+          extra: deleted_scene
+          title: 01. Seeing Walt
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/02. Kate's Choice.mkv
+          extra: deleted_scene
+          title: 02. Kate's Choice
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/03. Good With Kids.mkv
+          extra: deleted_scene
+          title: 03. Good With Kids
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/04. A Little You Time.mkv
+          extra: deleted_scene
+          title: 04. A Little You Time
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/05. Sawyer's Visitor.mkv
+          extra: deleted_scene
+          title: 05. Sawyer's Visitor
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/06. Dinner Time.mkv
+          extra: deleted_scene
+          title: 06. Dinner Time
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/07. Special Delivery.mkv
+          extra: deleted_scene
+          title: 07. Special Delivery
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/08. Ana Lucia's Prisoner.mkv
+          extra: deleted_scene
+          title: 08. Ana Lucia's Prisoner
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/09. The Saw.mkv
+          extra: deleted_scene
+          title: 09. The Saw
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/10. Libby & Claire.mkv
+          extra: deleted_scene
+          title: 10. Libby & Claire
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/11. Giving Care.mkv
+          extra: deleted_scene
+          title: 11. Giving Care
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/12. Connected.mkv
+          extra: deleted_scene
+          title: 12. Connected
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/13. I Need to Know.mkv
+          extra: deleted_scene
+          title: 13. I Need to Know
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/14. Scissors.mkv
+          extra: deleted_scene
+          title: 14. Scissors
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/15. The Doctor's Solution.mkv
+          extra: deleted_scene
+          title: 15. The Doctor's Solution
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/16. What's Your Story.mkv
+          extra: deleted_scene
+          title: 16. What's Your Story
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/17. Weakness.mkv
+          extra: deleted_scene
+          title: 17. Weakness
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/18. Are You All Right.mkv
+          extra: deleted_scene
+          title: 18. Are You All Right
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/19. I Miss.mkv
+          extra: deleted_scene
+          title: 19. I Miss
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Fire + Water - Anatomy Of An Episode.mkv
+          extra: featurette
+          title: Fire + Water - Anatomy Of An Episode
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Bernard in a Tree.mkv
+          extra: featurette
+          title: Bernard in a Tree
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Dharma Cookies.mkv
+          extra: featurette
+          title: Dharma Cookies
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/History of Jeronimo Jackson.mkv
+          extra: featurette
+          title: History of Jeronimo Jackson
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Hurley's Sweat.mkv
+          extra: featurette
+          title: Hurley's Sweat
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Jack's Trip.mkv
+          extra: featurette
+          title: Jack's Trip
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/On The Beach with Evi.mkv
+          extra: featurette
+          title: On The Beach with Evi
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Rain Delays.mkv
+          extra: featurette
+          title: Rain Delays
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/01. Adrift.mkv
+          extra: featurette
+          title: 01. Adrift
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/02. Everybody Hates Hugo.mkv
+          extra: featurette
+          title: 02. Everybody Hates Hugo
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/03. Abandoned.mkv
+          extra: featurette
+          title: 03. Abandoned
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/04. The Other 48 Days.mkv
+          extra: featurette
+          title: 04. The Other 48 Days
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/05. Collision.mkv
+          extra: featurette
+          title: 05. Collision
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/06. What Kate Did.mkv
+          extra: featurette
+          title: 06. What Kate Did
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/07. The 23rd Psalm.mkv
+          extra: featurette
+          title: 07. The 23rd Psalm
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/08. The Whole Truth.mkv
+          extra: featurette
+          title: 08. The Whole Truth
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/09. Dave.mkv
+          extra: featurette
+          title: 09. Dave
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/10. S.O.S.mkv
+          extra: featurette
+          title: 10. S.O.S
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/11. Two For The Road.mkv
+          extra: featurette
+          title: 11. Two For The Road
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/12. Live Together, Die Alone.mkv
+          extra: featurette
+          title: 12. Live Together, Die Alone
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/13. Canine Castaways.mkv
+          extra: featurette
+          title: 13. Canine Castaways
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House Bloopers.mkv
+          extra: featurette
+          title: House Bloopers
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House Connections.mkv
+          extra: featurette
+          title: House Connections
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Mysteries, Conspiracies and Theories.mkv
+          extra: featurette
+          title: Mysteries, Conspiracies and Theories
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Secrets from the Hatch.mkv
+          extra: featurette
+          title: Secrets from the Hatch
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The House Flashbacks/01. The Wake.mkv
+          extra: featurette
+          title: 01. The Wake
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The House Flashbacks/02. The New Au Pair.mkv
+          extra: featurette
+          title: 02. The New Au Pair
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The House Flashbacks/03. Locke's Father.mkv
+          extra: featurette
+          title: 03. Locke's Father
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The World According to Sawyer.mkv
+          extra: featurette
+          title: The World According to Sawyer
+          year: null
+        artwork:
+        - path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/backdrop.jpg
+          role: backdrop
+        nfo: null
+      - kind: season
+        series_name: House
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season: 2
+        path: null
+        provider_ids: {}
+        extras: []
+        artwork: []
+        nfo: null
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 1
+        first_episode: 1
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Man of Science, Acceptance
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (1080p BluRay x265 Simmers).mkv
+          label: 1080p BluRay x265 Simmers
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (MP4).mp4
+          label: MP4
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork:
+        - path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (MP4)-thumb.jpeg
+          role: episode_still
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 2
+        first_episode: 2
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Adrift
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E02 - Adrift (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 3
+        first_episode: 3
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Orientation
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E03 - Orientation (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 4
+        first_episode: 4
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Everybody Hates Hugo
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E04 - Everybody Hates Hugo (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 5
+        first_episode: 5
+        absolute: null
+        date:
+          status: unknown
+        episode_title: '...And Found'
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E05 - ...And Found (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 6
+        first_episode: 6
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Abandoned
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E06 - Abandoned (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 7
+        first_episode: 7
+        absolute: null
+        date:
+          status: unknown
+        episode_title: The Other 48 Days
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E07 - The Other 48 Days (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 8
+        first_episode: 8
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Collision (a.k.a. Old Habits)
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E08 - Collision (a.k.a. Old Habits) (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 9
+        first_episode: 9
+        absolute: null
+        date:
+          status: unknown
+        episode_title: What Kate Did
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E09 - What Kate Did (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 10
+        first_episode: 10
+        absolute: null
+        date:
+          status: unknown
+        episode_title: The 23rd Psalm
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E10 - The 23rd Psalm (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 11
+        first_episode: 11
+        absolute: null
+        date:
+          status: unknown
+        episode_title: The Hunting Party
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E11 - The Hunting Party (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 12
+        first_episode: 12
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Fire + Water
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E12 - Fire + Water (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 13
+        first_episode: 13
+        absolute: null
+        date:
+          status: unknown
+        episode_title: The Long Con
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E13 - The Long Con (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 14
+        first_episode: 14
+        absolute: null
+        date:
+          status: unknown
+        episode_title: One of Them
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E14 - One of Them (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 15
+        first_episode: 15
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Maternity Leave
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E15 - Maternity Leave (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 16
+        first_episode: 16
+        absolute: null
+        date:
+          status: unknown
+        episode_title: The Whole Truth
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E16 - The Whole Truth (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 17
+        first_episode: 17
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Lockdown
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E17 - Lockdown (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 18
+        first_episode: 18
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Dave
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E18 - Dave (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 19
+        first_episode: 19
+        absolute: null
+        date:
+          status: unknown
+        episode_title: S.O.S.
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E19 - S.O.S. (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 20
+        first_episode: 20
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Two for the Road
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E20 - Two for the Road (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 21
+        first_episode: 21
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Questionmark
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E21 - Questionmark (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 22
+        first_episode: 22
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Three Minutes
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E22 - Three Minutes (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 23
+        first_episode: 23
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Live Together, Die Alone (1)
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E23 - Live Together, Die Alone (1) (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      - kind: episode
+        series_name: House
+        series_year: 2004
+        series_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)
+        season:
+          status: resolved
+          value: 2
+          evidence:
+            rule: episode_token
+            span:
+            - 15
+            - 21
+        episodes:
+        - 24
+        first_episode: 24
+        absolute: null
+        date:
+          status: unknown
+        episode_title: Live Together, Die Alone (2)
+        path: null
+        provider_ids: {}
+        versions:
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E24 - Live Together, Die Alone (2) (1080p BluRay x265 Simmers).mkv
+          label: null
+          ambiguity_reason: null
+          edition: null
+          edition_hint: null
+          format_3d: null
+          nfo: null
+        extras: []
+        subtitles: []
+        audio: []
+        artwork: []
+        nfo: null
+        ambiguous: false
+        ambiguity_reasons: []
+      extras_of:
+        House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers):
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Channel 4 UK Promo Directed by David LaChapelle.mkv
+          extra: featurette
+          title: Channel 4 UK Promo Directed by David LaChapelle
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/01. Seeing Walt.mkv
+          extra: deleted_scene
+          title: 01. Seeing Walt
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/02. Kate's Choice.mkv
+          extra: deleted_scene
+          title: 02. Kate's Choice
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/03. Good With Kids.mkv
+          extra: deleted_scene
+          title: 03. Good With Kids
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/04. A Little You Time.mkv
+          extra: deleted_scene
+          title: 04. A Little You Time
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/05. Sawyer's Visitor.mkv
+          extra: deleted_scene
+          title: 05. Sawyer's Visitor
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/06. Dinner Time.mkv
+          extra: deleted_scene
+          title: 06. Dinner Time
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/07. Special Delivery.mkv
+          extra: deleted_scene
+          title: 07. Special Delivery
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/08. Ana Lucia's Prisoner.mkv
+          extra: deleted_scene
+          title: 08. Ana Lucia's Prisoner
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/09. The Saw.mkv
+          extra: deleted_scene
+          title: 09. The Saw
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/10. Libby & Claire.mkv
+          extra: deleted_scene
+          title: 10. Libby & Claire
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/11. Giving Care.mkv
+          extra: deleted_scene
+          title: 11. Giving Care
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/12. Connected.mkv
+          extra: deleted_scene
+          title: 12. Connected
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/13. I Need to Know.mkv
+          extra: deleted_scene
+          title: 13. I Need to Know
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/14. Scissors.mkv
+          extra: deleted_scene
+          title: 14. Scissors
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/15. The Doctor's Solution.mkv
+          extra: deleted_scene
+          title: 15. The Doctor's Solution
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/16. What's Your Story.mkv
+          extra: deleted_scene
+          title: 16. What's Your Story
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/17. Weakness.mkv
+          extra: deleted_scene
+          title: 17. Weakness
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/18. Are You All Right.mkv
+          extra: deleted_scene
+          title: 18. Are You All Right
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/19. I Miss.mkv
+          extra: deleted_scene
+          title: 19. I Miss
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Fire + Water - Anatomy Of An Episode.mkv
+          extra: featurette
+          title: Fire + Water - Anatomy Of An Episode
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Bernard in a Tree.mkv
+          extra: featurette
+          title: Bernard in a Tree
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Dharma Cookies.mkv
+          extra: featurette
+          title: Dharma Cookies
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/History of Jeronimo Jackson.mkv
+          extra: featurette
+          title: History of Jeronimo Jackson
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Hurley's Sweat.mkv
+          extra: featurette
+          title: Hurley's Sweat
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Jack's Trip.mkv
+          extra: featurette
+          title: Jack's Trip
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/On The Beach with Evi.mkv
+          extra: featurette
+          title: On The Beach with Evi
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Rain Delays.mkv
+          extra: featurette
+          title: Rain Delays
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/01. Adrift.mkv
+          extra: featurette
+          title: 01. Adrift
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/02. Everybody Hates Hugo.mkv
+          extra: featurette
+          title: 02. Everybody Hates Hugo
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/03. Abandoned.mkv
+          extra: featurette
+          title: 03. Abandoned
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/04. The Other 48 Days.mkv
+          extra: featurette
+          title: 04. The Other 48 Days
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/05. Collision.mkv
+          extra: featurette
+          title: 05. Collision
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/06. What Kate Did.mkv
+          extra: featurette
+          title: 06. What Kate Did
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/07. The 23rd Psalm.mkv
+          extra: featurette
+          title: 07. The 23rd Psalm
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/08. The Whole Truth.mkv
+          extra: featurette
+          title: 08. The Whole Truth
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/09. Dave.mkv
+          extra: featurette
+          title: 09. Dave
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/10. S.O.S.mkv
+          extra: featurette
+          title: 10. S.O.S
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/11. Two For The Road.mkv
+          extra: featurette
+          title: 11. Two For The Road
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/12. Live Together, Die Alone.mkv
+          extra: featurette
+          title: 12. Live Together, Die Alone
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/13. Canine Castaways.mkv
+          extra: featurette
+          title: 13. Canine Castaways
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House Bloopers.mkv
+          extra: featurette
+          title: House Bloopers
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House Connections.mkv
+          extra: featurette
+          title: House Connections
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Mysteries, Conspiracies and Theories.mkv
+          extra: featurette
+          title: Mysteries, Conspiracies and Theories
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Secrets from the Hatch.mkv
+          extra: featurette
+          title: Secrets from the Hatch
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The House Flashbacks/01. The Wake.mkv
+          extra: featurette
+          title: 01. The Wake
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The House Flashbacks/02. The New Au Pair.mkv
+          extra: featurette
+          title: 02. The New Au Pair
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The House Flashbacks/03. Locke's Father.mkv
+          extra: featurette
+          title: 03. Locke's Father
+          year: null
+        - paths:
+          - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The World According to Sawyer.mkv
+          extra: featurette
+          title: The World According to Sawyer
+          year: null
+      video_subtitles: {}
+      excluded_entries:
+      - path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/.DS_Store
+        reason: hidden_entry
+        matched_path: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/.DS_Store
+        rule_file: null
+      undecided_entries: []
+      invalid_entries: []
+      unclaimed_files: []
+      rule_diagnostics: []
+    plan:
+      proposals:
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Channel 4 UK Promo Directed by David LaChapelle.mkv
+        to: House (2004)/Featurettes/Channel 4 UK Promo Directed by David LaChapelle.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/01. Seeing Walt.mkv
+        to: House (2004)/Deleted Scenes/01. Seeing Walt.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/02. Kate's Choice.mkv
+        to: House (2004)/Deleted Scenes/02. Kate's Choice.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/03. Good With Kids.mkv
+        to: House (2004)/Deleted Scenes/03. Good With Kids.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/04. A Little You Time.mkv
+        to: House (2004)/Deleted Scenes/04. A Little You Time.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/05. Sawyer's Visitor.mkv
+        to: House (2004)/Deleted Scenes/05. Sawyer's Visitor.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/06. Dinner Time.mkv
+        to: House (2004)/Deleted Scenes/06. Dinner Time.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/07. Special Delivery.mkv
+        to: House (2004)/Deleted Scenes/07. Special Delivery.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/08. Ana Lucia's Prisoner.mkv
+        to: House (2004)/Deleted Scenes/08. Ana Lucia's Prisoner.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/09. The Saw.mkv
+        to: House (2004)/Deleted Scenes/09. The Saw.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/10. Libby & Claire.mkv
+        to: House (2004)/Deleted Scenes/10. Libby & Claire.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/11. Giving Care.mkv
+        to: House (2004)/Deleted Scenes/11. Giving Care.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/12. Connected.mkv
+        to: House (2004)/Deleted Scenes/12. Connected.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/13. I Need to Know.mkv
+        to: House (2004)/Deleted Scenes/13. I Need to Know.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/14. Scissors.mkv
+        to: House (2004)/Deleted Scenes/14. Scissors.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/15. The Doctor's Solution.mkv
+        to: House (2004)/Deleted Scenes/15. The Doctor's Solution.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/16. What's Your Story.mkv
+        to: House (2004)/Deleted Scenes/16. What's Your Story.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/17. Weakness.mkv
+        to: House (2004)/Deleted Scenes/17. Weakness.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/18. Are You All Right.mkv
+        to: House (2004)/Deleted Scenes/18. Are You All Right.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/19. I Miss.mkv
+        to: House (2004)/Deleted Scenes/19. I Miss.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Fire + Water - Anatomy Of An Episode.mkv
+        to: House (2004)/Featurettes/Fire + Water - Anatomy Of An Episode.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Bernard in a Tree.mkv
+        to: House (2004)/Featurettes/Hidden Extras/Bernard in a Tree.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Dharma Cookies.mkv
+        to: House (2004)/Featurettes/Hidden Extras/Dharma Cookies.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/History of Jeronimo Jackson.mkv
+        to: House (2004)/Featurettes/Hidden Extras/History of Jeronimo Jackson.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Hurley's Sweat.mkv
+        to: House (2004)/Featurettes/Hidden Extras/Hurley's Sweat.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Jack's Trip.mkv
+        to: House (2004)/Featurettes/Hidden Extras/Jack's Trip.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/On The Beach with Evi.mkv
+        to: House (2004)/Featurettes/Hidden Extras/On The Beach with Evi.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Rain Delays.mkv
+        to: House (2004)/Featurettes/Hidden Extras/Rain Delays.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/01. Adrift.mkv
+        to: House (2004)/Featurettes/House - On Location/01. Adrift.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/02. Everybody Hates Hugo.mkv
+        to: House (2004)/Featurettes/House - On Location/02. Everybody Hates Hugo.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/03. Abandoned.mkv
+        to: House (2004)/Featurettes/House - On Location/03. Abandoned.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/04. The Other 48 Days.mkv
+        to: House (2004)/Featurettes/House - On Location/04. The Other 48 Days.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/05. Collision.mkv
+        to: House (2004)/Featurettes/House - On Location/05. Collision.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/06. What Kate Did.mkv
+        to: House (2004)/Featurettes/House - On Location/06. What Kate Did.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/07. The 23rd Psalm.mkv
+        to: House (2004)/Featurettes/House - On Location/07. The 23rd Psalm.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/08. The Whole Truth.mkv
+        to: House (2004)/Featurettes/House - On Location/08. The Whole Truth.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/09. Dave.mkv
+        to: House (2004)/Featurettes/House - On Location/09. Dave.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/10. S.O.S.mkv
+        to: House (2004)/Featurettes/House - On Location/10. S.O.S.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/11. Two For The Road.mkv
+        to: House (2004)/Featurettes/House - On Location/11. Two For The Road.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/12. Live Together, Die Alone.mkv
+        to: House (2004)/Featurettes/House - On Location/12. Live Together, Die Alone.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/13. Canine Castaways.mkv
+        to: House (2004)/Featurettes/House - On Location/13. Canine Castaways.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House Bloopers.mkv
+        to: House (2004)/Featurettes/House Bloopers.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House Connections.mkv
+        to: House (2004)/Featurettes/House Connections.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Mysteries, Conspiracies and Theories.mkv
+        to: House (2004)/Featurettes/Mysteries, Conspiracies and Theories.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Secrets from the Hatch.mkv
+        to: House (2004)/Featurettes/Secrets from the Hatch.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The House Flashbacks/01. The Wake.mkv
+        to: House (2004)/Featurettes/The House Flashbacks/01. The Wake.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The House Flashbacks/02. The New Au Pair.mkv
+        to: House (2004)/Featurettes/The House Flashbacks/02. The New Au Pair.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The House Flashbacks/03. Locke's Father.mkv
+        to: House (2004)/Featurettes/The House Flashbacks/03. Locke's Father.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The World According to Sawyer.mkv
+        to: House (2004)/Featurettes/The World According to Sawyer.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E01 - Man of Science, Acceptance - 1080p BluRay x265 Simmers.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (MP4)-thumb.jpeg
+        to: House (2004)/Season 02/House (2004) - S02E01 - Man of Science, Acceptance - MP4-thumb.jpeg
+        case_only: false
+        requires_temporary_step: false
+        moves_with: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (1080p BluRay x265 Simmers).mkv
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (MP4).mp4
+        to: House (2004)/Season 02/House (2004) - S02E01 - Man of Science, Acceptance - MP4.mp4
+        case_only: false
+        requires_temporary_step: false
+        moves_with: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (1080p BluRay x265 Simmers).mkv
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E02 - Adrift (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E02 - Adrift.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E03 - Orientation (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E03 - Orientation.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E04 - Everybody Hates Hugo (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E04 - Everybody Hates Hugo.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E05 - ...And Found (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E05 - ...And Found.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E06 - Abandoned (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E06 - Abandoned.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E07 - The Other 48 Days (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E07 - The Other 48 Days.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E08 - Collision (a.k.a. Old Habits) (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E08 - Collision (a.k.a. Old Habits).mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E09 - What Kate Did (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E09 - What Kate Did.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E10 - The 23rd Psalm (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E10 - The 23rd Psalm.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E11 - The Hunting Party (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E11 - The Hunting Party.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E12 - Fire + Water (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E12 - Fire + Water.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E13 - The Long Con (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E13 - The Long Con.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E14 - One of Them (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E14 - One of Them.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E15 - Maternity Leave (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E15 - Maternity Leave.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E16 - The Whole Truth (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E16 - The Whole Truth.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E17 - Lockdown (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E17 - Lockdown.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E18 - Dave (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E18 - Dave.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E19 - S.O.S. (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E19 - S.O.S..mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E20 - Two for the Road (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E20 - Two for the Road.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E21 - Questionmark (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E21 - Questionmark.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E22 - Three Minutes (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E22 - Three Minutes.mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E23 - Live Together, Die Alone (1) (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E23 - Live Together, Die Alone (1).mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E24 - Live Together, Die Alone (2) (1080p BluRay x265 Simmers).mkv
+        to: House (2004)/Season 02/House (2004) - S02E24 - Live Together, Die Alone (2).mkv
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      - from: House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/backdrop.jpg
+        to: House (2004)/backdrop.jpg
+        case_only: false
+        requires_temporary_step: false
+        moves_with: null
+      blocked: []
+    validation:
+      diagnostics:
+      - rule: missing_provider_id
+        paths:
+        - 'House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)'
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Channel 4 UK Promo Directed by David LaChapelle.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/Channel 4 UK Promo Directed by David LaChapelle.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/01. Seeing Walt.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/01. Seeing Walt.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/02. Kate's Choice.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/02. Kate's Choice.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/03. Good With Kids.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/03. Good With Kids.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/04. A Little You Time.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/04. A Little You Time.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/05. Sawyer's Visitor.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/05. Sawyer's Visitor.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/06. Dinner Time.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/06. Dinner Time.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/07. Special Delivery.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/07. Special Delivery.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/08. Ana Lucia's Prisoner.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/08. Ana Lucia's Prisoner.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/09. The Saw.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/09. The Saw.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/10. Libby & Claire.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/10. Libby & Claire.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/11. Giving Care.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/11. Giving Care.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/12. Connected.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/12. Connected.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/13. I Need to Know.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/13. I Need to Know.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/14. Scissors.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/14. Scissors.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/15. The Doctor's Solution.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/15. The Doctor's Solution.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/16. What's Your Story.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/16. What's Your Story.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/17. Weakness.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/17. Weakness.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/18. Are You All Right.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/18. Are You All Right.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Deleted Scenes/19. I Miss.mkv
+        reason: null
+        proposed_path: House (2004)/Deleted Scenes/19. I Miss.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Fire + Water - Anatomy Of An Episode.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/Fire + Water - Anatomy Of An Episode.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Bernard in a Tree.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/Hidden Extras/Bernard in a Tree.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Dharma Cookies.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/Hidden Extras/Dharma Cookies.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/History of Jeronimo Jackson.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/Hidden Extras/History of Jeronimo Jackson.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Hurley's Sweat.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/Hidden Extras/Hurley's Sweat.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Jack's Trip.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/Hidden Extras/Jack's Trip.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/On The Beach with Evi.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/Hidden Extras/On The Beach with Evi.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Hidden Extras/Rain Delays.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/Hidden Extras/Rain Delays.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/01. Adrift.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/House - On Location/01. Adrift.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/02. Everybody Hates Hugo.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/House - On Location/02. Everybody Hates Hugo.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/03. Abandoned.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/House - On Location/03. Abandoned.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/04. The Other 48 Days.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/House - On Location/04. The Other 48 Days.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/05. Collision.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/House - On Location/05. Collision.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/06. What Kate Did.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/House - On Location/06. What Kate Did.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/07. The 23rd Psalm.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/House - On Location/07. The 23rd Psalm.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/08. The Whole Truth.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/House - On Location/08. The Whole Truth.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/09. Dave.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/House - On Location/09. Dave.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/10. S.O.S.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/House - On Location/10. S.O.S.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/11. Two For The Road.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/House - On Location/11. Two For The Road.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/12. Live Together, Die Alone.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/House - On Location/12. Live Together, Die Alone.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House - On Location/13. Canine Castaways.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/House - On Location/13. Canine Castaways.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House Bloopers.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/House Bloopers.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/House Connections.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/House Connections.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Mysteries, Conspiracies and Theories.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/Mysteries, Conspiracies and Theories.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/Secrets from the Hatch.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/Secrets from the Hatch.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The House Flashbacks/01. The Wake.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/The House Flashbacks/01. The Wake.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The House Flashbacks/02. The New Au Pair.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/The House Flashbacks/02. The New Au Pair.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The House Flashbacks/03. Locke's Father.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/The House Flashbacks/03. Locke's Father.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/Featurettes/The World According to Sawyer.mkv
+        reason: null
+        proposed_path: House (2004)/Featurettes/The World According to Sawyer.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E01 - Man of Science, Acceptance - 1080p BluRay x265 Simmers.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (MP4)-thumb.jpeg
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E01 - Man of Science, Acceptance - MP4-thumb.jpeg
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E01 - Man of Science, Acceptance (MP4).mp4
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E01 - Man of Science, Acceptance - MP4.mp4
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E02 - Adrift (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E02 - Adrift.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E03 - Orientation (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E03 - Orientation.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E04 - Everybody Hates Hugo (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E04 - Everybody Hates Hugo.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E05 - ...And Found (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E05 - ...And Found.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E06 - Abandoned (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E06 - Abandoned.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E07 - The Other 48 Days (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E07 - The Other 48 Days.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E08 - Collision (a.k.a. Old Habits) (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E08 - Collision (a.k.a. Old Habits).mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E09 - What Kate Did (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E09 - What Kate Did.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E10 - The 23rd Psalm (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E10 - The 23rd Psalm.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E11 - The Hunting Party (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E11 - The Hunting Party.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E12 - Fire + Water (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E12 - Fire + Water.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E13 - The Long Con (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E13 - The Long Con.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E14 - One of Them (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E14 - One of Them.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E15 - Maternity Leave (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E15 - Maternity Leave.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E16 - The Whole Truth (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E16 - The Whole Truth.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E17 - Lockdown (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E17 - Lockdown.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E18 - Dave (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E18 - Dave.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E19 - S.O.S. (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E19 - S.O.S..mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E20 - Two for the Road (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E20 - Two for the Road.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E21 - Questionmark (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E21 - Questionmark.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E22 - Three Minutes (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E22 - Three Minutes.mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E23 - Live Together, Die Alone (1) (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E23 - Live Together, Die Alone (1).mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/House (2004) - S02E24 - Live Together, Die Alone (2) (1080p BluRay x265 Simmers).mkv
+        reason: null
+        proposed_path: House (2004)/Season 02/House (2004) - S02E24 - Live Together, Die Alone (2).mkv
+      - rule: profile_violation
+        paths:
+        - House (2004) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Simmers)/backdrop.jpg
+        reason: null
+        proposed_path: House (2004)/backdrop.jpg

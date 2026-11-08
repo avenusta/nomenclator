@@ -1,0 +1,31 @@
+# Language pack `en`: the words a library in this language uses. Applied when a
+# caller declares its languages; see decision X11.
+name: language-en
+series_season_words:
+  add: ["series"]
+leading_articles:
+  add: ["the", "a", "an"]
+number_words:
+  add:
+    "one": 1
+    "two": 2
+    "three": 3
+    "four": 4
+    "five": 5
+    "six": 6
+    "seven": 7
+    "eight": 8
+    "nine": 9
+    "ten": 10
+    "eleven": 11
+    "twelve": 12
+    "thirteen": 13
+    "fourteen": 14
+    "fifteen": 15
+    "sixteen": 16
+    "seventeen": 17
+    "eighteen": 18
+    "nineteen": 19
+    "twenty": 20
+ordinal_suffixes:
+  add: ["st", "nd", "rd", "th"]

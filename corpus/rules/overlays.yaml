@@ -1,0 +1,557 @@
+# Overlays: caller data that adds words to or removes words from the built-in
+# vocabularies (decision X10). A case's `overlays` are YAML or JSON documents, applied
+# together onto the built-in rules before the operation runs.
+
+- name: the built-in rules end the title before a title-like release word
+  operation: parse_movie_name
+  input: { name: The End 2160p.mkv, kind: file }
+  expect:
+    title: The
+
+- name: an overlay that removes the title-like release word leaves it in the title
+  overlays:
+    - |
+      name: titles-ending-in-end
+      title_like_release_words:
+        remove: [end]
+  operation: parse_movie_name
+  input: { name: The End 2160p.mkv, kind: file }
+  expect:
+    title: The End
+
+- name: an overlay that adds an edition word moves it from the title to the edition hint
+  overlays:
+    - |
+      name: redux
+      edition_words:
+        add: [Redux]
+  operation: parse_movie_name
+  input: { name: Northern Passage Redux 2160p.mkv, kind: file }
+  expect:
+    title: Northern Passage
+    edition_hint: Redux
+
+- name: without the overlay the edition word is part of the title
+  operation: parse_movie_name
+  input: { name: Northern Passage Redux 2160p.mkv, kind: file }
+  expect:
+    title: Northern Passage Redux
+    edition_hint: null
+
+- name: an overlay that adds an edition phrase reads it as an edition hint
+  overlays:
+    - |
+      name: phrases
+      edition_phrases:
+        add: ["Producer's Cut"]
+  operation: parse_movie_name
+  input: { name: Northern.Passage.2021.Producers.Cut.mkv, kind: file }
+  expect:
+    title: Northern Passage
+    year: 2021
+    edition_hint: Producers Cut
+
+- name: without the overlay a year followed by plain words is part of the title
+  operation: parse_movie_name
+  input: { name: Northern.Passage.2021.Producers.Cut.mkv, kind: file }
+  expect:
+    title: Northern Passage 2021 Producers Cut
+    year: null
+    edition_hint: null
+
+- name: an overlay that adds a season word reads a folder named with it as a season
+  overlays:
+    - |
+      name: hungarian
+      season_words:
+        add: [évad]
+  operation: parse_season_folder
+  input: { name: 2. évad }
+  expect:
+    season: 2
+
+- name: without the overlay the folder has no season
+  operation: parse_season_folder
+  input: { name: 2. évad }
+  expect:
+    season: null
+
+- name: an overlay that adds a specials folder name reads it as season 0
+  overlays:
+    - |
+      name: german-specials
+      specials_folders:
+        add: [Extras-Folgen]
+  operation: parse_season_folder
+  input: { name: Extras-Folgen }
+  expect:
+    season: 0
+
+- name: an overlay that adds an extras folder classifies its videos as that kind
+  overlays:
+    - |
+      name: making-of
+      extras_folders:
+        add: { Making Of: behind_the_scenes }
+  operation: classify_extra
+  input:
+    path: Northern Passage (2021)/Making Of/Crew.mkv
+    kind: file
+    library: movies
+    context_paths: [Northern Passage (2021)/Northern Passage (2021).mkv]
+  expect:
+    extra: behind_the_scenes
+    owner: Northern Passage (2021)
+    supplemental_dir: Northern Passage (2021)/Making Of
+
+- name: an overlay that removes an extras folder makes its videos part of the movie
+  overlays:
+    - |
+      name: no-teasers-folder
+      extras_folders:
+        remove: [teasers]
+  operation: classify_extra
+  input:
+    path: Northern Passage (2021)/Teasers/Crew.mkv
+    kind: file
+    library: movies
+    context_paths: [Northern Passage (2021)/Northern Passage (2021).mkv]
+  expect:
+    extra: null
+
+- name: an overlay cannot remove an extras folder that the writer writes
+  operation: build_rules
+  input:
+    overlays: ["name: no-other-folder\nextras_folders:\n  remove: [other]\n"]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: canonical_entry, overlay: no-other-folder, line: 3, vocabulary: extras_folders, entry: other }
+
+- name: an overlay cannot give an artwork name that the writer writes another role
+  operation: build_rules
+  input:
+    overlays: ["name: fanart-poster\nartwork_roles:\n  add: { fanart: poster }\n"]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: canonical_entry, overlay: fanart-poster, vocabulary: artwork_roles, entry: fanart }
+
+- name: a language pack that is not declared keeps the season word that the writer writes
+  operation: parse_season_folder
+  languages: [de]
+  input: { name: Season 02 }
+  expect:
+    season: 2
+
+- name: an overlay that adds an extras suffix classifies a name ending in it
+  overlays:
+    - |
+      name: recap-suffix
+      extras_suffixes:
+        add: { recap: featurette }
+  operation: classify_extra
+  input: { path: Northern Passage (2021)/Northern Passage-recap.mkv, kind: file, library: movies }
+  expect:
+    extra: featurette
+    title: Northern Passage
+
+- name: an overlay that adds a language spelling reads it in a sidecar name
+  overlays:
+    - |
+      name: native-language-names
+      languages:
+        add: { de: [deutsch], fr: [français] }
+  operation: parse_sidecar
+  input: { name: Movie.deutsch.srt, video_name: Movie.mkv, kind: subtitle }
+  expect:
+    matches: true
+    language: de
+
+- name: a forced flag word that an overlay adds marks the subtitle forced
+  overlays:
+    - |
+      name: italian-flags
+      forced_flag_words:
+        add: [forzati]
+  operation: parse_sidecar
+  input: { name: Film.it.forzati.srt, video_name: Film.mkv, kind: subtitle }
+  expect:
+    language: it
+    flags: [forced]
+
+- name: an overlay that adds a video extension makes files with it videos
+  overlays:
+    - |
+      name: ogm
+      video_extensions:
+        add: [.ogm]
+  operation: is_video_file
+  input: { path: Movie (2001)/Movie (2001).ogm }
+  expect:
+    result: true
+
+- name: an overlay that removes a video extension makes files with it non-videos
+  overlays:
+    - |
+      name: no-transport-streams
+      video_extensions:
+        remove: [ts]
+  operation: is_video_file
+  input: { path: Movie (2001)/Movie (2001).ts }
+  expect:
+    result: false
+
+- name: an overlay that adds an artwork word assigns that role to images named with it
+  overlays:
+    - |
+      name: key-art
+      artwork_roles:
+        add: { keyart: poster }
+  operation: classify_artwork
+  input: { name: keyart.jpg }
+  expect:
+    role: poster
+
+- name: an overlay that adds a junk name excludes entries named with it
+  overlays:
+    - |
+      name: nas-junk
+      system_junk_names:
+        add: ["@SynoResource"]
+  operation: evaluate_ignore
+  input: { path: Movies/@SynoResource, kind: file, library: movies }
+  expect:
+    excluded: true
+    exclusion: { path: Movies/@SynoResource, reason: system_junk }
+
+- name: an overlay that adds a provider key reads tags with it
+  overlays:
+    - |
+      name: trakt
+      provider_keys:
+        add: [trakt]
+  operation: parse_provider_ids
+  input: { text: "Movie (2001) [trakt-12345]" }
+  expect:
+    provider_ids: { trakt: "12345" }
+
+- name: overlays apply to a whole interpretation
+  overlays:
+    - |
+      name: titles-ending-in-end
+      title_like_release_words:
+        remove: [end]
+  operation: interpret
+  input:
+    library: movies
+    paths: [The End (2024)/The End 2160p.mkv]
+  expect:
+    items:
+      - kind: movie
+        title: The End
+        year: 2024
+
+- name: a JSON overlay is read like a YAML one
+  overlays:
+    - '{"name": "titles-ending-in-end", "title_like_release_words": {"remove": ["end"]}}'
+  operation: parse_movie_name
+  input: { name: The End 2160p.mkv, kind: file }
+  expect:
+    title: The End
+
+- name: the rules identity lists the overlays in their declared order
+  operation: build_rules
+  input:
+    overlays:
+      - |
+        name: second-in-name-order
+        version: "2"
+        edition_words:
+          add: [redux]
+      - |
+        name: first-in-name-order
+        edition_words:
+          add: [redux]
+  expect:
+    identity:
+      overlays:
+        - { name: second-in-name-order, version: "2" }
+        - { name: first-in-name-order, version: null }
+    diagnostics: []
+
+- name: two overlays that make the same change do not conflict
+  operation: build_rules
+  input:
+    overlays:
+      - |
+        name: one
+        technical_words:
+          add: [hdlight]
+      - |
+        name: two
+        technical_words:
+          add: [HDLight]
+  expect:
+    diagnostics: []
+
+- name: an overlay that adds a word that another overlay removes is a conflict, whatever their order
+  operation: build_rules
+  input:
+    overlays:
+      - |
+        name: keeps-end
+        title_like_release_words:
+          remove: [end]
+      - |
+        name: cuts-end
+        title_like_release_words:
+          add: [end]
+  expect:
+    identity: null
+    diagnostics:
+      - reason: conflicting_change
+        vocabulary: title_like_release_words
+        entry: end
+        overlays: [keeps-end, cuts-end]
+
+- name: two overlays that give one extras folder different kinds conflict
+  operation: build_rules
+  input:
+    overlays:
+      - |
+        name: as-featurettes
+        extras_folders:
+          add: { Making Of: featurette }
+      - |
+        name: as-behind-the-scenes
+        extras_folders:
+          add: { making-of: behind_the_scenes }
+  expect:
+    identity: null
+    diagnostics:
+      - reason: conflicting_change
+        vocabulary: extras_folders
+        entry: makingof
+        overlays: [as-featurettes, as-behind-the-scenes]
+
+- name: two overlays with one name return a diagnostic
+  operation: build_rules
+  input:
+    overlays:
+      - "name: words\nedition_words:\n  add: [redux]\n"
+      - "name: words\nedition_words:\n  add: [recut]\n"
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: duplicate_overlay_name, overlay: words }
+
+- name: an overlay that names an unknown vocabulary returns a diagnostic on its line
+  operation: build_rules
+  input:
+    overlays:
+      - "name: typo\nedition_word:\n  add: [redux]\n"
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: unknown_vocabulary, line: 2, vocabulary: edition_word }
+
+- name: an overlay without a name returns a diagnostic
+  operation: build_rules
+  input:
+    overlays:
+      - "edition_words:\n  add: [redux]\n"
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: missing_name }
+
+- name: an overlay that is not YAML or JSON returns a syntax diagnostic on its line
+  operation: build_rules
+  input:
+    overlays:
+      - "name: broken\nedition_words: [redux\n"
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: syntax }
+
+# Overlay validation (decision X10): every problem returns a diagnostic with its line.
+
+- name: an entry listed twice in one vocabulary is a duplicate on its second line
+  operation: build_rules
+  input:
+    overlays:
+      - "name: twice\ntechnical_words:\n  add:\n    - hdlight\n    - HDLight\n"
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: duplicate_entry, overlay: twice, line: 5, vocabulary: technical_words, entry: hdlight }
+
+- name: an entry one overlay both adds and removes is a duplicate
+  operation: build_rules
+  input:
+    overlays:
+      - "name: undecided\nedition_words:\n  add: [redux]\n  remove: [redux]\n"
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: duplicate_entry, overlay: undecided, line: 4, vocabulary: edition_words, entry: redux }
+
+- name: a year added as a release word is a reserved token
+  operation: build_rules
+  input:
+    overlays:
+      - "name: years\ntitle_like_release_words:\n  add: [remastered, '2021']\n"
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: reserved_token, overlay: years, line: 3, vocabulary: title_like_release_words, entry: "2021" }
+
+- name: an episode code or a resolution added as a word is a reserved token
+  operation: build_rules
+  input:
+    overlays:
+      - "name: tokens\nedition_words:\n  add: [S01E02]\nseason_words:\n  add: [1080p]\n"
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: reserved_token, line: 3, vocabulary: edition_words, entry: s01e02 }
+      - { reason: reserved_token, line: 5, vocabulary: season_words, entry: 1080p }
+
+- name: a word added to a second release-word class collides with the first class
+  operation: build_rules
+  input:
+    overlays:
+      - "name: web-is-technical\ntechnical_words:\n  add: [web]\n"
+  expect:
+    identity: null
+    diagnostics:
+      - reason: colliding_entry
+        overlay: web-is-technical
+        line: 3
+        vocabulary: technical_words
+        entry: web
+        message: also in title_like_release_words
+
+- name: moving a word between release-word classes in one overlay is not a collision
+  operation: build_rules
+  input:
+    overlays:
+      - "name: web-is-technical\ntechnical_words:\n  add: [web]\ntitle_like_release_words:\n  remove: [web]\n"
+  expect:
+    diagnostics: []
+
+- name: an unknown extra kind is a malformed vocabulary on its line
+  operation: build_rules
+  input:
+    overlays:
+      - "name: kinds\nextras_folders:\n  add: { Making Of: making_of }\n"
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: malformed_vocabulary, overlay: kinds, line: 2, vocabulary: extras_folders }
+
+- name: an entry that is empty after normalization returns a diagnostic on its line
+  operation: build_rules
+  input:
+    overlays:
+      - "name: blank\nvideo_extensions:\n  add:\n    - mkv2\n    - '.'\n"
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: empty_entry, overlay: blank, line: 5, vocabulary: video_extensions }
+
+- name: an extras video name that an overlay adds with separators matches a stem written with them
+  overlays: ["name: making-of\nextras_video_names:\n  add: { making-of: behind_the_scenes }\n"]
+  operation: classify_extra
+  input:
+    path: Northern Passage (2021)/making-of.mkv
+    kind: file
+    library: movies
+    context_paths: [Northern Passage (2021)/Northern Passage (2021).mkv]
+  expect:
+    extra: behind_the_scenes
+
+# Release vocabularies (decision X26): `release_words`, `audio_channel_words` and
+# `release_site_tags` change what `parse_release` reads.
+
+- name: an overlay that adds a streaming service spelling makes a release name state that service
+  overlays:
+    - "name: mubi\nrelease_words:\n  add: { streaming_service: { mubi: [mubi] } }\n"
+  operation: parse_release
+  input: { name: Northern.Passage.2021.1080p.MUBI.WEB-DL.x264-NPX.mkv, kind: file }
+  expect:
+    streaming_service: mubi
+    source: web
+
+- name: without that overlay the spelling states no streaming service
+  operation: parse_release
+  input: { name: Northern.Passage.2021.1080p.MUBI.WEB-DL.x264-NPX.mkv, kind: file }
+  expect:
+    streaming_service: null
+
+- name: an overlay that removes a release word spelling stops a release name from stating it
+  overlays:
+    - "name: no-amzn\nrelease_words:\n  remove: [AMZN]\n"
+  operation: parse_release
+  input: { name: Northern.Passage.2021.1080p.AMZN.WEB-DL.x264-NPX.mkv, kind: file }
+  expect:
+    streaming_service: null
+    source: web
+
+- name: an overlay that adds an audio channel word gives its layout
+  overlays:
+    - "name: quad\naudio_channel_words:\n  add: { quad: '4.0' }\n"
+  operation: parse_release
+  input: { name: Northern.Passage.2021.1080p.WEB-DL.AAC.quad.x264-NPX.mkv, kind: file }
+  expect:
+    audio_channels: '4.0'
+
+- name: an overlay that adds a release site tag keeps that tag out of the release group
+  overlays:
+    - "name: site\nrelease_site_tags:\n  add: [qtracker]\n"
+  operation: parse_release
+  input: { name: "Quiet.Hours.S02E05.720p.HDTV.x264-NPX[qtracker].mkv", kind: file }
+  expect:
+    release_group: NPX
+
+- name: a bit depth that is not a number is a malformed vocabulary on its line
+  operation: build_rules
+  input:
+    overlays:
+      - "name: depth\nrelease_words:\n  add: { bit_depth: { ten: [10bits] } }\n"
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: malformed_vocabulary, overlay: depth, line: 2, vocabulary: release_words }
+
+- name: a channel layout that is not a layout is a malformed vocabulary on its line
+  operation: build_rules
+  input:
+    overlays:
+      - "name: layout\naudio_channel_words:\n  add: { quad: four }\n"
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: malformed_vocabulary, overlay: layout, line: 2, vocabulary: audio_channel_words }
+
+# Document dialect (decision X27): YAML 1.2 booleans, and no repeated keys.
+
+- name: an unquoted no in an overlay is the Norwegian language tag, not a boolean
+  operation: build_rules
+  input:
+    overlays:
+      - "name: norway\nlanguages:\n  add: { no: [norsk] }\n"
+  expect:
+    diagnostics: []
+
+- name: an overlay that repeats a vocabulary key is a syntax error on the repeated line
+  operation: build_rules
+  input:
+    overlays:
+      - "name: twice\ntechnical_words:\n  add: [webcap]\ntechnical_words:\n  add: [hdcap]\n"
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: syntax, line: 4 }

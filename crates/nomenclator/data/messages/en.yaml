@@ -1,0 +1,68 @@
+# English diagnostic messages (R13). Each rule has a `text` template; `reasons` gives a
+# template for a specific reason. Placeholders: {path} (the first path), {paths} (all
+# paths, each in backticks, joined by commas), {reason}, {proposed_path} and {code}.
+# Another language is a file of the same shape, named by its BCP 47 tag.
+
+ambiguous_identity:
+  text: "The identity of `{path}` is ambiguous ({reason}). Add a hint or rename the files so that they agree."
+conflicting_provider_ids:
+  text: "The names of `{path}` carry different {reason} IDs. Keep one ID, or add an authoritative hint."
+misplaced_series:
+  text: "`{path}` is an episode in a Movies library. Move it to a TV library."
+orphan_extra:
+  text: "`{path}` is an extra that belongs to no item. Move it into the folder of its movie or series, or set its owner with an override."
+orphan_sidecar:
+  text: "`{path}` is a subtitle or audio file that matches no video. Rename it after its video."
+orphan_artwork:
+  text: "`{path}` is an image that belongs to no item. Move it into an item folder, or rename it after a video."
+unclaimed_file:
+  text: "No item claims `{path}`. Move or remove it."
+missing_part:
+  text: "A part is missing between the parts {paths}."
+duplicate_part:
+  text: "The files {paths} claim the same part."
+clashing_version_labels:
+  text: "The versions {paths} have the same label and edition. Give each version a different label."
+insufficient_facts:
+  text: "`{path}` cannot be named because a fact is missing ({reason}). Add a hint for it."
+invalid_name_under_profile:
+  text: "The profile name of `{path}` is invalid ({reason})."
+folder_mismatch:
+  text: "`{path}` states a {reason} different from its folder."
+  reasons:
+    title: "`{path}` states a title different from its folder's title."
+    year: "`{path}` states a year different from its folder's year."
+    edition: "`{path}` states an edition different from its folder's edition."
+    series_title: "`{path}` states a series title different from its series folder."
+    series_year: "`{path}` states a series year different from its series folder."
+    season: "`{path}` states a season different from its season folder."
+overlapping_episodes:
+  text: "The episodes {paths} cover overlapping episode ranges."
+missing_year:
+  text: "`{path}` has no year. Add the year to the name or a hint."
+missing_series_year:
+  text: "The series `{path}` has no year. Add the year to the series folder or a hint."
+missing_provider_id:
+  text: "`{path}` has no provider ID. Add a provider tag such as `{tmdb-123}` or a hint."
+missing_episode_title:
+  text: "The episode `{path}` has no title."
+missing_episode:
+  text: "The series `{path}` lacks the episode {reason} that the reference lists."
+unexpected_episode:
+  text: "The reference does not list the episode {reason} of `{path}`."
+reference_year_mismatch:
+  text: "The year of `{path}` differs from the reference year {reason}."
+duplicate_work:
+  text: "The locations {paths} contain the same work ({reason}). Merge them or remove one."
+  reasons:
+    title_and_year: "The locations {paths} contain the same work (the same title and year). Merge them or remove one."
+duplicate_episode:
+  text: "The files {paths} are the same episode {reason}. Merge them as versions or remove one."
+missing_asset:
+  text: "`{path}` lacks the required {reason}."
+missing_subtitle:
+  text: "`{path}` lacks a subtitle for {reason}."
+release_junk:
+  text: "`{path}` is release junk. The plan proposes its removal."
+profile_violation:
+  text: "`{path}` does not follow the output profile. The profile name is `{proposed_path}`."

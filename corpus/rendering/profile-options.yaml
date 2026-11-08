@@ -1,0 +1,93 @@
+# Output profile options (decision R15). Every option defaults to the R1-R5
+# layout.
+
+- name: a flat movie layout writes the video without a movie folder
+  operation: render_names
+  input:
+    facts: { library: movies, title: Arrival, year: 2016, provider_ids: { tmdb: "329865" }, container: mkv }
+    profile: { movie_layout: flat }
+  expect:
+    path: "Arrival (2016) {tmdb-329865}.mkv"
+
+- name: a flat movie layout keeps the folder of a movie that has extras
+  operation: render_names
+  input:
+    facts: { library: movies, title: Arrival, year: 2016, container: mkv, has_extras: true }
+    profile: { movie_layout: flat }
+  expect:
+    path: Arrival (2016)/Arrival (2016).mkv
+
+- name: an unpadded season folder style writes the season number as is
+  operation: render_names
+  input:
+    facts: { library: tv, title: Quiet Hours, season: 2, episodes: [5], container: mkv }
+    profile: { season_folder_style: unpadded }
+  expect:
+    path: Quiet Hours/Season 2/Quiet Hours - S02E05.mkv
+
+- name: a specials folder name replaces the season 0 folder
+  operation: render_names
+  input:
+    facts: { library: tv, title: Quiet Hours, season: 0, episodes: [1], container: mkv }
+    profile: { specials_folder: Specials }
+  expect:
+    path: Quiet Hours/Specials/Quiet Hours - S00E01.mkv
+
+- name: an extras folder name replaces a kind's folder
+  operation: render_names
+  input:
+    facts: { library: movies, title: Arrival, year: 2016, container: mkv, extra: { kind: behind_the_scenes, title: Making Of } }
+    profile: { extras_folders: { behind_the_scenes: Making Of } }
+  expect:
+    path: Arrival (2016)/Making Of/Making Of.mkv
+
+- name: a bracketed provider tag style writes the provider with id in square brackets
+  operation: render_names
+  input:
+    facts: { library: movies, title: Arrival, year: 2016, provider_ids: { tmdb: "329865" }, container: mkv }
+    profile: { provider_tag_style: brackets_id }
+  expect:
+    path: "Arrival (2016) [tmdbid-329865]/Arrival (2016) [tmdbid-329865].mkv"
+
+- name: a provider tag style of none writes no provider tag
+  operation: render_names
+  input:
+    facts: { library: movies, title: Arrival, year: 2016, provider_ids: { tmdb: "329865" }, container: mkv }
+    profile: { provider_tag_style: none }
+  expect:
+    path: Arrival (2016)/Arrival (2016).mkv
+
+- name: character replacements apply before the filesystem rules
+  operation: render_names
+  input:
+    facts: { library: movies, title: "Mission: Impossible & More", year: 1996, container: mkv }
+    profile: { character_replacements: { ":": "", "&": and } }
+  expect:
+    path: Mission Impossible and More (1996)/Mission Impossible and More (1996).mkv
+
+- name: a bracketed version label style writes the label in square brackets
+  operation: render_names
+  input:
+    facts: { library: movies, title: Arrival, year: 2016, version_label: 2160p, container: mkv }
+    profile: { version_label_style: brackets }
+  expect:
+    path: Arrival (2016)/Arrival (2016) [2160p].mkv
+
+- name: an extension case of keep writes the extension as given
+  operation: render_names
+  input:
+    facts: { library: movies, title: Arrival, year: 2016, container: MKV }
+    profile: { extension_case: keep }
+  expect:
+    path: Arrival (2016)/Arrival (2016).MKV
+
+- name: a flat layout plan moves a movie without extras out of its folder
+  operation: plan_renames
+  input:
+    library: movies
+    paths: [Arrival 2016/Arrival.2016.1080p.mkv, Arrival 2016/Arrival.2016.1080p.en.srt]
+    profile: { movie_layout: flat }
+  expect:
+    proposals:
+      - { from: Arrival 2016/Arrival.2016.1080p.en.srt, to: Arrival (2016).en.srt }
+      - { from: Arrival 2016/Arrival.2016.1080p.mkv, to: Arrival (2016).mkv }

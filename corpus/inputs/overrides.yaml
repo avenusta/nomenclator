@@ -1,0 +1,129 @@
+# Overrides (decision X16): structural decisions the caller makes, in
+# `inputs.overrides`: videos that are versions of one item (`merge`), videos that are
+# items of their own (`split`), and an extra's kind or owner (`extras`).
+
+- name: merged videos are versions of one movie
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival (2016).mkv, Arrival Directors Edit.mkv]
+    inputs:
+      overrides:
+        merge: [[Arrival (2016).mkv, Arrival Directors Edit.mkv]]
+  expect:
+    items:
+      - kind: movie
+        title: Arrival
+        year: 2016
+        versions: [{}, {}]
+    input_diagnostics: []
+
+- name: without the override the videos are two movies
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival (2016).mkv, Arrival Directors Edit.mkv]
+  expect:
+    items: [{ kind: movie }, { kind: movie }]
+
+- name: a split video is removed from its folder's movie and is a movie of its own
+  operation: interpret
+  input:
+    library: movies
+    paths: [Collection (2010)/Collection (2010).mkv, Collection (2010)/Northern Passage.mkv]
+    inputs:
+      overrides:
+        split: [Collection (2010)/Northern Passage.mkv]
+  expect:
+    items:
+      - { kind: movie, title: Collection, path: Collection (2010), versions: [{ paths: [Collection (2010)/Collection (2010).mkv] }] }
+      - { kind: movie, title: Northern Passage, path: null, versions: [{ paths: [Collection (2010)/Northern Passage.mkv] }] }
+
+- name: an extra kind override changes the kind
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv, Arrival (2016)/Arrival (2016)-trailer.mkv]
+    inputs:
+      overrides:
+        extras: [{ path: Arrival (2016)/Arrival (2016)-trailer.mkv, kind: featurette }]
+  expect:
+    items: [{ kind: movie, extras: [{ paths: [Arrival (2016)/Arrival (2016)-trailer.mkv], extra: featurette }] }]
+
+- name: an extra kind override makes a feature video an extra
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv, Arrival (2016)/Making Arrival.mkv]
+    inputs:
+      overrides:
+        extras: [{ path: Arrival (2016)/Making Arrival.mkv, kind: behind_the_scenes }]
+  expect:
+    items:
+      - kind: movie
+        versions: [{ paths: [Arrival (2016)/Arrival (2016).mkv] }]
+        extras: [{ paths: [Arrival (2016)/Making Arrival.mkv], extra: behind_the_scenes, title: Making Arrival }]
+
+- name: an extra owner override attaches an orphan extra to that folder's movie
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv, Teaser-trailer.mkv]
+    inputs:
+      overrides:
+        extras: [{ path: Teaser-trailer.mkv, owner: Arrival (2016) }]
+  expect:
+    items: [{ kind: movie, extras: [{ paths: [Teaser-trailer.mkv], extra: trailer }] }]
+
+- name: without the override an extra at the library root is an orphan
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv, Teaser-trailer.mkv]
+  expect:
+    items: [{ kind: movie, extras: [] }, { kind: extra, paths: [Teaser-trailer.mkv] }]
+
+- name: merged TV videos are versions of the first one's episode
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Season 1/Show S01E01.mkv, Show/Season 1/Pilot (unaired cut).mkv]
+    inputs:
+      overrides:
+        merge: [[Show/Season 1/Show S01E01.mkv, Show/Season 1/Pilot (unaired cut).mkv]]
+  expect:
+    items:
+      - { kind: series }
+      - { kind: season }
+      - { kind: episode, episodes: [1], versions: [{}, {}] }
+
+- name: a split TV video is an episode of its own
+  operation: interpret
+  input:
+    library: tv
+    paths: [Show/Season 1/Show S01E01.mkv, Show/Season 1/Show S01E01 Extended.mkv]
+    inputs:
+      overrides:
+        split: [Show/Season 1/Show S01E01 Extended.mkv]
+  expect:
+    items:
+      - { kind: series }
+      - { kind: season }
+      - { kind: episode, episodes: [1], versions: [{ paths: [Show/Season 1/Show S01E01.mkv] }] }
+      - { kind: episode, episodes: [1], versions: [{ paths: [Show/Season 1/Show S01E01 Extended.mkv] }] }
+
+- name: overrides that refer to paths outside the listing or to no video are input diagnostics
+  operation: interpret
+  input:
+    library: movies
+    paths: [Arrival (2016)/Arrival (2016).mkv, Arrival (2016)/poster.jpg]
+    inputs:
+      overrides:
+        merge: [[Arrival (2016)/Arrival (2016).mkv, Arrival (2016)/poster.jpg]]
+        split: [Arrival (2016)/Missing.mkv]
+        extras: [{ path: Arrival (2016)/poster.jpg, kind: trailer }]
+  expect:
+    input_diagnostics:
+      - { input: extra_override, path: Arrival (2016)/poster.jpg, reason: not_applicable }
+      - { input: merge, path: Arrival (2016)/poster.jpg, reason: not_applicable }
+      - { input: split, path: Arrival (2016)/Missing.mkv, reason: unknown_path }

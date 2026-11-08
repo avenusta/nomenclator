@@ -1,0 +1,63 @@
+# Alternate and original titles (decision M16): `AKA`, ` / ` and a trailing
+# parenthesised title give the first part as the title and the others as alternates.
+
+- name: a trailing parenthesised title is an alternate title
+  operation: parse_movie_name
+  input: { name: Spirited Away (Sen to Chihiro no Kamikakushi) (2001).mkv, kind: file }
+  expect:
+    title: Spirited Away
+    year: 2001
+    alternate_titles: [{ title: Sen to Chihiro no Kamikakushi, span: [15, 44] }]
+
+- name: an AKA separates the title from its alternate
+  operation: parse_movie_name
+  input: { name: Infernal.Affairs.aka.Wu.Jian.Dao.2002.1080p.mkv, kind: file }
+  expect:
+    title: Infernal Affairs
+    year: 2002
+    alternate_titles: [{ title: Wu Jian Dao }]
+
+- name: an uppercase AKA with spaces separates the titles
+  operation: parse_movie_name
+  input: { name: Infernal Affairs AKA Wu Jian Dao 2002 1080p.mkv, kind: file }
+  expect:
+    title: Infernal Affairs
+    alternate_titles: [{ title: Wu Jian Dao }]
+
+- name: a spaced slash separates the title from its alternate
+  operation: parse_movie_name
+  input: { name: Spirited Away / Sen to Chihiro (2001), kind: directory }
+  expect:
+    title: Spirited Away
+    year: 2001
+    alternate_titles: [{ title: Sen to Chihiro }]
+
+- name: a title in square brackets stays the title
+  operation: parse_movie_name
+  input: { name: "[REC] (2007).mkv", kind: file }
+  expect:
+    title: "[REC]"
+    alternate_titles: []
+
+- name: a word containing aka is not a separator
+  operation: parse_movie_name
+  input: { name: Akakage (1967).mkv, kind: file }
+  expect:
+    title: Akakage
+    alternate_titles: []
+
+- name: a movie states the alternate titles of the name that gives its title
+  operation: interpret
+  input:
+    library: movies
+    paths: [Le Prestige (The Prestige) (2006)/Le.Prestige.2006.1080p.mkv]
+  expect:
+    items: [{ kind: movie, title: Le Prestige, year: 2006, alternate_titles: [The Prestige], ambiguous: false }]
+
+- name: a folder title agrees with a file whose alternate title it is
+  operation: interpret
+  input:
+    library: movies
+    paths: [The Prestige (2006)/Le.Prestige.(The.Prestige).2006.1080p.BluRay.x264-NPX.mkv]
+  expect:
+    items: [{ kind: movie, title: The Prestige, year: 2006, ambiguous: false }]

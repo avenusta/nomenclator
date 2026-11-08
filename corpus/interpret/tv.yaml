@@ -1,0 +1,2404 @@
+- name: two resolutions of an episode in its own folder are versions, with the higher first, in a series folder and in a season folder alike
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Narcos/Narcos - S01E01/Narcos - S01E01 - 1080p.mkv
+    - Narcos/Narcos - S01E01/Narcos - S01E01 - 720p.mkv
+    - Ozark/Season 1/Ozark - S01E01/Ozark - S01E01 - 1080p.mkv
+    - Ozark/Season 1/Ozark - S01E01/Ozark - S01E01 - 720p.mkv
+  expect:
+    items:
+    - kind: series
+      title: Narcos
+      path: Narcos
+    - kind: season
+      season: 1
+      path: null
+    - kind: episode
+      versions:
+      - paths:
+        - Narcos/Narcos - S01E01/Narcos - S01E01 - 1080p.mkv
+      - paths:
+        - Narcos/Narcos - S01E01/Narcos - S01E01 - 720p.mkv
+    - kind: series
+      title: Ozark
+      path: Ozark
+    - kind: season
+      season: 1
+      path: Ozark/Season 1
+    - kind: episode
+      versions:
+      - paths:
+        - Ozark/Season 1/Ozark - S01E01/Ozark - S01E01 - 1080p.mkv
+      - paths:
+        - Ozark/Season 1/Ozark - S01E01/Ozark - S01E01 - 720p.mkv
+
+- name: files of one episode in a season folder are versions, and files of other episodes are not
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Archer/Season 2/Archer - S02E01 - 1080p.mkv
+    - Archer/Season 2/Archer - S02E01 - 720p.mkv
+    - Archer/Season 2/Archer - S02E02.mkv
+    - Archer/Season 2/Archer - S02E03 - 1080p.mkv
+    - Archer/Season 2/Archer - S02E03 - 720p.mkv
+  expect:
+    items:
+    - kind: series
+      title: Archer
+      path: Archer
+    - kind: season
+      season: 2
+      path: Archer/Season 2
+    - kind: episode
+      versions:
+      - paths:
+        - Archer/Season 2/Archer - S02E01 - 1080p.mkv
+      - paths:
+        - Archer/Season 2/Archer - S02E01 - 720p.mkv
+    - kind: episode
+      versions:
+      - {}
+    - kind: episode
+      versions:
+      - {}
+      - {}
+
+- name: episodes with different numbers in one season are not versions
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Psych/Season 3/Psych - S03E01.mkv
+    - Psych/Season 3/Psych - S03E02.mkv
+    - Psych/Season 3/Psych - S03E03.mkv
+    - Psych/Season 3/Psych - S03E04.mkv
+    - Psych/Season 3/Psych - S03E05.mkv
+  expect:
+    items:
+    - kind: series
+      title: Psych
+      path: Psych
+    - kind: season
+      season: 3
+      path: Psych/Season 3
+    - kind: episode
+      versions:
+      - {}
+    - kind: episode
+      versions:
+      - {}
+    - kind: episode
+      versions:
+      - {}
+    - kind: episode
+      versions:
+      - {}
+    - kind: episode
+      versions:
+      - {}
+
+- name: labelled files of one episode, two or four of them, are versions of that episode
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Severance/Season 1/Severance - S01E01 - Aired.mkv
+    - Severance/Season 1/Severance - S01E01 - Uncensored.mkv
+    - Severance/Season 1/Severance - S01E02 - Aired.mkv
+    - Severance/Season 1/Severance - S01E02 - Uncensored.mkv
+    - Severance/Season 1/Severance - S01E03 - VersionA.mkv
+    - Severance/Season 1/Severance - S01E03 - VersionB.mkv
+    - Severance/Season 1/Severance - S01E03 - VersionC.mkv
+    - Severance/Season 1/Severance - S01E03 - VersionD.mkv
+  expect:
+    items:
+    - kind: series
+      title: Severance
+      path: Severance
+    - kind: season
+      season: 1
+      path: Severance/Season 1
+    - kind: episode
+      versions:
+      - {}
+      - {}
+    - kind: episode
+      versions:
+      - {}
+      - {}
+    - kind: episode
+      versions:
+      - {}
+      - {}
+      - {}
+      - {}
+
+- name: episode versions sort by resolution, highest first
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Halt and Catch Fire/Season 1/Halt and Catch Fire - S01E01 - 720p.mkv
+    - Halt and Catch Fire/Season 1/Halt and Catch Fire - S01E01 - 2160p.mkv
+    - Halt and Catch Fire/Season 1/Halt and Catch Fire - S01E01 - 1080p.mkv
+  expect:
+    items:
+    - kind: series
+      title: Halt and Catch Fire
+      path: Halt and Catch Fire
+    - kind: season
+      season: 1
+      path: Halt and Catch Fire/Season 1
+    - kind: episode
+      versions:
+      - paths:
+        - Halt and Catch Fire/Season 1/Halt and Catch Fire - S01E01 - 2160p.mkv
+      - paths:
+        - Halt and Catch Fire/Season 1/Halt and Catch Fire - S01E01 - 1080p.mkv
+      - paths:
+        - Halt and Catch Fire/Season 1/Halt and Catch Fire - S01E01 - 720p.mkv
+
+- name: one episode number in two seasons is two episodes, not versions
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Mindhunter/Mindhunter - S01E01.mkv
+    - Mindhunter/Mindhunter - S02E01.mkv
+  expect:
+    items:
+    - kind: series
+      title: Mindhunter
+      path: Mindhunter
+    - kind: season
+      season: 1
+      path: null
+    - kind: episode
+      season: 1
+      episodes:
+      - 1
+      versions:
+      - {}
+    - kind: season
+      season: 2
+      path: null
+    - kind: episode
+      season: 2
+      episodes:
+      - 1
+      versions:
+      - {}
+
+- name: files of one episode number with different titles are versions
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Twin Peaks/Season 1/Twin Peaks - S01E01 - Pilot.mkv
+    - Twin Peaks/Season 1/Twin Peaks - S01E01 - Completely Different Title.mkv
+  expect:
+    items:
+    - kind: series
+      title: Twin Peaks
+      path: Twin Peaks
+    - kind: season
+      season: 1
+      path: Twin Peaks/Season 1
+    - kind: episode
+      versions:
+      - {}
+      - {}
+
+- name: an episode title followed by a resolution label groups as versions in its own episode folder
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Hannibal/Hannibal - S01E01/Hannibal - S01E01 - Episode Title - 1080p.mkv
+    - Hannibal/Hannibal - S01E01/Hannibal - S01E01 - Episode Title - 720p.mkv
+  expect:
+    items:
+    - kind: series
+      title: Hannibal
+      path: Hannibal
+    - kind: season
+      season: 1
+      path: null
+    - kind: episode
+      versions:
+      - paths:
+        - Hannibal/Hannibal - S01E01/Hannibal - S01E01 - Episode Title - 1080p.mkv
+      - paths:
+        - Hannibal/Hannibal - S01E01/Hannibal - S01E01 - Episode Title - 720p.mkv
+
+- name: titled episodes with resolution labels group by episode
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Cheers/Season 1/Cheers - S01E01 - Pilot - 1080p.mkv
+    - Cheers/Season 1/Cheers - S01E01 - Pilot - 720p.mkv
+    - Cheers/Season 1/Cheers - S01E02 - Second Episode - 1080p.mkv
+    - Cheers/Season 1/Cheers - S01E02 - Second Episode - 720p.mkv
+    - Cheers/Season 1/Cheers - S01E03 - Third Episode.mkv
+  expect:
+    items:
+    - kind: series
+      title: Cheers
+      path: Cheers
+    - kind: season
+      season: 1
+      path: Cheers/Season 1
+    - kind: episode
+      versions:
+      - {}
+      - {}
+    - kind: episode
+      versions:
+      - {}
+      - {}
+    - kind: episode
+      versions:
+      - {}
+
+- name: a stacked episode's parts (cd, a dash part, a dotted pt) are the primary version, and a single file is the alternate
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - The Crown/Season 1/The Crown - S01E01 - 1080p cd1.mkv
+    - The Crown/Season 1/The Crown - S01E01 - 1080p cd2.mkv
+    - The Crown/Season 1/The Crown - S01E01 - 720p.mkv
+    - The Crown/Season 1/The Crown - S01E02 - 1080p - part1.mkv
+    - The Crown/Season 1/The Crown - S01E02 - 1080p - part2.mkv
+    - The Crown/Season 1/The Crown - S01E02 - 720p.mkv
+    - The Crown/Season 1/The Crown - S01E03 - 1080p.pt1.mkv
+    - The Crown/Season 1/The Crown - S01E03 - 1080p.pt2.mkv
+    - The Crown/Season 1/The Crown - S01E03 - 720p.mkv
+  expect:
+    items:
+    - kind: series
+      title: The Crown
+      path: The Crown
+    - kind: season
+      season: 1
+      path: The Crown/Season 1
+    - kind: episode
+      versions:
+      - paths:
+        - The Crown/Season 1/The Crown - S01E01 - 1080p cd1.mkv
+        - The Crown/Season 1/The Crown - S01E01 - 1080p cd2.mkv
+      - paths:
+        - The Crown/Season 1/The Crown - S01E01 - 720p.mkv
+    - kind: episode
+      versions:
+      - paths:
+        - The Crown/Season 1/The Crown - S01E02 - 1080p - part1.mkv
+        - The Crown/Season 1/The Crown - S01E02 - 1080p - part2.mkv
+      - paths:
+        - The Crown/Season 1/The Crown - S01E02 - 720p.mkv
+    - kind: episode
+      versions:
+      - paths:
+        - The Crown/Season 1/The Crown - S01E03 - 1080p.pt1.mkv
+        - The Crown/Season 1/The Crown - S01E03 - 1080p.pt2.mkv
+      - paths:
+        - The Crown/Season 1/The Crown - S01E03 - 720p.mkv
+
+- name: a part-stacked titled episode, with spaced or dash-joined part markers, is the primary version and a single file is the alternate
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Deadwood/Season 1/Deadwood - S01E01 - Pilot - 1080p part1.mkv
+    - Deadwood/Season 1/Deadwood - S01E01 - Pilot - 1080p part2.mkv
+    - Deadwood/Season 1/Deadwood - S01E01 - Pilot - 720p.mkv
+    - Deadwood/Season 1/Deadwood - S01E02 - Second Camp - 1080p - part1.mkv
+    - Deadwood/Season 1/Deadwood - S01E02 - Second Camp - 1080p - part2.mkv
+    - Deadwood/Season 1/Deadwood - S01E02 - Second Camp - 720p.mkv
+  expect:
+    items:
+    - kind: series
+      title: Deadwood
+      path: Deadwood
+    - kind: season
+      season: 1
+      path: Deadwood/Season 1
+    - kind: episode
+      versions:
+      - paths:
+        - Deadwood/Season 1/Deadwood - S01E01 - Pilot - 1080p part1.mkv
+        - Deadwood/Season 1/Deadwood - S01E01 - Pilot - 1080p part2.mkv
+      - paths:
+        - Deadwood/Season 1/Deadwood - S01E01 - Pilot - 720p.mkv
+    - kind: episode
+      versions:
+      - paths:
+        - Deadwood/Season 1/Deadwood - S01E02 - Second Camp - 1080p - part1.mkv
+        - Deadwood/Season 1/Deadwood - S01E02 - Second Camp - 1080p - part2.mkv
+      - paths:
+        - Deadwood/Season 1/Deadwood - S01E02 - Second Camp - 720p.mkv
+
+- name: an episode with an alternate single file and a different single-file episode beside it are two episodes
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Sherlock/Season 1/Sherlock - S01E01 - 1080p cd1.mkv
+    - Sherlock/Season 1/Sherlock - S01E01 - 1080p cd2.mkv
+    - Sherlock/Season 1/Sherlock - S01E01 - 720p.mkv
+    - Sherlock/Season 1/Sherlock - S01E02 - Other.mkv
+  expect:
+    items:
+    - kind: series
+      title: Sherlock
+      path: Sherlock
+    - kind: season
+      season: 1
+      path: Sherlock/Season 1
+    - kind: episode
+      versions:
+      - paths:
+        - Sherlock/Season 1/Sherlock - S01E01 - 1080p cd1.mkv
+        - Sherlock/Season 1/Sherlock - S01E01 - 1080p cd2.mkv
+      - paths:
+        - Sherlock/Season 1/Sherlock - S01E01 - 720p.mkv
+    - kind: episode
+      episodes:
+      - 2
+      episode_title: Other
+      versions:
+      - paths:
+        - Sherlock/Season 1/Sherlock - S01E02 - Other.mkv
+
+- name: an unlabelled three-part stack is the primary version over single-file resolution versions
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Star Trek The Next Generation/Season 1/S01E01 - 720p.mkv
+    - Star Trek The Next Generation/Season 1/S01E01 - 1080p.mkv
+    - Star Trek The Next Generation/Season 1/S01E01 - Part 1.mkv
+    - Star Trek The Next Generation/Season 1/S01E01 - Part 2.mkv
+    - Star Trek The Next Generation/Season 1/S01E01 - Part 3.mkv
+  expect:
+    items:
+    - kind: series
+      title: Star Trek The Next Generation
+      path: Star Trek The Next Generation
+    - kind: season
+      season: 1
+      path: Star Trek The Next Generation/Season 1
+    - kind: episode
+      versions:
+      - paths:
+        - Star Trek The Next Generation/Season 1/S01E01 - Part 1.mkv
+        - Star Trek The Next Generation/Season 1/S01E01 - Part 2.mkv
+        - Star Trek The Next Generation/Season 1/S01E01 - Part 3.mkv
+      - paths:
+        - Star Trek The Next Generation/Season 1/S01E01 - 1080p.mkv
+      - paths:
+        - Star Trek The Next Generation/Season 1/S01E01 - 720p.mkv
+
+- name: two part stacks at different resolutions are two multi-file versions, the higher first
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Community/Season 1/Community - S01E01 - 1080p - part1.mkv
+    - Community/Season 1/Community - S01E01 - 1080p - part2.mkv
+    - Community/Season 1/Community - S01E01 - 720p - part1.mkv
+    - Community/Season 1/Community - S01E01 - 720p - part2.mkv
+  expect:
+    items:
+    - kind: series
+      title: Community
+      path: Community
+    - kind: season
+      season: 1
+      path: Community/Season 1
+    - kind: episode
+      versions:
+      - paths:
+        - Community/Season 1/Community - S01E01 - 1080p - part1.mkv
+        - Community/Season 1/Community - S01E01 - 1080p - part2.mkv
+      - paths:
+        - Community/Season 1/Community - S01E01 - 720p - part1.mkv
+        - Community/Season 1/Community - S01E01 - 720p - part2.mkv
+
+- name: a trailer is never one of an episode's versions
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Mad Men/Season 1/Mad Men - S01E01 - 1080p part1.mkv
+    - Mad Men/Season 1/Mad Men - S01E01 - 1080p part2.mkv
+    - Mad Men/Season 1/Mad Men - S01E01 - 720p.mkv
+    - Mad Men/Season 1/Mad Men - S01E01-trailer.mp4
+  expect:
+    items:
+    - kind: series
+      title: Mad Men
+      path: Mad Men
+    - kind: season
+      season: 1
+      path: Mad Men/Season 1
+    - kind: episode
+      versions:
+      - paths:
+        - Mad Men/Season 1/Mad Men - S01E01 - 1080p part1.mkv
+        - Mad Men/Season 1/Mad Men - S01E01 - 1080p part2.mkv
+      - paths:
+        - Mad Men/Season 1/Mad Men - S01E01 - 720p.mkv
+      extras:
+      - extra: trailer
+        paths:
+        - Mad Men/Season 1/Mad Men - S01E01-trailer.mp4
+
+- name: hyphen-joined cd and part markers stack an episode, and the single file is the alternate
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Dark/Season 1/Dark - S01E01-1080p-cd1.mkv
+    - Dark/Season 1/Dark - S01E01-1080p-cd2.mkv
+    - Dark/Season 1/Dark - S01E01-720p.mkv
+    - Dark/Season 1/Dark - S01E02 - Ruptures-1080p-part1.mkv
+    - Dark/Season 1/Dark - S01E02 - Ruptures-1080p-part2.mkv
+    - Dark/Season 1/Dark - S01E02 - Ruptures-720p.mkv
+  expect:
+    items:
+    - kind: series
+      title: Dark
+      path: Dark
+    - kind: season
+      season: 1
+      path: Dark/Season 1
+    - kind: episode
+      versions:
+      - paths:
+        - Dark/Season 1/Dark - S01E01-1080p-cd1.mkv
+        - Dark/Season 1/Dark - S01E01-1080p-cd2.mkv
+      - paths:
+        - Dark/Season 1/Dark - S01E01-720p.mkv
+    - kind: episode
+      versions:
+      - paths:
+        - Dark/Season 1/Dark - S01E02 - Ruptures-1080p-part1.mkv
+        - Dark/Season 1/Dark - S01E02 - Ruptures-1080p-part2.mkv
+      - paths:
+        - Dark/Season 1/Dark - S01E02 - Ruptures-720p.mkv
+
+- name: a spaced title after the code in an Extras folder is an episode, not an extra (T19)
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Rookie Blue/
+    - Rookie Blue/Season 01/
+    - Rookie Blue/Season 01/Extras/
+    - Rookie Blue/Season 01/Extras/Rookie Blue S01E01 - Behind The Scenes.mkv
+  expect:
+    items:
+    - kind: series
+      title: Rookie Blue
+      path: Rookie Blue
+    - kind: season
+      season: 1
+      path: Rookie Blue/Season 01
+    - kind: episode
+      series_name: Rookie Blue
+      season: 1
+      episodes:
+      - 1
+      episode_title: Behind The Scenes
+      versions:
+      - paths:
+        - Rookie Blue/Season 01/Extras/Rookie Blue S01E01 - Behind The Scenes.mkv
+
+- name: an episode in a series folder named Clips is an episode
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Clips/
+    - Clips/Clips S01E01.mkv
+  expect:
+    items:
+    - kind: series
+      title: Clips
+      path: Clips
+    - kind: season
+      season: 1
+    - kind: episode
+      series_path: Clips
+      season: 1
+      episodes:
+      - 1
+
+- name: a series owns a file named exactly trailer in its folder and the files of its trailers folder
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Homeland/
+    - Homeland/Season 2/
+    - Homeland/Season 2/S02E04.mkv
+    - Homeland/trailer.mkv
+    - Homeland/trailers/
+    - Homeland/trailers/trailer3.mkv
+  expect:
+    extras_of:
+      Homeland:
+      - extra: trailer
+        paths:
+        - Homeland/trailer.mkv
+      - paths:
+        - Homeland/trailers/trailer3.mkv
+
+- name: an episode's own provider id, and a season's own provider id, are kept and not inherited from the folders above
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Bored to Death [tvdbid=11111]/
+    - Bored to Death [tvdbid=11111]/Season 01 [tvdbid=22222]/
+    - Bored to Death [tvdbid=11111]/Season 01 [tvdbid=22222]/Bored to Death S01E01 [tvdbid=33333].mkv
+    - Better Things [tvdbid=55555]/
+    - Better Things [tvdbid=55555]/Season 02 [tvdbid=66666]/
+    - Better Things [tvdbid=55555]/Season 02 [tvdbid=66666]/Better Things S02E01.mkv
+  expect:
+    items:
+    - kind: series
+      title: Better Things
+    - kind: season
+      season: 2
+      provider_ids:
+        tvdb: '66666'
+    - kind: episode
+      season: 2
+      episodes:
+      - 1
+    - kind: series
+      title: Bored to Death
+    - kind: season
+      season: 1
+    - kind: episode
+      season: 1
+      episodes:
+      - 1
+      provider_ids:
+        tvdb: '33333'
+
+- name: a subtitle with only a default flag has no language
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Better Things/
+    - Better Things/Season 1/
+    - Better Things/Season 1/Better Things.S01E01.default.srt
+    - Better Things/Season 1/Better Things.S01E01.mkv
+  expect:
+    items:
+    - kind: series
+    - kind: season
+      season: 1
+    - kind: episode
+      season: 1
+      episodes:
+      - 1
+      subtitles:
+      - path: Better Things/Season 1/Better Things.S01E01.default.srt
+        language: null
+        flags:
+        - default
+
+- name: episode files that differ only by resolution group as versions, and another episode is separate
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Ted Lasso/
+    - Ted Lasso/Season 1/
+    - Ted Lasso/Season 1/Ted Lasso - S01E01 - 1080p.mkv
+    - Ted Lasso/Season 1/Ted Lasso - S01E01 - 720p.mkv
+    - Ted Lasso/Season 1/Ted Lasso - S01E02.mkv
+  expect:
+    items:
+    - kind: series
+    - kind: season
+      season: 1
+    - kind: episode
+      season: 1
+      episodes:
+      - 1
+      versions:
+      - paths:
+        - Ted Lasso/Season 1/Ted Lasso - S01E01 - 1080p.mkv
+      - paths:
+        - Ted Lasso/Season 1/Ted Lasso - S01E01 - 720p.mkv
+    - kind: episode
+      season: 1
+      episodes:
+      - 2
+      versions:
+      - paths:
+        - Ted Lasso/Season 1/Ted Lasso - S01E02.mkv
+
+- name: an extra-suffixed file in a season folder belongs to its episode
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Reacher (2020)/
+    - Reacher (2020)/Season 01/
+    - Reacher (2020)/Season 01/Reacher S01E01-trailer.mkv
+    - Reacher (2020)/Season 01/Reacher S01E01.mkv
+  expect:
+    items:
+    - kind: series
+      extras: []
+    - kind: season
+      season: 1
+      extras: []
+    - kind: episode
+      season: 1
+      episodes:
+      - 1
+      versions:
+      - paths:
+        - Reacher (2020)/Season 01/Reacher S01E01.mkv
+      extras:
+      - paths:
+        - Reacher (2020)/Season 01/Reacher S01E01-trailer.mkv
+        extra: trailer
+
+- name: an extras folder inside a season folder belongs to that season
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Rome (2005)/
+    - Rome (2005)/Season 01/
+    - Rome (2005)/Season 01/Rome S01E01.mkv
+    - Rome (2005)/Season 01/extras/
+    - Rome (2005)/Season 01/extras/Making Of.mkv
+  expect:
+    items:
+    - kind: series
+      extras: []
+    - kind: season
+      season: 1
+      extras:
+      - paths:
+        - Rome (2005)/Season 01/extras/Making Of.mkv
+        extra: extra
+    - kind: episode
+      season: 1
+      episodes:
+      - 1
+      versions:
+      - paths:
+        - Rome (2005)/Season 01/Rome S01E01.mkv
+
+- name: a series folder with a season folder gives the series, the season, the episodes and their subtitles
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Billions/
+    - Billions/Season 4/
+    - Billions/Season 4/Billions.S04E01.1080p.BluRay.HEVC-RTXW.it.srt
+    - Billions/Season 4/Billions.S04E01.1080p.BluRay.HEVC-RTXW.mkv
+    - Billions/Season 4/Billions.S04E02.1080p.BluRay.HEVC-RTXW.it.srt
+    - Billions/Season 4/Billions.S04E02.1080p.BluRay.HEVC-RTXW.mkv
+    - Billions/Season 4/Billions.S04E03.1080p.BluRay.HEVC-RTXW.it.srt
+    - Billions/Season 4/Billions.S04E03.1080p.BluRay.HEVC-RTXW.mkv
+  expect:
+    items:
+    - kind: series
+      title: Billions
+    - kind: season
+      series_name: Billions
+      season: 4
+      path: Billions/Season 4
+    - kind: episode
+      series_name: Billions
+      season: 4
+      episodes:
+      - 1
+      versions:
+      - paths:
+        - Billions/Season 4/Billions.S04E01.1080p.BluRay.HEVC-RTXW.mkv
+      subtitles:
+      - path: Billions/Season 4/Billions.S04E01.1080p.BluRay.HEVC-RTXW.it.srt
+    - kind: episode
+      series_name: Billions
+      season: 4
+      episodes:
+      - 2
+      versions:
+      - paths:
+        - Billions/Season 4/Billions.S04E02.1080p.BluRay.HEVC-RTXW.mkv
+      subtitles:
+      - path: Billions/Season 4/Billions.S04E02.1080p.BluRay.HEVC-RTXW.it.srt
+    - kind: episode
+      series_name: Billions
+      season: 4
+      episodes:
+      - 3
+      versions:
+      - paths:
+        - Billions/Season 4/Billions.S04E03.1080p.BluRay.HEVC-RTXW.mkv
+      subtitles:
+      - path: Billions/Season 4/Billions.S04E03.1080p.BluRay.HEVC-RTXW.it.srt
+
+- name: a multi-episode file covers each of its episodes with one video
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Spartacus/
+    - Spartacus/Season 1/
+    - Spartacus/Season 1/Spartacus S01E01-E02.mkv
+  expect:
+    items:
+    - kind: series
+    - kind: season
+      season: 1
+    - kind: episode
+      season: 1
+      episodes:
+      - 1
+      - 2
+      versions:
+      - paths:
+        - Spartacus/Season 1/Spartacus S01E01-E02.mkv
+
+- name: a loose multi-episode file, a season-folder episode it overlaps, and a single episode beside a two-episode file are separate, each with its full coverage
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Fringe/
+    - Fringe/Season 1/
+    - Fringe/Season 1/Fringe S01E02 folder.mkv
+    - Fringe/Fringe S01E01-E02 loose.mkv
+    - Fringe/Season 1/Fringe.S01E03-E04.mkv
+    - Fringe/Season 1/Fringe.S01E03.mkv
+  expect:
+    items:
+    - kind: series
+    - kind: season
+      season: 1
+    - kind: episode
+      season: 1
+      episodes:
+      - 1
+      - 2
+      versions:
+      - paths:
+        - Fringe/Fringe S01E01-E02 loose.mkv
+    - kind: episode
+      season: 1
+      episodes:
+      - 2
+      versions:
+      - paths:
+        - Fringe/Season 1/Fringe S01E02 folder.mkv
+    - kind: episode
+      season: 1
+      episodes:
+      - 3
+      versions:
+      - paths:
+        - Fringe/Season 1/Fringe.S01E03.mkv
+    - kind: episode
+      season: 1
+      episodes:
+      - 3
+      - 4
+      versions:
+      - paths:
+        - Fringe/Season 1/Fringe.S01E03-E04.mkv
+
+- name: a season-pack folder resolves to the series and season, labelled versions of one episode are ordered highest resolution first, and a still is attached to its version
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Cobra Kai (2018) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/
+    - Cobra Kai (2018) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Cobra Kai (2018) - S02E01 - Strike First (1080p BluRay x265 Cinefile).mkv
+    - Cobra Kai (2018) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Cobra Kai (2018) - S02E01 - Strike First (MP4)-thumb.jpeg
+    - Cobra Kai (2018) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Cobra Kai (2018) - S02E01 - Strike First (MP4).mp4
+    - Cobra Kai (2018) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/backdrop.jpg
+    - Cobra Kai (2018) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/poster.jpg
+  expect:
+    items:
+    - kind: series
+      title: Cobra Kai
+      artwork:
+      - path: Cobra Kai (2018) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/backdrop.jpg
+      - path: Cobra Kai (2018) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/poster.jpg
+    - kind: season
+      series_name: Cobra Kai
+      season: 2
+      artwork: []
+    - kind: episode
+      series_name: Cobra Kai
+      season: 2
+      episodes:
+      - 1
+      episode_title: Strike First
+      versions:
+      - paths:
+        - Cobra Kai (2018) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Cobra Kai (2018) - S02E01 - Strike First (1080p BluRay x265 Cinefile).mkv
+        label: 1080p BluRay x265 Cinefile
+      - paths:
+        - Cobra Kai (2018) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Cobra Kai (2018) - S02E01 - Strike First (MP4).mp4
+        label: MP4
+      artwork:
+      - path: Cobra Kai (2018) Season 2 S02 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Cinefile)/Cobra Kai (2018) - S02E01 - Strike First (MP4)-thumb.jpeg
+        role: episode_still
+
+- name: episodes right inside a season-pack folder have a season but no season folder, and the extras of that series belong to the series
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/
+    - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Featurettes/
+    - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Featurettes/Deleted Scenes/
+    - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Featurettes/Deleted Scenes/2. Zod Returns.mkv
+    - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Featurettes/Hidden Extras/
+    - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Featurettes/Hidden Extras/Barn Tour.mkv
+    - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Featurettes/Hidden Extras/Cape Test.mkv
+    - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Featurettes/Krypton 100.mkv
+    - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Featurettes/Making the Farm.mkv
+    - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Featurettes/Mysteries of Kansas - The Daily Planet.mkv
+    - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Smallville (2001) - S06E01 - Zod (1080p BluRay x265 Harborline).mkv
+    - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Smallville (2001) - S06E02 - Sneeze (1080p BluRay x265 Harborline).mkv
+    - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Smallville (2001) - S06E03 - Wither (1080p BluRay x265 Harborline).mkv
+  expect:
+    items:
+    - kind: series
+      title: Smallville
+      extras:
+      - paths:
+        - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Featurettes/Deleted Scenes/2. Zod Returns.mkv
+      - paths:
+        - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Featurettes/Hidden Extras/Barn Tour.mkv
+      - paths:
+        - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Featurettes/Hidden Extras/Cape Test.mkv
+      - paths:
+        - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Featurettes/Krypton 100.mkv
+        extra: featurette
+      - paths:
+        - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Featurettes/Making the Farm.mkv
+        extra: featurette
+      - paths:
+        - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Featurettes/Mysteries of Kansas - The Daily Planet.mkv
+        extra: featurette
+    - kind: season
+      series_name: Smallville
+      season: 6
+      path: null
+      extras: []
+    - kind: episode
+      series_name: Smallville
+      season: 6
+      episodes:
+      - 1
+      versions:
+      - paths:
+        - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Smallville (2001) - S06E01 - Zod (1080p BluRay x265 Harborline).mkv
+    - kind: episode
+      series_name: Smallville
+      season: 6
+      episodes:
+      - 2
+      versions:
+      - paths:
+        - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Smallville (2001) - S06E02 - Sneeze (1080p BluRay x265 Harborline).mkv
+    - kind: episode
+      series_name: Smallville
+      season: 6
+      episodes:
+      - 3
+      versions:
+      - paths:
+        - Smallville (2001) Season 6 S06 + Extras (1080p BluRay x265 HEVC 10bit AAC 5.1 Harborline)/Smallville (2001) - S06E03 - Wither (1080p BluRay x265 Harborline).mkv
+
+- name: a folder with no content at the TV root gives no series
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Quantum Leap [tvdbid=12345]/
+  expect:
+    items: []
+
+- name: two files of one episode at different resolutions in a season folder are versions of that episode
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Bones S03/
+    - Bones S03/Season 3/
+    - Bones S03/Season 3/Bones.S03E07.1080p.mkv
+    - Bones S03/Season 3/Bones.S03E07.720p.mkv
+  expect:
+    items:
+    - kind: series
+    - kind: season
+      season: 3
+    - kind: episode
+      season: 3
+      episodes:
+      - 7
+      versions:
+      - paths:
+        - Bones S03/Season 3/Bones.S03E07.1080p.mkv
+      - paths:
+        - Bones S03/Season 3/Bones.S03E07.720p.mkv
+
+- name: the label of a version is the release text after the episode code
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Banshee/
+    - Banshee/Season 2/
+    - Banshee/Season 2/Banshee.S02E05.1080p.mkv
+    - Banshee/Season 2/Banshee.S02E05.RERIP.720p.mkv
+  expect:
+    items:
+    - kind: series
+    - kind: season
+      season: 2
+    - kind: episode
+      season: 2
+      episodes:
+      - 5
+      versions:
+      - paths:
+        - Banshee/Season 2/Banshee.S02E05.1080p.mkv
+      - paths:
+        - Banshee/Season 2/Banshee.S02E05.RERIP.720p.mkv
+        label: RERIP 720p
+
+- name: a version's label is the text after its episode title and never includes the title
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Coastline (2010)/Season 01/Coastline - S01E01 - Pilot - 1080p.mkv
+    - Coastline (2010)/Season 01/Coastline - S01E01 - Pilot - 720p.mkv
+    - Coastline (2010)/Season 01/Coastline - S01E02 - Low Tide.mkv
+    - Coastline (2010)/Season 01/Coastline - S01E02 - Low Tide.WEBRip.x264.mkv
+  expect:
+    items:
+    - kind: series
+    - kind: season
+    - kind: episode
+      episodes:
+      - 1
+      episode_title: Pilot
+      versions:
+      - paths:
+        - Coastline (2010)/Season 01/Coastline - S01E01 - Pilot - 1080p.mkv
+        label: 1080p
+      - paths:
+        - Coastline (2010)/Season 01/Coastline - S01E01 - Pilot - 720p.mkv
+        label: 720p
+    - kind: episode
+      episodes:
+      - 2
+      episode_title: Low Tide
+      versions:
+      - paths:
+        - Coastline (2010)/Season 01/Coastline - S01E02 - Low Tide.mkv
+        label: null
+      - paths:
+        - Coastline (2010)/Season 01/Coastline - S01E02 - Low Tide.WEBRip.x264.mkv
+        label: WEBRip x264
+
+- name: in a TV library a file's folder is its show, even with no episode marker
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Loose Standalone/random-file.mkv
+  expect:
+    items:
+    - kind: series
+      title: Loose Standalone
+      path: Loose Standalone
+    - kind: episode
+      series_path: Loose Standalone
+      season: null
+      episodes: null
+
+- name: a four-digit episode number is not truncated
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Evening News Hour/Season 23/Evening News Hour S23E1162.mkv
+  expect:
+    items:
+    - kind: series
+      title: Evening News Hour
+      year: null
+    - kind: season
+      season: 23
+      path: Evening News Hour/Season 23
+    - kind: episode
+      series_name: Evening News Hour
+      series_year: null
+      season: 23
+      first_episode: 1162
+      date: null
+
+- name: a dated daily episode has its air date, not an episode number
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Wheel of Fortune (1975)/Season 2026/Wheel of Fortune (1975) - 2026-04-24 - Contestant Showcase.mkv
+  expect:
+    items:
+    - kind: series
+      title: Wheel of Fortune
+      year: 1975
+      path: Wheel of Fortune (1975)
+    - kind: season
+      season: 2026
+      path: Wheel of Fortune (1975)/Season 2026
+    - kind: episode
+      series_name: Wheel of Fortune
+      series_year: 1975
+      series_path: Wheel of Fortune (1975)
+      season: 2026
+      episodes: null
+      date: '2026-04-24'
+
+- name: a dotted daily date resolves to an air date and no season or episode
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Last Week Tonight/Last.Week.Tonight.2024.03.10.Guest.Name.mkv
+  expect:
+    items:
+    - kind: series
+      title: Last Week Tonight
+      year: null
+    - kind: episode
+      series_name: Last Week Tonight
+      series_year: null
+      season: null
+      episodes: null
+      date: '2024-03-10'
+
+- name: a release-pack season folder at the library root is its own show
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Hidden.Valley.S01.HDR.2160p.WEB-DL-GROUP/Hidden.Valley.S01E01.mkv
+  expect:
+    items:
+    - kind: series
+      title: Hidden Valley
+      path: Hidden.Valley.S01.HDR.2160p.WEB-DL-GROUP
+    - kind: season
+      season: 1
+      path: null
+    - kind: episode
+      series_path: Hidden.Valley.S01.HDR.2160p.WEB-DL-GROUP
+      season: 1
+      episodes:
+      - 1
+
+- name: a release-pack season folder inside a matching show belongs to that show
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Ted Lasso (2020)/Ted.Lasso.S01.1080p.WEB-DL/Ted.Lasso.S01E01.mkv
+  expect:
+    items:
+    - kind: series
+      title: Ted Lasso
+      year: 2020
+      path: Ted Lasso (2020)
+    - kind: season
+      season: 1
+      path: Ted Lasso (2020)/Ted.Lasso.S01.1080p.WEB-DL
+    - kind: episode
+      series_path: Ted Lasso (2020)
+      season: 1
+      episodes:
+      - 1
+
+- name: a four-digit or five-digit episode number in a bare show folder is read whole
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Silver Coast/Silver Coast S23E11620.mkv
+  expect:
+    items:
+    - kind: series
+      title: Silver Coast
+      path: Silver Coast
+    - kind: season
+      season: 23
+      path: null
+    - kind: episode
+      series_name: Silver Coast
+      series_year: null
+      series_path: Silver Coast
+      season: 23
+      first_episode: 11620
+      date: null
+
+- name: the show folder is the series root when the episode code has a decimal suffix
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - anime/Your Lie in April (2017) {tvdb-332994}/Season 01/Your Lie in April (2017) - S01E01.001 - I Only Need a Little Brother Who Can Cook a Beautiful Naked Girl and Friends I Can Relate to [Bluray-1080p][10bit][x265][AC3 5.1][EN+JA]-CINEFILE][.mkv
+  expect:
+    items:
+    - kind: series
+      title: Your Lie in April
+      year: 2017
+      path: anime/Your Lie in April (2017) {tvdb-332994}
+      provider_ids:
+        tvdb: '332994'
+    - kind: season
+      season: 1
+      path: anime/Your Lie in April (2017) {tvdb-332994}/Season 01
+    - kind: episode
+      series_name: Your Lie in April
+      series_year: 2017
+      series_path: anime/Your Lie in April (2017) {tvdb-332994}
+      season: 1
+      first_episode: 1
+      date: null
+
+- name: an underscored daily date resolves to an air date, not an episode number
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - The Price Hour (1984)/Season 2026/The Price Hour (1984) - 2026_04_24 - Jamie Ding.mkv
+  expect:
+    items:
+    - kind: series
+      title: The Price Hour
+      year: 1984
+      path: The Price Hour (1984)
+    - kind: season
+      season: 2026
+      path: The Price Hour (1984)/Season 2026
+    - kind: episode
+      series_name: The Price Hour
+      series_year: 1984
+      series_path: The Price Hour (1984)
+      season: 2026
+      episodes: null
+      date: '2026-04-24'
+
+- name: loose files of two shows in one folder split into two shows by name
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Harbor.Lane.S01E01.mkv
+    - Harbor.Lane.S01E02.mkv
+    - Tall.Tower.S01E01.mkv
+  expect:
+    items:
+    - kind: series
+      title: Harbor Lane
+      path: null
+    - kind: season
+      season: 1
+    - kind: episode
+      series_name: Harbor Lane
+      episodes:
+      - 1
+      ambiguous: false
+    - kind: episode
+      series_name: Harbor Lane
+      episodes:
+      - 2
+      ambiguous: false
+    - kind: series
+      title: Tall Tower
+      path: null
+    - kind: season
+      season: 1
+    - kind: episode
+      series_name: Tall Tower
+      episodes:
+      - 1
+      ambiguous: false
+
+- name: unrepeated text before the episode code in a show folder is the episode title, also for versions of one episode, and the series title is the folder title (T2)
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Twin Peaks/Pilot - S01E01 - 1080p.mkv
+    - Twin Peaks/Pilot - S01E01 - 720p.mkv
+    - Twin Peaks/Traces to Nowhere - S01E02.mkv
+  expect:
+    items:
+    - kind: series
+      title: Twin Peaks
+      path: Twin Peaks
+    - kind: season
+      season: 1
+    - kind: episode
+      series_name: Twin Peaks
+      series_path: Twin Peaks
+      season: 1
+      episodes:
+      - 1
+      episode_title: Pilot
+      versions:
+      - paths:
+        - Twin Peaks/Pilot - S01E01 - 1080p.mkv
+      - paths:
+        - Twin Peaks/Pilot - S01E01 - 720p.mkv
+    - kind: episode
+      series_name: Twin Peaks
+      series_path: Twin Peaks
+      season: 1
+      episodes:
+      - 2
+      episode_title: Traces to Nowhere
+
+- name: a trusted show folder, with a year or a provider tag, gives the series when an episode file title differs, and the result is not ambiguous (T2)
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Coast Guard - Norway (2021) {tvdb-517204}/Season 01/Kystvakten Norge S01E01.mkv
+    - Coast Guard - Norway (2022)/Season 01/Kystvakten Norge S01E01.mkv
+  expect:
+    items:
+    - kind: series
+      title: Coast Guard - Norway
+      provider_ids:
+        tvdb: '517204'
+    - kind: season
+      season: 1
+    - kind: episode
+      series_name: Coast Guard - Norway
+      ambiguous: false
+    - kind: series
+      title: Coast Guard - Norway
+      year: 2022
+    - kind: season
+      season: 1
+    - kind: episode
+      series_name: Coast Guard - Norway
+      ambiguous: false
+
+- name: episodes in different season folders of one show folder share the show
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Mad Men (2007)/Season 03/Mad.Men.S03E01.mkv
+    - Mad Men (2007)/Season 04/Mad.Men.S04E01.mkv
+  expect:
+    items:
+    - kind: series
+      title: Mad Men
+      year: 2007
+      path: Mad Men (2007)
+    - kind: season
+      season: 3
+    - kind: episode
+      series_name: Mad Men
+      series_year: 2007
+    - kind: season
+      season: 4
+    - kind: episode
+      series_name: Mad Men
+      series_year: 2007
+
+- name: a series text repeated by several episode files in one category folder is its own series there (T2)
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Animated/Paw Patrol S01E01.mkv
+    - Animated/Paw Patrol S01E02.mkv
+  expect:
+    items:
+    - kind: series
+      title: Paw Patrol
+      path: Animated
+    - kind: season
+      season: 1
+    - kind: episode
+      series_name: Paw Patrol
+      series_path: Animated
+      episodes:
+      - 1
+      episode_title: null
+    - kind: episode
+      series_name: Paw Patrol
+      series_path: Animated
+      episodes:
+      - 2
+
+- name: in a season folder, text before the code that differs from a trusted series folder is the episode title (T2)
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Harbor Lights (2019)/Season 01/Low Tide - S01E01.mkv
+    - Harbor Lights (2019)/Season 01/Harbor Lights - S01E02.mkv
+    - Harbor Lights (2019)/Season 01/The Harbor Lights - S01E03.mkv
+    - Harbor Lights (2019)/Season 01/Night Watch - S01E04 - 1080p.mkv
+  expect:
+    items:
+    - kind: series
+      title: Harbor Lights
+      path: Harbor Lights (2019)
+    - kind: season
+      season: 1
+    - kind: episode
+      series_name: Harbor Lights
+      series_path: Harbor Lights (2019)
+      episodes:
+      - 1
+      episode_title: Low Tide
+    - kind: episode
+      series_name: Harbor Lights
+      episodes:
+      - 2
+      episode_title: null
+    - kind: episode
+      series_name: Harbor Lights
+      episodes:
+      - 3
+      episode_title: null
+    - kind: episode
+      series_name: Harbor Lights
+      episodes:
+      - 4
+      episode_title: Night Watch
+      versions:
+      - paths:
+        - Harbor Lights (2019)/Season 01/Night Watch - S01E04 - 1080p.mkv
+        label: null
+
+- name: versions of one episode that repeat a text are one episode (T2)
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Harbor Lights (2019)/Season 01/Low Tide - S01E01.mkv
+    - Harbor Lights (2019)/Season 01/Low Tide - S01E01 - 720p.mkv
+  expect:
+    items:
+    - kind: series
+      title: Harbor Lights
+    - kind: season
+    - kind: episode
+      series_name: Harbor Lights
+      episode_title: Low Tide
+      versions:
+      - paths:
+        - Harbor Lights (2019)/Season 01/Low Tide - S01E01.mkv
+        label: null
+      - paths:
+        - Harbor Lights (2019)/Season 01/Low Tide - S01E01 - 720p.mkv
+        label: 720p
+
+- name: text repeated across a season folder's episodes is the series' alternate identity, not a second series (T2)
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Harbor Lights (2019)/Season 01/Paw Patrol S01E01.mkv
+    - Harbor Lights (2019)/Season 01/Paw Patrol S01E02.mkv
+    - Harbor Lights (2019)/Season 01/Paw Patrol S01E02 720p.mkv
+    - Harbor Lights (2019)/Season 01/Low Tide - S01E03.mkv
+  expect:
+    items:
+    - kind: series
+      title: Harbor Lights
+      year: 2019
+      path: Harbor Lights (2019)
+      alternate_identity:
+        title: Paw Patrol
+        year: null
+    - kind: season
+      series_name: Harbor Lights
+      season: 1
+    - kind: episode
+      series_name: Harbor Lights
+      episodes:
+      - 1
+      episode_title: null
+    - kind: episode
+      series_name: Harbor Lights
+      episodes:
+      - 2
+      episode_title: null
+      versions:
+      - {}
+      - {}
+    - kind: episode
+      series_name: Harbor Lights
+      episodes:
+      - 3
+      episode_title: Low Tide
+
+- name: each repeated text in a category folder is a series, and a lone text is an episode title (T2)
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Tots/Gravity Falls S01E01.mkv
+    - Tots/Gravity Falls S01E02.mkv
+    - Tots/Paw Patrol S02E01.mkv
+    - Tots/Paw Patrol S02E02.mkv
+    - Tots/Snow Day - S01E01.mkv
+  expect:
+    items:
+    - kind: series
+      title: Tots
+      path: Tots
+    - kind: season
+      season: 1
+    - kind: episode
+      series_name: Tots
+      series_path: Tots
+      episodes:
+      - 1
+      episode_title: Snow Day
+    - kind: series
+      title: Gravity Falls
+      path: Tots
+    - kind: season
+      season: 1
+    - kind: episode
+      series_name: Gravity Falls
+      episodes:
+      - 1
+    - kind: episode
+      series_name: Gravity Falls
+      episodes:
+      - 2
+    - kind: series
+      title: Paw Patrol
+      path: Tots
+    - kind: season
+      season: 2
+    - kind: episode
+      series_name: Paw Patrol
+      episodes:
+      - 1
+    - kind: episode
+      series_name: Paw Patrol
+      episodes:
+      - 2
+
+- name: a spaced dash title after the code is the episode title, and a file with a glued suffix is an extra (T19, E5)
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Lantern Road/Season 1/Lantern Road S01E01 - Trailer.mkv
+    - Lantern Road/Season 1/Lantern Road S01E01-deleted.mkv
+  expect:
+    items:
+    - kind: series
+      title: Lantern Road
+    - kind: season
+      season: 1
+    - kind: episode
+      episodes:
+      - 1
+      episode_title: Trailer
+      extras:
+      - paths:
+        - Lantern Road/Season 1/Lantern Road S01E01-deleted.mkv
+        extra: deleted_scene
+
+- name: the show title of a root-level episode file is read from its name
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Cheers.S04E05.mkv
+    - The.Crown.S02E03.mkv
+  expect:
+    items:
+    - kind: series
+      title: Cheers
+      year: null
+      path: null
+      provider_ids: {}
+    - kind: season
+      season: 4
+      path: null
+    - kind: episode
+      series_name: Cheers
+      series_path: null
+      ambiguous: false
+    - kind: series
+      title: The Crown
+      year: null
+      path: null
+      provider_ids: {}
+    - kind: season
+      season: 2
+      path: null
+    - kind: episode
+      series_name: The Crown
+      series_path: null
+      ambiguous: false
+
+- name: an unnamed episode at the library root has no series and no provider ID, and both are unknown, not ambiguous
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - E05.mkv
+  expect:
+    items:
+    - kind: episode
+      series_name: null
+      series_year: null
+      season: null
+      first_episode: 5
+      provider_ids: {}
+      ambiguous: false
+
+- name: a root-level file has no season from folders above the library
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Harbor Days - 12.mkv
+  expect:
+    items:
+    - kind: series
+      title: Harbor Days
+      path: null
+    - kind: episode
+      series_name: Harbor Days
+      series_path: null
+      season: null
+      first_episode: 12
+
+- name: an episode file's own provider ID identifies it
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - E07 [tvdbid=13579].mkv
+  expect:
+    items:
+    - kind: episode
+      series_name: null
+      provider_ids:
+        tvdb: '13579'
+      ambiguous: false
+
+- name: numeric and year-like folders at the library root are show titles, not seasons, and a bare number has no season
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - 86/E07.mkv
+    - 24/05.mkv
+    - 1923/1923 S02E01.mkv
+  expect:
+    items:
+    - kind: series
+      title: '1923'
+    - kind: season
+      season: 2
+    - kind: episode
+      series_name: '1923'
+      season: 2
+      ambiguous: false
+    - kind: series
+      title: '24'
+      path: '24'
+    - kind: episode
+      series_name: '24'
+      season: null
+      ambiguous: false
+    - kind: series
+      title: '86'
+      path: '86'
+    - kind: episode
+      series_name: '86'
+      season: null
+      ambiguous: false
+
+- name: a numeric folder inside a show folder is its season
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Quiet Road/02/E03.mkv
+  expect:
+    items:
+    - kind: series
+      title: Quiet Road
+    - kind: season
+      season: 2
+      path: Quiet Road/02
+    - kind: episode
+      series_name: Quiet Road
+      season: 2
+      ambiguous: false
+
+- name: bare, numbered and localized season folders, with their Specials and Extras, belong to the show
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Broadchurch (2013) {tvdb-123456}/Season/Broadchurch - S01E01.mkv
+    - Broadchurch (2013) {tvdb-123456}/Season 2/Broadchurch - S02E01.mkv
+    - Broadchurch (2013) {tvdb-123456}/Staffel/Broadchurch - S03E01.mkv
+    - Broadchurch (2013) {tvdb-123456}/Saison/Broadchurch - S04E01.mkv
+    - Broadchurch (2013) {tvdb-123456}/Säsong/Broadchurch - S05E01.mkv
+    - Broadchurch (2013) {tvdb-123456}/Season/Specials/Broadchurch - S00E01.mkv
+    - Broadchurch (2013) {tvdb-123456}/Season/Extras/Broadchurch - S00E02.mkv
+  expect:
+    items:
+    - kind: series
+      path: Broadchurch (2013) {tvdb-123456}
+      title: Broadchurch
+      provider_ids:
+        tvdb: '123456'
+    - kind: season
+      season: 0
+      path: Broadchurch (2013) {tvdb-123456}/Season/Specials
+    - kind: episode
+      series_path: Broadchurch (2013) {tvdb-123456}
+      season: 0
+      episodes:
+      - 1
+    - kind: season
+      season: 1
+      path: Broadchurch (2013) {tvdb-123456}/Season
+      extras:
+      - paths:
+        - Broadchurch (2013) {tvdb-123456}/Season/Extras/Broadchurch - S00E02.mkv
+    - kind: episode
+      series_path: Broadchurch (2013) {tvdb-123456}
+      season: 1
+      episodes:
+      - 1
+    - kind: season
+      season: 2
+      path: Broadchurch (2013) {tvdb-123456}/Season 2
+    - kind: episode
+      series_path: Broadchurch (2013) {tvdb-123456}
+      season: 2
+      episodes:
+      - 1
+    - kind: season
+      season: 3
+      path: Broadchurch (2013) {tvdb-123456}/Staffel
+    - kind: episode
+      series_path: Broadchurch (2013) {tvdb-123456}
+      season: 3
+      episodes:
+      - 1
+    - kind: season
+      season: 4
+      path: Broadchurch (2013) {tvdb-123456}/Saison
+    - kind: episode
+      series_path: Broadchurch (2013) {tvdb-123456}
+      season: 4
+      episodes:
+      - 1
+    - kind: season
+      season: 5
+    - kind: episode
+      series_path: Broadchurch (2013) {tvdb-123456}
+      season: 5
+      episodes:
+      - 1
+
+- name: episodes in a season's Extras or Specials folder, or in an S01 folder's Extras, belong to their show
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Ash Hollow/Season 01/Extras/Ash Hollow S01E05 Deleted.mkv
+    - Lunar Dock/Season 01/Specials/Lunar Dock S00E05.mkv
+    - Ember Coast/S01/Extras/Ember Coast S01E06.mkv
+  expect:
+    items:
+    - kind: series
+      path: Ash Hollow
+      title: Ash Hollow
+    - kind: season
+      season: 1
+    - kind: episode
+      series_name: Ash Hollow
+      series_path: Ash Hollow
+      season: 1
+      first_episode: 5
+    - kind: series
+      path: Ember Coast
+      title: Ember Coast
+    - kind: season
+      season: 1
+    - kind: episode
+      series_name: Ember Coast
+      series_path: Ember Coast
+      season: 1
+      first_episode: 6
+    - kind: series
+      path: Lunar Dock
+      title: Lunar Dock
+    - kind: season
+      season: 0
+    - kind: episode
+      series_name: Lunar Dock
+      series_path: Lunar Dock
+      season: 0
+      first_episode: 5
+
+- name: numeric show titles above a season folder, a year-like folder and a numeric Extras folder are show titles with their specials
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Plays/24/Season 01/Specials/24 S00E01.mkv
+    - Plays/1883/Specials/1883 S00E01.mkv
+    - Plays/36/Extras/36 S00E02.mkv
+  expect:
+    items:
+    - kind: series
+      path: Plays/1883
+      title: '1883'
+    - kind: season
+      season: 0
+    - kind: episode
+      series_name: '1883'
+      series_path: Plays/1883
+      season: 0
+      first_episode: 1
+    - kind: series
+      path: Plays/24
+      title: '24'
+    - kind: season
+      season: 0
+    - kind: episode
+      series_name: '24'
+      series_path: Plays/24
+      season: 0
+      first_episode: 1
+    - kind: series
+      path: Plays/36
+      title: '36'
+    - kind: season
+      season: 0
+    - kind: episode
+      series_name: '36'
+      series_path: Plays/36
+      season: 0
+      first_episode: 2
+
+- name: a show named Extras is a show under the library root and under a category folder
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Extras/Specials/Extras S00E01.mkv
+    - Cinema/Extras/Specials/Extras S00E01.mkv
+  expect:
+    items:
+    - kind: series
+      path: Cinema/Extras
+      title: Extras
+    - kind: season
+      season: 0
+    - kind: episode
+      series_name: Extras
+      series_path: Cinema/Extras
+      season: 0
+      first_episode: 1
+    - kind: series
+      path: Extras
+      title: Extras
+    - kind: season
+      season: 0
+    - kind: episode
+      series_name: Extras
+      series_path: Extras
+      season: 0
+      first_episode: 1
+
+- name: a show whose name starts like a season is a show with its specials, tagged or not
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Documentation/Series 7 Documentary (2024) {tvdb-123456}/Specials/Series 7 Documentary S00E01.mkv
+    - Documentation/Series 7 Documentary/Specials/Series 7 Documentary S00E01.mkv
+  expect:
+    items:
+    - kind: series
+      path: Documentation/Series 7 Documentary
+      title: Series 7 Documentary
+    - kind: season
+      season: 0
+    - kind: episode
+      series_name: Series 7 Documentary
+      series_path: Documentation/Series 7 Documentary
+      season: 0
+      first_episode: 1
+    - kind: series
+      path: Documentation/Series 7 Documentary (2024) {tvdb-123456}
+      title: Series 7 Documentary
+    - kind: season
+      season: 0
+    - kind: episode
+      series_name: Series 7 Documentary
+      series_path: Documentation/Series 7 Documentary (2024) {tvdb-123456}
+      season: 0
+      first_episode: 1
+
+- name: a show named like a season, under a category, has its specials
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Plays/Season 3/Specials/Season 3 S00E01.mkv
+  expect:
+    items:
+    - kind: series
+      path: Plays/Season 3
+      title: Season 3
+    - kind: season
+      season: 0
+    - kind: episode
+      series_name: Season 3
+      series_path: Plays/Season 3
+      season: 0
+      first_episode: 1
+
+- name: Specials inside a numeric season folder belong to the show, dated or not
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Ash Hollow/02/Specials/Ash Hollow S00E01.mkv
+    - Ash Hollow (2020)/02/Specials/Ash Hollow S00E02.mkv
+  expect:
+    items:
+    - kind: series
+      path: Ash Hollow
+      title: Ash Hollow
+    - kind: season
+      season: 0
+    - kind: episode
+      series_name: Ash Hollow
+      series_path: Ash Hollow
+      season: 0
+      first_episode: 1
+    - kind: series
+      path: Ash Hollow (2020)
+      title: Ash Hollow
+    - kind: season
+      season: 0
+    - kind: episode
+      series_name: Ash Hollow
+      series_path: Ash Hollow (2020)
+      season: 0
+      first_episode: 2
+
+- name: a season folder at the library root is never lifted above it
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Season 04/Specials/Night Shift S00E01.mkv
+  expect:
+    items:
+    - kind: series
+      path: Season 04
+      title: Season 04
+    - kind: season
+      season: 0
+    - kind: episode
+      series_name: Season 04
+      series_path: Season 04
+      season: 0
+      first_episode: 1
+
+- name: a bare season folder at the library root is not lifted to the library root, and a loose episode in it is its own show
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Season/Harbor Lights - S01E01.mkv
+  expect:
+    items:
+    - kind: series
+      path: Season
+      title: Harbor Lights
+    - kind: season
+      season: 1
+    - kind: episode
+      series_path: Season
+      season: 1
+
+- name: a bare season folder higher up is a category, never the show's season
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Genera/Season/Shows/Northern Passage/Northern.Passage.S01E01.mkv
+  expect:
+    items:
+    - kind: series
+      path: Genera/Season/Shows/Northern Passage
+    - kind: season
+      season: 1
+      path: null
+    - kind: episode
+      series_path: Genera/Season/Shows/Northern Passage
+
+- name: a show named Saison with a numbered season folder is rooted at its folder
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Saison/Saison 1/Saison.S01E01.mkv
+  expect:
+    items:
+    - kind: series
+      path: Saison
+      title: Saison
+    - kind: season
+      season: 1
+    - kind: episode
+      series_path: Saison
+      season: 1
+
+- name: the episode in a bare season folder belongs to the show folder above it
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Lost Coast/Season/Lost.Coast.S01E01.mkv
+  expect:
+    items:
+    - kind: series
+      path: Lost Coast
+    - kind: season
+      season: 1
+      path: Lost Coast/Season
+    - kind: episode
+      series_path: Lost Coast
+
+- name: shows with bare season folders inside numbered ones are separate shows
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Cheers (1982) {tvdb-72}/Season 2/Season/Cheers - S02E01.mkv
+    - Frasier (1993) {tvdb-78}/Season 2/Season/Frasier - S02E01.mkv
+  expect:
+    items:
+    - kind: series
+      path: Cheers (1982) {tvdb-72}
+      provider_ids:
+        tvdb: '72'
+    - kind: season
+      season: 2
+    - kind: episode
+      series_path: Cheers (1982) {tvdb-72}
+    - kind: series
+      path: Frasier (1993) {tvdb-78}
+      provider_ids:
+        tvdb: '78'
+    - kind: season
+      season: 2
+    - kind: episode
+      series_path: Frasier (1993) {tvdb-78}
+
+- name: a show named Season under a category folder is rooted at its folder for a season-and-episode code, a bare episode code, and a dash-number episode
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Genera/Season/Season.S01E01.mkv
+    - Genera/Season/Season.E03.mkv
+    - Genera/Season/Season - 04.mkv
+  expect:
+    items:
+    - kind: series
+      path: Genera/Season
+      title: Season
+    - kind: season
+      season: 1
+      path: null
+    - kind: episode
+      series_path: Genera/Season
+      season: 1
+      episodes:
+      - 1
+    - kind: episode
+      series_path: Genera/Season
+      season: null
+      episodes:
+      - 3
+    - kind: episode
+      series_path: Genera/Season
+      season: null
+      episodes:
+      - 4
+
+- name: a show named Season is rooted at its folder for a compact-code episode
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Genera/Season/Season.214.mkv
+  expect:
+    items:
+    - kind: series
+      path: Genera/Season
+      title: Season
+    - kind: episode
+      series_path: Genera/Season
+      season: null
+      absolute:
+      - 214
+
+- name: a file in a bare Season folder under a category belongs to the show folder above the Season folder
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Genera/Lantern Road/Season/Lantern.Road.S01E01.mkv
+  expect:
+    items:
+    - kind: series
+      path: Genera/Lantern Road
+      title: Lantern Road
+    - kind: season
+      season: 1
+    - kind: episode
+      series_path: Genera/Lantern Road
+      season: 1
+
+- name: unrelated daily shows loose in one folder are separate shows
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - The.Morning.Brief.2026.04.24.mkv
+    - The.Evening.Recap.2026.04.24.mkv
+  expect:
+    items:
+    - kind: series
+      title: The Evening Recap
+    - kind: episode
+      series_name: The Evening Recap
+      date: '2026-04-24'
+    - kind: series
+      title: The Morning Brief
+    - kind: episode
+      series_name: The Morning Brief
+      date: '2026-04-24'
+
+- name: the matching show folder is the series when the file name has a release year
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Ozark/Ozark.2017.S01E01.mkv
+  expect:
+    items:
+    - kind: series
+      title: Ozark
+      path: Ozark
+    - kind: season
+      season: 1
+    - kind: episode
+      series_name: Ozark
+      series_path: Ozark
+
+- name: subtitles from the subs folder named for an episode are attached to it, not language-only files, other folders or an episode alone in its folder, and none are attached to a trailer or other videos
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Lantern Road/Season 01/Lantern Road - S01E01.mkv
+    - Lantern Road/Season 01/Lantern Road - S01E02.mkv
+    - Lantern Road/Season 01/subs/English.srt
+    - Lantern Road/Season 01/subs/Lantern Road - S01E01/2_English.srt
+    - Lantern Road/Season 01/subs/Lantern Road - S01E01/3_Spanish.srt
+    - Lantern Road/Season 01/subs/Lantern Road - S01E02.en.srt
+    - Lantern Road/Season 01/Featurettes/Lantern Road - S01E01.en.srt
+    - Lantern Road/Single Season/Lantern Road - S02E01.mkv
+    - Lantern Road/Single Season/Subs/English.srt
+  expect:
+    video_subtitles:
+      Lantern Road/Season 01/Lantern Road - S01E01.mkv:
+      - path: Lantern Road/Season 01/subs/Lantern Road - S01E01/2_English.srt
+        language: en
+      - path: Lantern Road/Season 01/subs/Lantern Road - S01E01/3_Spanish.srt
+        language: es
+      Lantern Road/Season 01/Lantern Road - S01E02.mkv:
+      - path: Lantern Road/Season 01/subs/Lantern Road - S01E02.en.srt
+        language: en
+      Lantern Road/Single Season/Lantern Road - S02E01.mkv:
+      - path: Lantern Road/Single Season/Subs/English.srt
+        language: en
+
+- name: a loose root episode is a series with no folder and no inherited provider ID
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Lantern.S01E01.mkv
+  expect:
+    items:
+    - kind: series
+      title: Lantern
+      path: null
+      provider_ids: {}
+    - kind: season
+      season: 1
+      path: null
+    - kind: episode
+      series_path: null
+      provider_ids: {}
+
+- name: a theme file at the library root is a theme song without an owner, and a file in a theme-music folder is no show item
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - theme.mp3
+    - theme-music/end-credits.mp3
+  expect:
+    items:
+    - kind: extra
+      extra: theme_song
+      paths:
+      - theme.mp3
+
+- name: the parent of a season folder, lowercase or with an arc name, or of a Specials folder is the show folder
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Glass Tower/Specials/Glass.Tower.S00E01.mkv
+    - Quiet Tower/season 03/Quiet.Tower.S03E01.mkv
+    - anime/Bleach Kai/Season 01 - Arc 01 - Soul Society/Bleach.E01.1080p.mkv
+  expect:
+    items:
+    - kind: series
+      path: Glass Tower
+      title: Glass Tower
+    - kind: season
+      season: 0
+    - kind: episode
+      series_path: Glass Tower
+      season: 0
+    - kind: series
+      path: Quiet Tower
+      title: Quiet Tower
+    - kind: season
+      season: 3
+    - kind: episode
+      series_path: Quiet Tower
+      season: 3
+    - kind: series
+      path: anime/Bleach Kai
+      title: Bleach Kai
+    - kind: season
+      season: 1
+    - kind: episode
+      series_path: anime/Bleach Kai
+      season: 1
+
+- name: a folder named after a resolution is a series folder, not a season (T1)
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Movie Text/1080p/Movie.Text.mkv
+  expect:
+    items:
+    - kind: series
+      path: Movie Text/1080p
+    - kind: episode
+      series_path: Movie Text/1080p
+      season: null
+      episodes: null
+
+- name: an S00 file in an Extras folder is season zero of its show
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Ash Hollow/Extras/Ash.Hollow.S00E01.mkv
+  expect:
+    items:
+    - kind: series
+      path: Ash Hollow
+      title: Ash Hollow
+    - kind: season
+      season: 0
+    - kind: episode
+      series_name: Ash Hollow
+      series_path: Ash Hollow
+      season: 0
+      first_episode: 1
+
+- name: a dotted season and episode code is read
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Severance/Season 01/Severance.s01.e01.mkv
+  expect:
+    items:
+    - kind: series
+      title: Severance
+      year: null
+    - kind: season
+      season: 1
+    - kind: episode
+      series_name: Severance
+      series_year: null
+      season: 1
+      first_episode: 1
+      date: null
+
+- name: a dotted season and episode code is read when the show folder has a year and a provider tag
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Fringe (2008) {tvdb-82066}/Season 02/Fringe.(2008).s02.e05.mkv
+  expect:
+    items:
+    - kind: series
+      title: Fringe
+      year: 2008
+      provider_ids:
+        tvdb: '82066'
+    - kind: season
+      season: 2
+    - kind: episode
+      series_name: Fringe
+      series_year: 2008
+      season: 2
+      first_episode: 5
+      date: null
+
+- name: episode extras in a season's extras folder or with a bare trailer name are owned by their episode, and are titled by the text after the episode code or left untitled
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Harbor Lights (2019)/Season 01/Harbor Lights - S01E01 - Low Tide.mkv
+    - Harbor Lights (2019)/Season 01/Deleted Scenes/S01E01 - Cut.mkv
+    - Harbor Lights (2019)/Season 01/Harbor Lights S01E01-trailer.mkv
+  expect:
+    items:
+    - kind: series
+      extras: []
+    - kind: season
+      extras: []
+    - kind: episode
+      episodes:
+      - 1
+      extras:
+      - paths:
+        - Harbor Lights (2019)/Season 01/Deleted Scenes/S01E01 - Cut.mkv
+        extra: deleted_scene
+        title: Cut
+      - paths:
+        - Harbor Lights (2019)/Season 01/Harbor Lights S01E01-trailer.mkv
+        extra: trailer
+        title: null
+
+- name: series, season and episode NFOs attach to their folder and video
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Harbor Lights (2019)/tvshow.nfo
+    - Harbor Lights (2019)/Season 01/season.nfo
+    - Harbor Lights (2019)/Season 01/Harbor Lights - S01E01 - Low Tide.mkv
+    - Harbor Lights (2019)/Season 01/Harbor Lights - S01E01 - Low Tide.nfo
+    - Harbor Lights (2019)/Season 01/movie.nfo
+  expect:
+    items:
+    - kind: series
+      nfo: Harbor Lights (2019)/tvshow.nfo
+    - kind: season
+      nfo: Harbor Lights (2019)/Season 01/season.nfo
+    - kind: episode
+      nfo: Harbor Lights (2019)/Season 01/Harbor Lights - S01E01 - Low Tide.nfo
+    unclaimed_files:
+    - Harbor Lights (2019)/Season 01/movie.nfo
+
+- name: each version has the NFO named after its own video
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Harbor Lights (2019)/Season 01/Harbor Lights - S01E01 - 1080p.mkv
+    - Harbor Lights (2019)/Season 01/Harbor Lights - S01E01 - 1080p.nfo
+    - Harbor Lights (2019)/Season 01/Harbor Lights - S01E01 - 720p.mkv
+    - Harbor Lights (2019)/Season 01/Harbor Lights - S01E01 - 720p.nfo
+  expect:
+    items:
+    - kind: series
+    - kind: season
+    - kind: episode
+      nfo: Harbor Lights (2019)/Season 01/Harbor Lights - S01E01 - 1080p.nfo
+      versions:
+      - nfo: Harbor Lights (2019)/Season 01/Harbor Lights - S01E01 - 1080p.nfo
+      - nfo: Harbor Lights (2019)/Season 01/Harbor Lights - S01E01 - 720p.nfo
+    unclaimed_files: []
+
+- name: a series NFO beside two file-named series is attached to neither (S8)
+  operation: interpret
+  input:
+    library: tv
+    paths:
+    - Animated/Paw Patrol S01E01.mkv
+    - Animated/Paw Patrol S01E02.mkv
+    - Animated/Gravity Falls S01E01.mkv
+    - Animated/Gravity Falls S01E02.mkv
+    - Animated/tvshow.nfo
+  expect:
+    unclaimed_files:
+    - Animated/tvshow.nfo
+
