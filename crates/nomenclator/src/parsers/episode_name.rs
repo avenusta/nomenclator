@@ -5,12 +5,11 @@ use std::sync::LazyLock;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use crate::data;
 use crate::lexical::{self, BracketClass, DateMatch, TokenKind, WordClass};
 use crate::model::{EntryKind, Evidence, Finding, Rule, Span};
 use crate::parsers::extras::extras_folder_kind;
 use crate::parsers::series_name::{SeriesName, TitleParts, is_valid_season, title_parts};
-use crate::rules::{BareNumbers, Rules};
+use crate::rules::{BareNumbers, Rules, Vocabulary, is_shared_word};
 
 /// The series, season and episode facts of one episode path.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -1309,9 +1308,7 @@ fn explicit_candidates(rules: &Rules, text: &str) -> (Vec<Candidate>, Vec<Span>)
         }
         let number = captures.get(2).expect("number");
         let folded_word = lexical::vocabulary_form(word);
-        let tier = if folded_word == data::EPISODE_OUTPUT_LETTER
-            || data::EPISODE_BASE_WORDS.contains(&folded_word.as_str())
-        {
+        let tier = if is_shared_word(Vocabulary::episode_words, &folded_word) {
             Tier::EpisodeOnly
         } else {
             Tier::LocalizedEpisodeWord

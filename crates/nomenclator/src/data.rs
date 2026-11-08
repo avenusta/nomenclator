@@ -26,9 +26,6 @@ pub(crate) const BUILT_IN_IGNORE_GROUPS: &[&str] = &[
     "generated_metadata",
 ];
 
-/// The episode words that every library reads. The canonical section holds `e`.
-pub(crate) const EPISODE_BASE_WORDS: &[&str] = &["episode", "ep"];
-
 /// Resolution words and the height that each states. An explicit height in the same name
 /// takes precedence over them, because `4K` also names a restoration.
 pub(crate) const RESOLUTION_WORDS: &[(&str, u32)] = &[("4k", 2160), ("8k", 4320), ("uhd", 2160)];

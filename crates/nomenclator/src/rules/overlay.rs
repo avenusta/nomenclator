@@ -940,11 +940,19 @@ impl Rules {
     }
 }
 
+/// Returns `true` if `entry` is a word of `vocabulary` that every library reads: a word of the
+/// shared base or a canonical name, not a word of a language (X11).
+pub(crate) fn is_shared_word(vocabulary: Vocabulary, entry: &str) -> bool {
+    BUILTINS.shared.contains(&(vocabulary, entry.to_owned()))
+}
+
 /// The built-in vocabularies: the shared base, and the words of each language (X11).
 struct Builtins {
     base: Vec<Change>,
     /// The canonical names (X25), applied last.
     canonical: Vec<Change>,
+    /// The entries of the base and the canonical names.
+    shared: BTreeSet<(Vocabulary, String)>,
     /// Each language's tag and its words.
     languages: Vec<(&'static str, Vec<Change>)>,
 }
@@ -955,9 +963,17 @@ static BUILTINS: LazyLock<Builtins> = LazyLock::new(|| {
             .expect("a built-in document is valid")
             .changes
     };
+    let base = read(data::BUILTIN);
+    let canonical = canonical_changes();
+    let shared = base
+        .iter()
+        .chain(&canonical)
+        .map(|change| (change.vocabulary, change.entry.clone()))
+        .collect();
     Builtins {
-        base: read(data::BUILTIN),
-        canonical: canonical_changes(),
+        base,
+        canonical,
+        shared,
         languages: data::LANGUAGE_PACKS
             .iter()
             .map(|(tag, text)| (*tag, read(text)))

@@ -16,7 +16,8 @@ use crate::rendering::template::Template;
 mod overlay;
 mod vocabulary;
 
-pub(crate) use vocabulary::Vocabularies;
+pub(crate) use overlay::is_shared_word;
+pub(crate) use vocabulary::{Vocabularies, Vocabulary};
 
 pub use overlay::{Overlay, OverlayDiagnostic, OverlayDiagnosticReason, OverlayIdentity};
 
