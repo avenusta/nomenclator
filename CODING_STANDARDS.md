@@ -1,71 +1,62 @@
 # Coding standards
 
-This file lists the rules for Rust code in `crates/`. `AGENTS.md` states the principles that these rules apply and the writing rules for comments, names and messages. This file does not repeat them. If this file and `AGENTS.md` disagree, `AGENTS.md` wins, and this file is corrected.
+This file lists the rules for Rust code in `crates/`. `AGENTS.md` states the principles and the writing rules. This file does not repeat them. If the two disagree, `AGENTS.md` wins and this file is corrected.
 
-Tooling enforces these rules:
+Tooling checks formatting, clippy with warnings as errors, the workspace lints in `Cargo.toml`, the purity lints in the core's `lib.rs` (no printing, exiting or `unwrap`), the dependency licenses (`just deps`), the wire contract (`just proto`), the public API against a release tag (`just semver`) and the tests (`just check`). The rules below are the ones that tooling does not check.
 
-- `just check` runs formatting (`cargo fmt`), the lints and the tests. The lints are clippy with warnings as errors, the workspace lints in `Cargo.toml` (`unsafe_code`, `missing_docs`, `must_use_candidate`, `doc_markdown` and others), and the purity lints of the core crate in its `lib.rs` (no printing, exiting or `unwrap`).
-- `just deps` runs `cargo deny check` against `deny.toml`: permissive licenses only, no security advisories, crates.io as the only source.
-- `just proto` lints the wire contract with buf (`buf.yaml`) and checks it for breaking changes against `main`.
-- `just semver <tag>` checks the core crate's public API for breaking changes against a release tag.
+## One definition
 
-CI runs all four. The rules below are the ones that tooling does not check.
+- A list that code enumerates - vocabularies, operations, diagnostic rules, reasons, presets, template slots - is one table: a constant slice, an enum with derives, or a data file. Code iterates the table. No second `match` over its members exists elsewhere. A member that needs a property gets a column in the table.
+- Adding a member of such a list changes the table and the code that gives the member its behaviour, and nothing else. If adding one needs edits in three files, the table is missing.
+- A value that another field determines is not stored. The reader computes it, or a method returns it.
+- A type crosses a boundary (CLI, wire, corpus, YAML) in its serde form. No hand-kept schema mirrors a core type.
+- A vocabulary word, an extension or an output name is in the rules or in a file under `data/`. Logic code contains none of them. A regex contains shapes (digits, repetition, a separator class from the rules), never words.
+- A canonical name is in the canonical section of `data.rs` (decision X25). The reader accepts every canonical name that the writer writes.
+- Code reads a YAML or JSON document only with `parse_document` (decision X27).
+- Each operation has one entry point: a method on `Rules`. No alias of it exists.
 
-## Purity
+## One mechanism
 
-- The `nomenclator` crate does not use `std::fs`, `std::env`, `std::time`, `std::net`, `std::process`, threads, randomness or the process locale.
-- The core has no mutable global state. A `static` or `LazyLock` holds only a value that is computed from constants, such as a compiled `Regex` or a built-in table.
-- The core does not print or log. It returns diagnostics as values.
-- The front ends (`nomenclator-cli`, `nomenclator-grpc`) do the I/O. They read files, scan folders and write output, then call the core.
+- One way does each job. A second mechanism for a job that one mechanism already does (a second tokenizer, a second title cut, a style option beside a template) replaces the first in the same change, or it is not added.
+- A name is tokenized once per parse. Parsers consume the token stream and its spans. They do not scan the raw string again.
+- Every pattern is compiled in one place, `rules::Patterns`, from the rules. A parser file holds no `LazyLock<Regex>`.
+- A fact is computed once per call. Validation and planning read the interpretation and share the rendered targets. Neither parses a name again.
+- A step that both pipelines need (attaching sidecars, building versions, settling hints) lives in a shared module that both call. The pipelines never call each other. `lexical` and `data` never take or branch on `LibraryType`. A parser reads one name and calls no interpreter, matcher, renderer or validator.
+- One dispatch maps an operation name and its input to a result. The corpus runner, the CLI and any server call it. A front end does not match a word, a pattern or an extension itself.
 
-## Determinism
+## Earning a place
 
-- Use `BTreeMap` and `BTreeSet`. Do not use `HashMap` or `HashSet` in the core, because their iteration order varies between runs.
-- A result does not depend on the order of the input entries. If the code collects entries, it sorts them by a total order before it decides anything.
-- Fold case with `lexical::fold_case` or `lexical::fold_case_text` when two names are compared. Do not compare with `to_lowercase` or `to_uppercase`. `str::to_lowercase` is allowed only to produce output text, such as an extension under `ExtensionCase::Lower`.
-- Compare names in NFC through the lexical layer (decision X3).
+- Every public item has a caller in a front end or a corpus operation. An item with neither is deleted.
+- Every behaviour has a corpus case that fails without it. An overlay vocabulary has a case that changes it. A preset has a case that sets it.
+- When a behaviour is replaced, the old code, its cases and its entry in `docs/decisions.md` change in the same commit.
+- A dependency is added only to replace code that is hard to get right, with the reason in the commit message. Its license is in `deny.toml`.
+
+## Purity and determinism
+
+- The core crate uses no `std::fs`, `std::env`, `std::time`, `std::net`, `std::process`, threads, randomness or process locale. A `static` holds only a value computed from constants.
+- The core returns diagnostics as values. The front ends do the I/O.
+- Use `BTreeMap` and `BTreeSet`. A result does not depend on the order of the input entries: collected entries are sorted by a total order before any decision.
+- Compare names through the lexical layer: `vocabulary_form` for vocabulary entries and lookups, `fold_case_text` and NFC for name comparison (decisions X2, X3). `str::to_lowercase` produces output text only.
 - A span is a pair of UTF-8 byte offsets into the input name. The end is exclusive.
 
-## Layering
+## Outcomes
 
-- `lexical` and `data` never take or branch on `LibraryType`.
-- The movie pipeline (`interpret/movies.rs`) and the TV pipeline (`interpret/tv.rs`) do not call each other. Code that both need goes into the shared lexical layer or a parser.
-- A parser reads one name and does not call the interpreter, the matcher, the renderer or the validator.
-- The front ends call the core for every rule. A front end does not match a vocabulary word, a pattern or an extension itself.
-- An operation is a method on `Rules`. The free function of the same name calls it with `Rules::builtin()`.
-
-## Data
-
-- A vocabulary word, an extension or an output name is defined once, in `data.rs` or in a file under `crates/nomenclator/data/`. Logic code does not contain vocabulary as string literals.
-- A canonical name is in the canonical section of `data.rs` (decision X25). The reader accepts every canonical name that the writer writes.
-- Entries in `data.rs` are lowercase.
-- A language's words go in its pack under `data/languages/`, not in the shared base.
-- Code reads a YAML or JSON document only with `parse_document`, so every document has the same dialect (decision X27).
-
-## Outcomes and errors
-
-- A fact that can be ambiguous is a `Finding`, with its evidence and span. Do not use `Option` for such a fact, because `None` cannot say why the fact is missing.
-- A reason is a variant of a `*Reason` enum with `#[serde(rename_all = "snake_case")]`. It is never a free-form string. Message text comes from `data/messages/`.
-- Input never causes a panic. Invalid input returns an `invalid`, `unknown` or `ambiguous` outcome, or a diagnostic.
-- `expect` and `unreachable!` are allowed only for an internal invariant, and the message states the invariant: `expect("every extra kind has an output folder")`. Library code outside tests does not call `unwrap`.
+- A fact that the name can leave open is a `Finding` with its evidence and span. `Option` is for a fact that is present or absent, never for one that can be ambiguous.
+- Several candidates for one fact give `Finding::Ambiguous` with the candidates. A choice between candidates is a decision in `docs/decisions.md`, and the code cites it.
+- A reason is a variant of a `*Reason` enum with `#[serde(rename_all = "snake_case")]`, never a free-form string.
+- Input never causes a panic. `expect` and `unreachable!` state an internal invariant: `expect("every extra kind has an output folder")`.
 
 ## Public API
 
-- `lib.rs` lists the public surface with `pub use`. A new module is private or `pub(crate)` by default.
-- Every public item has a doc comment that follows the doc comment rules in `AGENTS.md`.
-- A type that is written to JSON, YAML or the wire derives `Serialize` with `rename_all = "snake_case"`.
-- The gRPC contract `nomenclator.v1` changes only compatibly: add fields and never renumber or reuse them. The wire has one field per library field.
-- A change in naming results gets an entry under "Naming behaviour" in `CHANGELOG.md`, the one changelog of every package. A change in the API, the wire contract or the CLI gets an entry in its own section there.
-- Every crate inherits the one version from `[workspace.package]`. A crate does not set its own version.
+- `lib.rs` lists the public surface with `pub use`. A new module is private by default.
+- Every public item has a doc comment that follows `AGENTS.md`.
+- A type that is written to JSON, YAML or the wire derives `Serialize` with `rename_all = "snake_case"`. A public enum of facts is `#[non_exhaustive]`.
+- A change in naming results gets an entry under "Naming behaviour" in `CHANGELOG.md`. A change in the API, the wire contract or the CLI gets an entry in its own section there.
+- Every crate inherits the one version from `[workspace.package]`.
 
 ## Tests
 
-- A behaviour starts as a failing corpus case (`corpus/README.md`). A Rust test under `tests/` is for a property, a benchmark or a front end, not for one naming example.
+- A behaviour starts as a failing corpus case (`corpus/README.md`). A Rust test under `tests/` is a property test, a benchmark or a front-end test, never one naming example.
+- A corpus input struct has `deny_unknown_fields`, so a misspelt key fails the case.
 - A test name follows the test name rules in `AGENTS.md`.
-- Corpus inputs are written for this project. They are not copied from the tests of another project.
-- Code, tests and corpus files do not name other media servers or projects.
-
-## Dependencies
-
-- The core crate keeps few dependencies. Add a dependency only if it replaces code that is hard to get right, and give the reason in the commit message.
-- A dependency is MIT, Apache-2.0 or a similarly permissive license, because the crates are MIT. `deny.toml` lists the allowed licenses. Add a license there only if it is permissive.
+- Corpus inputs are written for this project and name no other media server or project.
