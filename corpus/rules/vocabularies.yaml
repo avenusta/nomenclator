@@ -1,0 +1,208 @@
+# Overlay vocabularies for the tables that the name grammar reads (decision X28). One case
+# per vocabulary. Each case shows that an entry changes a result.
+
+- name: an overlay that adds a subtitle folder attaches the subtitles in that folder
+  overlays: ["name: fr\nsubtitle_folders:\n  add: [Sous-titres]\n"]
+  operation: interpret
+  input:
+    library: movies
+    paths: [Heat (1995)/Heat (1995).mkv, Heat (1995)/Sous-titres/Heat (1995).fr.srt]
+  expect:
+    unclaimed_files: []
+
+- name: an overlay that removes a subtitle folder leaves the subtitles in that folder unclaimed
+  overlays: ["name: no-subs\nsubtitle_folders:\n  remove: [Subs]\n"]
+  operation: interpret
+  input:
+    library: movies
+    paths: [Heat (1995)/Heat (1995).mkv, Heat (1995)/Subs/Heat (1995).fr.srt]
+  expect:
+    unclaimed_files: [Heat (1995)/Subs/Heat (1995).fr.srt]
+
+- name: an overlay that adds a 3D layout word reads its layout
+  overlays: ["name: ou\nformat_3d_words:\n  add: { OU: top_and_bottom }\n"]
+  operation: parse_movie_name
+  input: { name: Northern Passage (2021) OU.mkv, kind: file }
+  expect:
+    format_3d: top_and_bottom
+
+- name: an overlay that adds a release group ending drops the leading bracket from the title
+  overlays: ["name: collective\nrelease_group_endings:\n  add: [collective]\n"]
+  operation: parse_movie_name
+  input: { name: "[Moon Collective] Northern Passage.mkv", kind: file }
+  expect:
+    title: Northern Passage
+
+- name: an overlay that adds a video height keeps dimensions with that height from being a season and episode
+  overlays: ["name: h352\nvideo_heights:\n  add: ['352']\n"]
+  operation: parse_episode_name
+  input: { path: Show 2000x352.mkv }
+  expect:
+    season: null
+
+- name: a video height that is not three or four digits is malformed
+  operation: build_rules
+  input:
+    overlays: ["name: bad\nvideo_heights:\n  add: [tall]\n"]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: malformed_vocabulary, overlay: bad, vocabulary: video_heights }
+
+- name: an overlay that adds a letter fold compares titles with the letter spelled out
+  overlays: ["name: thorn\nletter_folds:\n  add: { þ: th }\n"]
+  operation: rank_candidates
+  input:
+    facts: { kind: movie, title: Þór }
+    candidates:
+      - { handle: a, kind: movie, title: Thor }
+  expect:
+    outcome: selected
+    selected: a
+
+- name: a letter fold of more than one letter is malformed
+  operation: build_rules
+  input:
+    overlays: ["name: bad\nletter_folds:\n  add: { th: t }\n"]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: malformed_vocabulary, overlay: bad, vocabulary: letter_folds }
+
+- name: an overlay that adds a disc image extension reports the file as a disc image
+  overlays: ["name: nrg\ndisc_image_extensions:\n  add: [.nrg]\n"]
+  operation: is_video_file
+  input: { path: Movie.nrg }
+  expect:
+    result: false
+    unsupported_video: true
+    unsupported_video_reason: disc_image
+
+- name: an overlay that adds an unsupported video extension reports the file as unsupported
+  overlays: ["name: asf\nunsupported_video_extensions:\n  add: [asf]\n"]
+  operation: is_video_file
+  input: { path: Movie.asf }
+  expect:
+    result: false
+    unsupported_video_reason: unsupported_container
+
+- name: an overlay that adds a disc structure folder reports the clips inside it
+  overlays: ["name: hv\ndisc_structure_folders:\n  add: [HVDVD_TS]\n"]
+  operation: is_video_file
+  input: { path: Movie/HVDVD_TS/clip.mkv }
+  expect:
+    result: false
+    unsupported_video_reason: disc_structure
+
+- name: an overlay that adds an NFO extension reads a generic name with that extension
+  overlays: ["name: xml\nnfo_extensions:\n  add: [.xml]\n"]
+  operation: classify_nfo
+  input: { path: Heat (1995)/movie.xml }
+  expect:
+    role: movie
+
+- name: an overlay cannot remove the NFO extension that the writer writes
+  operation: build_rules
+  input:
+    overlays: ["name: no-nfo\nnfo_extensions:\n  remove: [nfo]\n"]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: canonical_entry, overlay: no-nfo, vocabulary: nfo_extensions, entry: nfo }
+
+- name: an overlay that adds a still image suffix reads the image as the still of its video
+  overlays: ["name: still\nstill_image_suffixes:\n  add: [-still]\n"]
+  operation: classify_artwork
+  input: { path: Show/Pilot-still.jpg, video_path: Show/Pilot.mkv }
+  expect:
+    role: episode_still
+    is_episode_still: true
+
+- name: an overlay cannot remove the still image suffix that the writer writes
+  operation: build_rules
+  input:
+    overlays: ["name: no-thumb\nstill_image_suffixes:\n  remove: [-thumb]\n"]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: canonical_entry, overlay: no-thumb, vocabulary: still_image_suffixes, entry: -thumb }
+
+- name: an overlay that adds a hearing-impaired-or-language word reads it as a flag beside another language
+  overlays: ["name: sr\nhearing_impaired_or_language_words:\n  add: { sr: sr }\n"]
+  operation: parse_sidecar
+  input: { name: Movie.sr.en.srt, video_name: Movie.mkv, kind: subtitle }
+  expect:
+    language: en
+    flags: [hearing_impaired]
+
+- name: an overlay that adds a hearing-impaired-or-language word reads it as its language alone
+  overlays: ["name: sr\nhearing_impaired_or_language_words:\n  add: { sr: sr }\n"]
+  operation: parse_sidecar
+  input: { name: Movie.sr.srt, video_name: Movie.mkv, kind: subtitle }
+  expect:
+    language: sr
+    flags: []
+
+- name: an overlay that adds an aspect ratio keeps it from being a season and episode
+  overlays: ["name: r17\naspect_ratios:\n  add: [17x9]\n"]
+  operation: parse_episode_name
+  input: { path: Show 17x9.mkv }
+  expect:
+    season: null
+
+- name: an overlay that adds an audio codec word keeps its channel layout from being an episode
+  overlays: ["name: auro\naudio_codec_words:\n  add: [auro]\n"]
+  operation: parse_episode_name
+  input: { path: Show AURO 2.0.mkv }
+  expect:
+    episodes: null
+
+- name: an overlay that adds a final episode word marks the last episode
+  overlays: ["name: fin\nfinal_episode_words:\n  add: [FIN]\n"]
+  operation: parse_episode_name
+  input: { path: "[Grp] Show - 12 FIN.mkv" }
+  expect:
+    episodes: [12]
+    is_final: true
+    episode_title: null
+
+- name: an overlay that adds a final episode word reads it glued to the number
+  overlays: ["name: fin\nfinal_episode_words:\n  add: [FIN]\n"]
+  operation: parse_episode_name
+  input: { path: Show S01E12FIN.mkv }
+  expect:
+    season: 1
+    episodes: [12]
+
+- name: an overlay that adds an alternate title word splits the title at the word
+  overlays: ["name: alias\nalternate_title_words:\n  add: [alias]\n"]
+  operation: parse_movie_name
+  input: { name: Northern Passage ALIAS Southern Road (2021).mkv, kind: file }
+  expect:
+    title: Northern Passage
+    alternate_titles:
+      - { title: Southern Road }
+
+- name: an overlay that removes an alternate title word keeps the title whole
+  overlays: ["name: no-aka\nalternate_title_words:\n  remove: [aka]\n"]
+  operation: parse_movie_name
+  input: { name: Northern Passage AKA Southern Road (2021).mkv, kind: file }
+  expect:
+    title: Northern Passage AKA Southern Road
+    alternate_titles: []
+
+- name: an overlay that adds a remux marker reads a source spelling that contains it as a remux
+  overlays: ["name: full\nremux_markers:\n  add: [full]\nrelease_words:\n  add: { source: { bluray: [bdfull] } }\n"]
+  operation: parse_release
+  input: { name: Northern.Passage.2021.1080p.BDFull.mkv, kind: file }
+  expect:
+    source: bluray
+    remux: true
+
+- name: an overlay that adds a screener marker reads a source spelling that contains it as a screener
+  overlays: ["name: preview\nscreener_markers:\n  add: [preview]\nrelease_words:\n  add: { source: { dvd: [dvdpreview] } }\n"]
+  operation: parse_release
+  input: { name: Northern.Passage.2021.DVDPreview.mkv, kind: file }
+  expect:
+    source: dvd
+    screener: true

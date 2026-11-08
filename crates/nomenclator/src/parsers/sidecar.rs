@@ -54,8 +54,10 @@ impl Rules {
         let rest = &sidecar_stem[stem_end..];
 
         if kind == SidecarKind::Image {
-            let is_still =
-                rest.is_empty() || lexical::fold_case_text(rest) == rules.still_image_suffix;
+            let is_still = rest.is_empty()
+                || rules
+                    .still_image_suffixes
+                    .contains(&lexical::vocabulary_form(rest));
             return Sidecar {
                 matches: is_still,
                 ..unmatched
@@ -127,30 +129,34 @@ fn has_extension_for(rules: &Rules, name: &str, kind: SidecarKind) -> bool {
         .is_some_and(|extension| extensions.contains(&extension))
 }
 
-/// Sorts segments into flags, languages and title words. `hi` is the hearing-impaired flag if
-/// another language is present. If no other language is present, the first `hi` is Hindi and
-/// a later `hi` is the hearing-impaired flag.
+/// Sorts segments into flags, languages and title words. A word such as `hi` is the
+/// hearing-impaired flag if another language is present. If no other language is present,
+/// the first such word is its language (Hindi for `hi`) and a later one is the
+/// hearing-impaired flag.
 fn read_segments(rules: &Rules, segments: &[Segment]) -> Sidecar {
     let mut flags = Vec::new();
     let mut languages: Vec<(String, Span)> = Vec::new();
     let mut title_segments: Vec<&Segment> = Vec::new();
-    let mut hearing_impaired_or_hindi: Vec<Span> = Vec::new();
+    let mut hearing_impaired_or_language: Vec<(String, Span)> = Vec::new();
     for segment in segments {
         if let Some(flag) = lexical::sidecar_flag(rules, segment.text) {
             flags.push(flag);
-        } else if lexical::vocabulary_form(segment.text) == rules.hearing_impaired_or_hindi_word {
-            hearing_impaired_or_hindi.push(segment.span);
+        } else if let Some(tag) = rules
+            .hearing_impaired_or_language_words
+            .get(&lexical::vocabulary_form(segment.text))
+        {
+            hearing_impaired_or_language.push((tag.clone(), segment.span));
         } else if let Some(tag) = lexical::language_tag(rules, segment.text) {
             languages.push((tag, segment.span));
         } else {
             title_segments.push(segment);
         }
     }
-    let mut hearing_impaired_words = hearing_impaired_or_hindi.into_iter();
+    let mut hearing_impaired_words = hearing_impaired_or_language.into_iter();
     if languages.is_empty()
-        && let Some(span) = hearing_impaired_words.next()
+        && let Some(language) = hearing_impaired_words.next()
     {
-        languages.push((rules.hearing_impaired_or_hindi_word.clone(), span));
+        languages.push(language);
     }
     if hearing_impaired_words.next().is_some() {
         flags.push(SidecarFlag::HearingImpaired);

@@ -63,6 +63,12 @@ First release. It implements the conventions in `docs/decisions.md`, and the cor
 - Language packs (X11): `Rules::for_languages` limits the rules to the shared base and the packs of the declared languages. The packs also add words (native language names, spelled numbers, ordinals). `Rules::language_packs` lists the packs. `RulesIdentity.languages` records the declared languages. Overlays can change `leading_articles`, `number_words` and `ordinal_suffixes`.
 - Overlays (X10): `Overlay::parse` reads a YAML or JSON overlay. `Rules::from_overlays` applies several overlays together. It reports each problem as an `OverlayDiagnostic` with the line that caused it: conflicting changes, duplicate names, malformed vocabularies, duplicate entries, reserved tokens, and entries that collide with another word class. `RulesIdentity.overlays` lists each applied overlay with a digest of its changes.
 - `Rules`: one value that holds every input vocabulary. Each operation is also a method on `Rules`. The free functions use `Rules::builtin()`. `Rules::ignore_rules` compiles rule files together with the built-in exclusions. `Interpretation`, `RenamePlan`, `Validation` and `CandidateRanking` contain the `RulesIdentity` that they were produced under (X9).
+- `Rules::group_parts` runs part grouping under a rules value. The free function `group_parts` uses the built-in rules.
+- Overlays change every table that the reader compares a name against (X28): 19 new vocabularies, among them `part_words`, `subtitle_folders`, `format_3d_words` and `alternate_title_words`.
+- An overlay that removes an entry that the built-in rules do not contain is rejected with `OverlayDiagnosticReason::IneffectiveRemoval` (X28).
+- An overlay can remove the codec words `x264`, `x265`, `h264`, `h265`, `mpeg2`, `mpeg4`, `hdr10` and `hdr10+` from `technical_words`. These words are no longer `reserved_token`s.
+- `OutputProfile.reserved_names` lists names that a path component must not use (R5).
+- `Format3d` implements `Deserialize` and `Ord`.
 
 ### Wire contract
 
@@ -87,6 +93,8 @@ First release. It implements the conventions in `docs/decisions.md`, and the cor
 - `RulesSelection.languages` and `RulesIdentity.languages`. A request can declare the languages of its library (X11).
 - `RulesSelection rules` on `ParseNames`, `EvaluateIgnore`, `Interpret`, `RankCandidates`, `PlanRenames` and `Validate` requests. The field holds overlay documents that apply to that call. If an overlay is rejected, the call fails with `INVALID_ARGUMENT` and lists the diagnostics. `RulesIdentity.overlays` lists the applied overlays.
 - `RulesIdentity`: every response, including `GetVersion`, states the rules it was answered under in `rules`.
+- `GroupPartsRequest.rules` selects the rules of a `GroupParts` call.
+- `OutputProfile.reserved_names`.
 
 ### CLI
 

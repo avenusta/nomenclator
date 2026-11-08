@@ -124,7 +124,7 @@ pub enum SidecarFlag {
 }
 
 /// A 3D layout named in a file or folder name.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Format3d {
     /// `sbs`.

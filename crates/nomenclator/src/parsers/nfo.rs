@@ -4,7 +4,6 @@ use std::collections::BTreeMap;
 
 use serde::Serialize;
 
-use crate::interpret::parts::group_parts;
 use crate::lexical;
 use crate::model::{EntryKind, NfoRole};
 use crate::parsers::file_types::{file_name, parent_folder};
@@ -50,14 +49,14 @@ pub(crate) struct FolderVideoNames {
 
 impl FolderVideoNames {
     /// Collects the names of `videos`, the videos of one folder in path order.
-    pub(crate) fn new(_rules: &Rules, videos: &[String]) -> Self {
+    pub(crate) fn new(rules: &Rules, videos: &[String]) -> Self {
         let mut videos_by_stem = BTreeMap::new();
         for video in videos {
             let stem = lexical::fold_case_text(lexical::stem(file_name(video), EntryKind::File));
             videos_by_stem.entry(stem).or_insert_with(|| video.clone());
         }
         let mut stacks_by_name = BTreeMap::new();
-        for stack in group_parts(videos).stacks {
+        for stack in rules.group_parts(videos).stacks {
             let name = lexical::fold_case_text(&stack.name);
             stacks_by_name
                 .entry(name)
@@ -78,7 +77,8 @@ pub(crate) fn classify_nfo_among(
     names: &FolderVideoNames,
 ) -> NfoClassification {
     let name = file_name(path);
-    let is_nfo = lexical::extension(name, EntryKind::File).as_ref() == Some(&rules.nfo_extension);
+    let is_nfo = lexical::extension(name, EntryKind::File)
+        .is_some_and(|extension| rules.nfo_extensions.contains(&extension));
     if !is_nfo {
         return NfoClassification { role: None };
     }

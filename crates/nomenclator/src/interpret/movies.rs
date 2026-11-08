@@ -7,7 +7,6 @@ use std::cmp::Reverse;
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::associations::{self, OwnerCandidate, OwnerCandidates, OwnerChoice};
-use super::parts::group_parts;
 use super::{
     EntryIndex, FileRole, Item, Movie, OrphanExtra, PipelineOutput, Version,
     collapse_same_named_wrappers, merge_provider_claims, parent_folder, resolution_of,
@@ -372,7 +371,7 @@ fn collect_units(rules: &Rules, index: &EntryIndex) -> Vec<Unit> {
 
     let mut units = Vec::new();
     let mut consumed: BTreeSet<String> = BTreeSet::new();
-    for stack in group_parts(&stack_candidates).stacks {
+    for stack in rules.group_parts(&stack_candidates).stacks {
         let is_folder_stack = stack.paths[0].ends_with('/');
         let paths: Vec<String> = if is_folder_stack {
             stack

@@ -135,7 +135,7 @@ pub(crate) enum WordClass {
 
 static TECHNICAL_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r"(?i)^(?:\d{3,4}[pi]|\d{3,4}x\d{3,4}|[xh]\.?26[45]|mpeg[24]|\d{1,2}bit|(?:dd|ddp|dd\+|eac3|ac3|aac|dts)\d(?:\.\d)?|hdr10\+?)$",
+        r"(?i)^(?:\d{3,4}[pi]|\d{3,4}x\d{3,4}|\d{1,2}bit|(?:dd|ddp|dd\+|eac3|ac3|aac|dts)\d(?:\.\d)?)$",
     )
     .expect("valid technical pattern")
 });

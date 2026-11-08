@@ -3,7 +3,7 @@
 use nomenclator::model::{EntryKind, SidecarKind};
 use nomenclator::{
     CallerInputs, IgnoreFile, LibraryType, MatchCandidate, MatchFacts, NamingFacts, OutputProfile,
-    OverlayDiagnostic, RankQuery, ReferenceMetadata, Rules, RulesIdentity, diff_rules, group_parts,
+    OverlayDiagnostic, RankQuery, ReferenceMetadata, Rules, RulesIdentity, diff_rules,
 };
 #[path = "support/cases.rs"]
 mod cases;
@@ -378,7 +378,7 @@ fn run_case(rules: &Rules, case: &CorpusCase) -> Result<(), String> {
         }
         "group_parts" => {
             let input: Paths = parse_input(&case.input)?;
-            to_value(group_parts(&input.paths))
+            to_value(rules.group_parts(&input.paths))
         }
         "classify_extra" => {
             let input: ExtraInput = parse_input(&case.input)?;

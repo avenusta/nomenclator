@@ -11,7 +11,7 @@ pub(crate) const TECHNICAL_WORDS: &[&str] = &[
     "x265", "h264", "h265", "hevc", "av1", "xvid", "divx", "aac", "ac3", "eac3", "dts", "dts-hd",
     "dtshd", "truehd", "atmos", "ddp", "hdc", "ultrahd", "repack", "rerip", "sbs", "hsbs", "fsbs",
     "htab", "ftab", "mvc", "sdtv", "bdmv", "hdr10", "hdr10+", "dovi", "sbs3d", "bd25", "bd50",
-    "dsr", "mp4", "mkv", "m4v", "avi", "wmv", "mpg", "mpeg",
+    "dsr", "mp4", "mkv", "m4v", "avi", "wmv", "mpg", "mpeg", "mpeg2", "mpeg4",
 ];
 
 /// Release words that can also be ordinary title words. They cut only after a year or a
@@ -141,14 +141,8 @@ pub(crate) const AUDIO_EXTENSIONS: &[&str] = &[
 /// Image file extensions.
 pub(crate) const IMAGE_EXTENSIONS: &[&str] = &["jpg", "jpeg", "png", "webp", "gif", "bmp"];
 
-/// The extension of NFO files.
-pub(crate) const NFO_EXTENSION: &str = "nfo";
-
 /// NFO stems that refer to the item of their folder rather than to a video (S9).
 pub(crate) const NFO_GENERIC_NAMES: &[(&str, NfoRole)] = &[];
-
-/// Suffix that marks an image as a video's still: `Video-thumb.jpg`.
-pub(crate) const STILL_IMAGE_SUFFIX: &str = "-thumb";
 
 /// Sidecar words that set the default flag.
 pub(crate) const DEFAULT_FLAG_WORDS: &[&str] = &[];
@@ -160,11 +154,24 @@ pub(crate) const FORCED_FLAG_WORDS: &[&str] = &["foreign"];
 /// also Hindi.
 pub(crate) const HEARING_IMPAIRED_FLAG_WORDS: &[&str] = &["cc"];
 
-/// The word after an episode number that marks the last episode of a release run (X20).
-pub(crate) const FINAL_EPISODE_WORD: &str = "end";
+/// The words after an episode number that mark the last episode of a release run (X20).
+pub(crate) const FINAL_EPISODE_WORDS: &[&str] = &["end"];
 
-/// The word that means hearing impaired beside another language, and Hindi otherwise.
-pub(crate) const HEARING_IMPAIRED_OR_HINDI_WORD: &str = "hi";
+/// Words that mean hearing impaired beside another language, and otherwise the language of
+/// the tag that follows each.
+pub(crate) const HEARING_IMPAIRED_OR_LANGUAGE_WORDS: &[(&str, &str)] = &[("hi", "hi")];
+
+/// Words between separators that start another title of a movie (M16).
+pub(crate) const ALTERNATE_TITLE_WORDS: &[&str] = &["aka"];
+
+/// Text that marks a release word spelling as a remux (X19), as in `BDRemux`.
+pub(crate) const REMUX_MARKERS: &[&str] = &["remux"];
+
+/// Text that marks a source spelling as a screener (X19), as in `DVDScr`.
+pub(crate) const SCREENER_MARKERS: &[&str] = &["scr"];
+
+/// The normalized source value of a screener (X19).
+pub(crate) const SCREENER_SOURCE_VALUE: &str = "screener";
 
 /// Languages as pairs of a BCP 47 tag and its other spellings: ISO 639-2 codes and English
 /// names. Codes that are common English words (`cat`, `may`, `mac`) are left out on purpose.
@@ -350,6 +357,13 @@ pub(crate) const SPECIALS_FOLDER_NAMES: &[&str] = &["specials", "special"];
 /// Endings that make a number an ordinal before a season word (`2nd Season`, `3. Staffel`).
 pub(crate) const ORDINAL_SUFFIXES: &[&str] = &["st", "nd", "rd", "th", "."];
 
+/// Disc words, compared without case. A disc word and a number name a part (M11) or a folder
+/// of episodes below a season folder (T18).
+pub(crate) const DISC_WORDS: &[&str] = &["cd", "dvd", "disc", "disk"];
+
+/// The part words that are not disc words (M11).
+pub(crate) const OTHER_PART_WORDS: &[&str] = &["pt"];
+
 /// Video heights: `NNNxHHH` with one of these is a resolution, never a season and episode.
 pub(crate) const VIDEO_HEIGHTS: &[&str] = &[
     "240", "288", "360", "480", "540", "576", "720", "768", "800", "900", "1080", "1200", "1440",
@@ -436,17 +450,20 @@ pub(crate) const NFO_OUTPUT_NAMES: &[(NfoRole, &str)] = &[
     (NfoRole::Season, "season"),
 ];
 
+/// The extension of an NFO file (R19), read as `nfo_extensions`.
+pub(crate) const NFO_EXTENSION: &str = "nfo";
+
+/// The suffix of a video's still (S6, R19), `Video-thumb.jpg`, read as `still_image_suffixes`.
+pub(crate) const STILL_IMAGE_SUFFIX: &str = "-thumb";
+
 /// The stem of a theme song or theme video (R19), read as `extras_audio_names`.
 pub(crate) const THEME_OUTPUT_STEM: &str = "theme";
 
 /// The word of a season folder (R2), read as `season_words`.
 pub(crate) const SEASON_FOLDER_WORD: &str = "Season";
 
-/// The word of a part number (R1), read by the part markers.
+/// The word of a part number (R1), read as `part_words`.
 pub(crate) const PART_OUTPUT_WORD: &str = "part";
-
-/// The part words, compared without case (M11). They contain `PART_OUTPUT_WORD`.
-pub(crate) const PART_WORDS: &[&str] = &["cd", "dvd", "disc", "disk", PART_OUTPUT_WORD, "pt"];
 
 /// The key of an edition tag, `{edition-X}` (R1), read by the edition tag pattern.
 pub(crate) const EDITION_TAG_KEY: &str = "edition";

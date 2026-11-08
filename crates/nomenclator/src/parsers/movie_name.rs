@@ -74,7 +74,7 @@ impl Rules {
         let title_end = year_index.map_or(cut, |index| index.min(cut));
 
         let title = title_finding(stem, &tokens, start, title_end, year_index.is_some(), cut);
-        let (title, alternate_titles) = split_alternate_titles(stem, title);
+        let (title, alternate_titles) = split_alternate_titles(rules, stem, title);
         let has_bracketed_year = matches!(
             year_index.map(|index| &tokens[index].1),
             Some(Part::Bracket(BracketClass::Year(_)))
@@ -411,14 +411,12 @@ fn format_3d(
     }
 }
 
-static AKA_PATTERN: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?i)[ ._]aka[ ._]").expect("valid aka pattern"));
-
 /// Splits the other titles from a resolved title (M16): the text after `AKA` or after
 /// ` / `, and a trailing parenthesised group of words. Square brackets and a leading
 /// parenthesis stay part of the title (`[REC]`, `(500) Days of Summer`). Returns the
 /// title unchanged if it states no other title.
 fn split_alternate_titles(
+    rules: &Rules,
     stem: &str,
     title: Finding<String>,
 ) -> (Finding<String>, Vec<AlternateTitle>) {
@@ -464,7 +462,9 @@ fn split_alternate_titles(
             end = start + span.0;
             continue;
         }
-        let separator = AKA_PATTERN
+        let separator = rules
+            .patterns
+            .alternate_title_separator
             .find(raw)
             .map(|found| (found.start(), found.end()))
             .or_else(|| raw.find(" / ").map(|at| (at, at + 3)));

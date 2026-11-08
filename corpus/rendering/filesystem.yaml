@@ -132,3 +132,21 @@
     facts: { library: movies, title: "Amélie", year: 2001, container: mkv }
   expect:
     path: "Amélie (2001)/Amélie (2001).mkv"
+
+- name: a name that the profile reserves is blocked on the posix target
+  operation: render_names
+  input:
+    facts: { library: movies, title: Volume, container: mkv }
+    profile: { target_filesystem: posix, reserved_names: [VOLUME] }
+  expect:
+    path: null
+    blocked_reasons: [reserved_name]
+
+- name: a reserved device name stays blocked when the profile reserves other names
+  operation: render_names
+  input:
+    facts: { library: movies, title: CON, container: mkv }
+    profile: { reserved_names: [volume] }
+  expect:
+    path: null
+    blocked_reasons: [reserved_name]

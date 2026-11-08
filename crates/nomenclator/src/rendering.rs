@@ -625,7 +625,7 @@ fn finish_components(
     let mut reasons = Vec::new();
     if finished
         .iter()
-        .any(|component| filesystem.is_reserved(component))
+        .any(|component| profile.is_reserved(component))
     {
         reasons.push(BlockReason::ReservedName);
     }

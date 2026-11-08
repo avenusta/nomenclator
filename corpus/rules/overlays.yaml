@@ -555,3 +555,65 @@
     identity: null
     diagnostics:
       - { reason: syntax, line: 4 }
+
+- name: an overlay that removes a codec word from the technical words leaves the word in the title
+  overlays: ["name: x264-is-a-word\ntechnical_words:\n  remove: [x264]\n"]
+  operation: parse_movie_name
+  input: { name: The x264 Story.mkv, kind: file }
+  expect:
+    title: The x264 Story
+
+- name: an overlay that removes an entry that the vocabulary does not contain is rejected on its line
+  operation: build_rules
+  input:
+    overlays:
+      - "name: typo\ntechnical_words:\n  remove:\n    - x624\n"
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: ineffective_removal, overlay: typo, line: 4, vocabulary: technical_words, entry: x624 }
+
+- name: an overlay that adds a part word groups the files that the word marks
+  overlays: ["name: teil\npart_words:\n  add: [Teil]\n"]
+  operation: group_parts
+  input: { paths: [Northern Passage Teil1.mkv, Northern Passage Teil2.mkv] }
+  expect:
+    stacks:
+      - { name: Northern Passage, paths: [Northern Passage Teil1.mkv, Northern Passage Teil2.mkv], ambiguous: false, ambiguity_reason: null }
+
+- name: an overlay that adds a part word makes the interpreter stack the parts of a movie
+  overlays: ["name: teil\npart_words:\n  add: [Teil]\n"]
+  operation: interpret
+  input:
+    library: movies
+    paths: [Northern Passage (2021)/Northern Passage (2021) Teil1.mkv, Northern Passage (2021)/Northern Passage (2021) Teil2.mkv]
+  expect:
+    items:
+      - kind: movie
+        versions:
+          - paths: [Northern Passage (2021)/Northern Passage (2021) Teil1.mkv, Northern Passage (2021)/Northern Passage (2021) Teil2.mkv]
+
+- name: an overlay that removes a part word stops grouping the files that the word marked
+  overlays: ["name: no-pt\npart_words:\n  remove: [pt]\n"]
+  operation: group_parts
+  input: { paths: [Northern Passage pt1.mkv, Northern Passage pt2.mkv] }
+  expect:
+    stacks: []
+
+- name: an overlay cannot remove the part word that the writer writes
+  operation: build_rules
+  input:
+    overlays: ["name: no-part\npart_words:\n  remove: [part]\n"]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: canonical_entry, overlay: no-part, vocabulary: part_words, entry: part }
+
+- name: an overlay that adds a disc folder word reads the episodes below the folder (T18)
+  overlays: ["name: scheibe\ndisc_folder_words:\n  add: [Scheibe]\n"]
+  operation: parse_episode_name
+  input: { path: The Pacific/Season 01/Scheibe 1/The Pacific - 03.mkv }
+  expect:
+    series_name: The Pacific
+    season: 1
+    episodes: [3]

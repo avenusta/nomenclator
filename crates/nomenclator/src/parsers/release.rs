@@ -2,7 +2,7 @@
 //! audio, language markers, release group, checksum, revision, streaming service and
 //! container. Every fact is optional and carries the span it was read from.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::LazyLock;
 
 use regex::Regex;
@@ -234,10 +234,14 @@ impl Rules {
             };
             facts.add(found.fact, found.value, span);
             // `BDRemux` states its source and that the release is a remux.
-            let text = lexical::fold_case_text(&stem[found.span.0..found.span.1]);
-            facts.remux |= text.contains("remux");
+            let text = lexical::vocabulary_form(&stem[found.span.0..found.span.1]);
+            let contains_any = |markers: &BTreeSet<String>| {
+                markers.iter().any(|marker| text.contains(marker.as_str()))
+            };
+            facts.remux |= contains_any(&self.remux_markers);
             facts.screener |= found.fact == ReleaseFact::Source
-                && (text.contains("scr") || found.value == "screener");
+                && (contains_any(&self.screener_markers)
+                    || found.value == data::SCREENER_SOURCE_VALUE);
             if let Some(span) = found.channels {
                 facts.channels.push((stem[span.0..span.1].to_owned(), span));
             }

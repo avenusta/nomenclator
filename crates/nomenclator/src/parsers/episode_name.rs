@@ -4,7 +4,6 @@ use std::sync::LazyLock;
 use regex::Regex;
 use serde::Serialize;
 
-use crate::data;
 use crate::lexical::{self, BracketClass, DateMatch, TokenKind, WordClass};
 use crate::model::{EntryKind, Evidence, Finding, Rule, Span};
 use crate::parsers::extras::extras_folder_kind;
@@ -388,9 +387,11 @@ impl ContextReading<'_> {
             .flatten()
             .map(|(title, _)| title);
         // `END` after the number marks the last episode of a release run; it is no title.
-        let is_final = title_after_reference
-            .as_deref()
-            .is_some_and(|title| lexical::vocabulary_form(title) == data::FINAL_EPISODE_WORD);
+        let is_final = title_after_reference.as_deref().is_some_and(|title| {
+            rules
+                .final_episode_words
+                .contains(&lexical::vocabulary_form(title))
+        });
         let episode_title = title_after_reference.filter(|_| !is_final).or_else(|| {
             identity
                 .set_aside_file_title
@@ -547,9 +548,6 @@ fn is_extras_folder(rules: &Rules, name: &str) -> bool {
     extras_folder_kind(rules, name).is_some()
 }
 
-static DISC_FOLDER_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)^(?:disc|disk|dvd|cd)[ ._-]*\d{1,2}$").expect("valid disc folder pattern")
-});
 static EPISODE_FOLDER_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)(?:^|[^a-z0-9])s\d{1,4}e\d{1,5}(?:$|[^a-z0-9])").expect("valid pattern")
 });
@@ -579,7 +577,8 @@ impl FolderContext {
             return context;
         };
         let is_nested_episode_folder = |name: &str| {
-            DISC_FOLDER_PATTERN.is_match(name.trim()) || EPISODE_FOLDER_PATTERN.is_match(name)
+            rules.patterns.disc_folder.is_match(name.trim())
+                || EPISODE_FOLDER_PATTERN.is_match(name)
         };
         if is_season_like(known, rules, folders, last) {
             context.season_folder_index = Some(last);
@@ -1375,8 +1374,6 @@ static CROSS_CONTINUATION_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)^(?:x(\d{1,6})|( ?[-~] ?)(?:(\d{1,4})x|x|e)?(\d{1,6}))")
         .expect("valid continuation pattern")
 });
-static SUFFIX_PATTERN: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?i)^(?:v\d{1,2})?(?:end)?").expect("valid suffix pattern"));
 static PART_LETTER_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?i)^[ab]").expect("valid part letter pattern"));
 static CODEC_GLUE_PATTERN: LazyLock<Regex> =
@@ -1447,9 +1444,11 @@ fn episode_number(digits: &str) -> Option<u32> {
 /// Returns the end of the suffix after a number: an optional `v2`, `END` or part letter that
 /// a word boundary follows.
 /// Returns `position` if the suffix is not followed by a word boundary.
-fn after_suffix(text: &str, position: usize) -> usize {
+fn after_suffix(rules: &Rules, text: &str, position: usize) -> usize {
     let mut end = position
-        + SUFFIX_PATTERN
+        + rules
+            .patterns
+            .episode_suffix
             .find(&text[position..])
             .map_or(0, |found| found.end());
     if !lexical::is_boundary_after(text, end)
@@ -1482,7 +1481,7 @@ fn run_candidate(
 ) -> Option<Candidate> {
     let first_digits = first_number.as_str();
     let first = episode_number(first_digits)?;
-    let mut end = after_suffix(text, first_number.end());
+    let mut end = after_suffix(rules, text, first_number.end());
     if !is_terminated(rules, text, end, style) {
         return None;
     }
@@ -1490,7 +1489,7 @@ fn run_candidate(
     while let Some((joined, restated_season, number, continuation_end)) =
         continuation(rules, text, end, style)
     {
-        let next_end = after_suffix(text, continuation_end);
+        let next_end = after_suffix(rules, text, continuation_end);
         let crosses_season = restated_season.is_some_and(|restated| Some(restated) != season);
         if crosses_season || !is_terminated(rules, text, next_end, style) {
             break;

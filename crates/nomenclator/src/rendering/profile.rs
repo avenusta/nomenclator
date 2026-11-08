@@ -26,6 +26,10 @@ pub struct OutputProfile {
     pub target_filesystem: TargetFilesystem,
     /// The maximum length of a path component, in UTF-8 bytes. Defaults to 255.
     pub max_component_bytes: usize,
+    /// Names that no path component may use before its first dot, compared without case,
+    /// in addition to the device names that the target filesystem reserves (R5). Defaults
+    /// to no names.
+    pub reserved_names: Vec<String>,
     /// The validation rules reported at another severity or not reported (R7). Rename
     /// planning ignores this field.
     pub severity: BTreeMap<DiagnosticRule, SeverityOverride>,
@@ -216,6 +220,7 @@ impl Default for OutputProfile {
             series_provider_order: vec!["tvdb".to_owned(), "tmdb".to_owned()],
             target_filesystem: TargetFilesystem::default(),
             max_component_bytes: 255,
+            reserved_names: Vec::new(),
             severity: BTreeMap::new(),
             required_assets: BTreeMap::new(),
             wanted_subtitles: Vec::new(),
@@ -251,6 +256,16 @@ impl OutputProfile {
     pub(crate) fn clean_fact(&self, text: &str) -> String {
         self.target_filesystem
             .clean_text(&self.replace_characters(text))
+    }
+
+    /// Returns `true` if the target filesystem or the profile reserves `component`.
+    pub(crate) fn is_reserved(&self, component: &str) -> bool {
+        let name = lexical::vocabulary_form(before_first_dot(component));
+        self.target_filesystem.is_reserved(component)
+            || self
+                .reserved_names
+                .iter()
+                .any(|reserved| lexical::vocabulary_form(reserved) == name)
     }
 
     /// Returns `text` with the profile's character replacements applied. At each position
@@ -315,9 +330,13 @@ impl TargetFilesystem {
     /// Returns `true` if the target reserves `component`, which is the case if the part
     /// before the first dot is a device name.
     pub(crate) fn is_reserved(self, component: &str) -> bool {
-        let before_first_dot = component.split('.').next().unwrap_or_default().trim_end();
         self == TargetFilesystem::Portable
             && data::RESERVED_DEVICE_NAMES
-                .contains(&lexical::vocabulary_form(before_first_dot).as_str())
+                .contains(&lexical::vocabulary_form(before_first_dot(component)).as_str())
     }
+}
+
+/// Returns the part of `component` before its first dot, without trailing spaces.
+fn before_first_dot(component: &str) -> &str {
+    component.split('.').next().unwrap_or_default().trim_end()
 }

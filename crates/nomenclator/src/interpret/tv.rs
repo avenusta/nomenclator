@@ -7,7 +7,6 @@ use std::cmp::Reverse;
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::associations::{self, OwnerCandidate, OwnerCandidates, OwnerChoice};
-use super::parts::group_parts;
 use super::{
     Artwork, EntryIndex, Episode, Extra, FileRole, Item, OrphanExtra, PipelineOutput, Season,
     Series, SidecarFile, Version, collapse_same_named_wrappers, merge_provider_claims,
@@ -613,7 +612,7 @@ fn collect_units(known: &KnownSeasons, rules: &Rules, index: &EntryIndex) -> Vec
         .collect();
     let mut units = Vec::new();
     let mut consumed: BTreeSet<String> = BTreeSet::new();
-    for stack in group_parts(&feature_files).stacks {
+    for stack in rules.group_parts(&feature_files).stacks {
         let extension = lexical::extension(file_name(&stack.paths[0]), EntryKind::File);
         let stack_file = format!("{}.{}", stack.name, extension.unwrap_or_default());
         let reading_path = match parent_folder(&stack.paths[0]) {

@@ -11,7 +11,7 @@ use serde_json::Value;
 
 use crate::data;
 use crate::lexical::{self, fold_case_text};
-use crate::model::{ArtworkRole, ExtraKind, NfoRole, SidecarFlag};
+use crate::model::{ArtworkRole, ExtraKind, Format3d, NfoRole, SidecarFlag};
 use crate::parsers::extras::folded_vocabulary_form;
 use crate::parsers::release::{ReleaseFact, release_spelling_form};
 use crate::rendering::OutputProfile;
@@ -32,8 +32,10 @@ use crate::rules::{PresetError, Rules, RulesIdentity};
 /// `extras_suffixes`, `extras_video_names` and `extras_audio_names` add a map from word to
 /// extra kind, `artwork_roles` from word to artwork role, `nfo_names` from name to NFO role,
 /// `languages` from BCP 47 tag to its spellings, `release_words` from release fact to
-/// value to spellings, and `audio_channel_words` from word to channel layout. `remove` is
-/// always a list of entries.
+/// value to spellings, `audio_channel_words` from word to channel layout,
+/// `format_3d_words` from word to 3D layout, `letter_folds` from one letter to its spelling,
+/// and `hearing_impaired_or_language_words` from word to BCP 47 tag. `remove` is always a
+/// list of entries.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Overlay {
     name: String,
@@ -114,6 +116,9 @@ pub enum OverlayDiagnosticReason {
     /// An entry that the writer writes, such as `fanart` or `season` (X25). An overlay
     /// cannot remove or redefine it, so the reader reads every name that the writer writes.
     CanonicalEntry,
+    /// A removed entry that the built-in rules do not contain, so the removal changes
+    /// nothing (X28).
+    IneffectiveRemoval,
 }
 
 /// The vocabularies an overlay can change, by their names in an overlay document.
@@ -159,6 +164,25 @@ enum Vocabulary {
     ReleaseWords,
     AudioChannelWords,
     ReleaseSiteTags,
+    PartWords,
+    DiscFolderWords,
+    Format3dWords,
+    ReleaseGroupEndings,
+    VideoHeights,
+    LetterFolds,
+    DiscImageExtensions,
+    UnsupportedVideoExtensions,
+    DiscStructureFolders,
+    NfoExtensions,
+    StillImageSuffixes,
+    HearingImpairedOrLanguageWords,
+    SubtitleFolders,
+    AspectRatios,
+    AudioCodecWords,
+    FinalEpisodeWords,
+    AlternateTitleWords,
+    RemuxMarkers,
+    ScreenerMarkers,
 }
 
 const VOCABULARIES: &[(&str, Vocabulary)] = &[
@@ -220,6 +244,31 @@ const VOCABULARIES: &[(&str, Vocabulary)] = &[
     ("release_words", Vocabulary::ReleaseWords),
     ("audio_channel_words", Vocabulary::AudioChannelWords),
     ("release_site_tags", Vocabulary::ReleaseSiteTags),
+    ("part_words", Vocabulary::PartWords),
+    ("disc_folder_words", Vocabulary::DiscFolderWords),
+    ("format_3d_words", Vocabulary::Format3dWords),
+    ("release_group_endings", Vocabulary::ReleaseGroupEndings),
+    ("video_heights", Vocabulary::VideoHeights),
+    ("letter_folds", Vocabulary::LetterFolds),
+    ("disc_image_extensions", Vocabulary::DiscImageExtensions),
+    (
+        "unsupported_video_extensions",
+        Vocabulary::UnsupportedVideoExtensions,
+    ),
+    ("disc_structure_folders", Vocabulary::DiscStructureFolders),
+    ("nfo_extensions", Vocabulary::NfoExtensions),
+    ("still_image_suffixes", Vocabulary::StillImageSuffixes),
+    (
+        "hearing_impaired_or_language_words",
+        Vocabulary::HearingImpairedOrLanguageWords,
+    ),
+    ("subtitle_folders", Vocabulary::SubtitleFolders),
+    ("aspect_ratios", Vocabulary::AspectRatios),
+    ("audio_codec_words", Vocabulary::AudioCodecWords),
+    ("final_episode_words", Vocabulary::FinalEpisodeWords),
+    ("alternate_title_words", Vocabulary::AlternateTitleWords),
+    ("remux_markers", Vocabulary::RemuxMarkers),
+    ("screener_markers", Vocabulary::ScreenerMarkers),
 ];
 
 impl Vocabulary {
@@ -241,6 +290,11 @@ impl Vocabulary {
                 | Vocabulary::Languages
                 | Vocabulary::LeadingArticles
                 | Vocabulary::NumberWords
+                | Vocabulary::PartWords
+                | Vocabulary::DiscFolderWords
+                | Vocabulary::Format3dWords
+                | Vocabulary::FinalEpisodeWords
+                | Vocabulary::AlternateTitleWords
         )
     }
 
@@ -284,7 +338,10 @@ impl Vocabulary {
             Vocabulary::VideoExtensions
             | Vocabulary::AudioExtensions
             | Vocabulary::SubtitleExtensions
-            | Vocabulary::ImageExtensions => lower.trim_start_matches('.').to_owned(),
+            | Vocabulary::ImageExtensions
+            | Vocabulary::DiscImageExtensions
+            | Vocabulary::UnsupportedVideoExtensions
+            | Vocabulary::NfoExtensions => lower.trim_start_matches('.').to_owned(),
             Vocabulary::SystemJunkNames
             | Vocabulary::SystemJunkFileSuffixes
             | Vocabulary::PartialDownloadSuffixes
@@ -341,6 +398,8 @@ enum Meaning {
     Preset(String),
     Release(ReleaseFact, String),
     ChannelLayout(String),
+    Format3d(Format3d),
+    SpelledLetter(String),
 }
 
 impl Action {
@@ -356,6 +415,8 @@ impl Action {
             Action::Add(Meaning::Preset(value)) => format!("set {value}"),
             Action::Add(Meaning::Release(fact, value)) => format!("add {fact:?} {value}"),
             Action::Add(Meaning::ChannelLayout(layout)) => format!("add {layout}"),
+            Action::Add(Meaning::Format3d(format)) => format!("add {format:?}"),
+            Action::Add(Meaning::SpelledLetter(spelled)) => format!("add {spelled}"),
         }
     }
 }
@@ -745,6 +806,43 @@ fn read_additions(vocabulary: Vocabulary, value: &Value) -> Result<Vec<(String, 
             }
             additions
         }
+        Vocabulary::Format3dWords => read::<BTreeMap<String, Format3d>>(value)?
+            .into_iter()
+            .map(|(word, format)| (word, Meaning::Format3d(format)))
+            .collect(),
+        Vocabulary::HearingImpairedOrLanguageWords => read::<BTreeMap<String, String>>(value)?
+            .into_iter()
+            .map(|(word, tag)| {
+                let tag = lexical::vocabulary_form(tag.trim());
+                (word, Meaning::Language(tag))
+            })
+            .collect(),
+        Vocabulary::LetterFolds => {
+            let mut additions = Vec::new();
+            for (letter, spelled) in read::<BTreeMap<String, String>>(value)? {
+                let spelled = lexical::vocabulary_form(spelled.trim());
+                if letter.trim().chars().count() != 1 || spelled.is_empty() {
+                    return Err(format!(
+                        "letter fold `{letter}` is not one letter with a spelling"
+                    ));
+                }
+                additions.push((letter, Meaning::SpelledLetter(spelled)));
+            }
+            additions
+        }
+        Vocabulary::VideoHeights => {
+            let heights = read::<Vec<String>>(value)?;
+            if let Some(height) = heights.iter().find(|height| {
+                !(3..=4).contains(&height.trim().len())
+                    || !height.trim().bytes().all(|byte| byte.is_ascii_digit())
+            }) {
+                return Err(format!("video height `{height}` is not 3 or 4 digits"));
+            }
+            heights
+                .into_iter()
+                .map(|height| (height, Meaning::Word))
+                .collect()
+        }
         _ => read::<Vec<String>>(value)?
             .into_iter()
             .map(|word| (word, Meaning::Word))
@@ -796,6 +894,21 @@ fn canonical_changes() -> Vec<Change> {
     changes.push(add(
         Vocabulary::SeasonWords,
         data::SEASON_FOLDER_WORD,
+        Meaning::Word,
+    ));
+    changes.push(add(
+        Vocabulary::PartWords,
+        data::PART_OUTPUT_WORD,
+        Meaning::Word,
+    ));
+    changes.push(add(
+        Vocabulary::NfoExtensions,
+        data::NFO_EXTENSION,
+        Meaning::Word,
+    ));
+    changes.push(add(
+        Vocabulary::StillImageSuffixes,
+        data::STILL_IMAGE_SUFFIX,
         Meaning::Word,
     ));
     changes.extend(data::SIDECAR_FLAG_OUTPUT_WORDS.iter().map(|(flag, word)| {
@@ -979,6 +1092,28 @@ impl Rules {
                 });
             }
         }
+        for overlay in user_overlays {
+            for change in &overlay.changes {
+                let is_added = actions[&(change.vocabulary, change.entry.as_str())]
+                    .iter()
+                    .any(|(_, action)| matches!(action, Action::Add(_)));
+                if change.action == Action::Remove
+                    && !is_added
+                    && !Rules::builtin().contains(change.vocabulary, &change.entry)
+                {
+                    diagnostics.push(OverlayDiagnostic {
+                        overlay: Some(overlay.name.clone()),
+                        line: overlay
+                            .lines
+                            .get(&(change.vocabulary, change.entry.clone()))
+                            .copied(),
+                        vocabulary: Some(change.vocabulary.name().to_owned()),
+                        entry: Some(change.entry.clone()),
+                        ..diagnostic(OverlayDiagnosticReason::IneffectiveRemoval)
+                    });
+                }
+            }
+        }
         if !diagnostics.is_empty() {
             return Err(diagnostics);
         }
@@ -1101,6 +1236,93 @@ impl Rules {
         })
     }
 
+    /// Returns `true` if `vocabulary` contains `entry`, in the form that the vocabulary
+    /// compares.
+    fn contains(&self, vocabulary: Vocabulary, entry: &str) -> bool {
+        let exclusions = &self.built_in_exclusions;
+        match vocabulary {
+            Vocabulary::TechnicalWords
+            | Vocabulary::TitleLikeReleaseWords
+            | Vocabulary::EditionWords
+            | Vocabulary::SeasonWords
+            | Vocabulary::SeriesSeasonWords
+            | Vocabulary::DefaultFlagWords
+            | Vocabulary::ForcedFlagWords
+            | Vocabulary::HearingImpairedFlagWords => self
+                .word_set(vocabulary)
+                .is_some_and(|words| words.contains(entry)),
+            Vocabulary::SpecialsFolders => self.specials_folder_names.contains(entry),
+            Vocabulary::ProviderKeys => self.provider_keys.contains(entry),
+            Vocabulary::Presets => false,
+            Vocabulary::LeadingArticles => self.leading_articles.contains(entry),
+            Vocabulary::OrdinalSuffixes => self.ordinal_suffixes.contains(entry),
+            Vocabulary::NumberWords => self.number_words.contains_key(entry),
+            Vocabulary::VideoExtensions => self.video_extensions.contains(entry),
+            Vocabulary::AudioExtensions => self.audio_extensions.contains(entry),
+            Vocabulary::SubtitleExtensions => self.subtitle_extensions.contains(entry),
+            Vocabulary::ImageExtensions => self.image_extensions.contains(entry),
+            Vocabulary::SystemJunkNames => exclusions.system_junk_names.contains(entry),
+            Vocabulary::BuiltInIgnoreGroups => exclusions.groups.contains(entry),
+            Vocabulary::NoMediaMarkers => exclusions.no_media_markers.contains(entry),
+            Vocabulary::ReleaseJunkNames => self.release_junk_names.contains(entry),
+            Vocabulary::ReleaseJunkPrefixes => self.release_junk_prefixes.contains(entry),
+            Vocabulary::ReleaseJunkExtensions => self.release_junk_extensions.contains(entry),
+            Vocabulary::ReleaseJunkImages => self.release_junk_images.contains(entry),
+            Vocabulary::GeneratedMetadataFolders => exclusions
+                .generated_metadata_directory_names
+                .contains(entry),
+            Vocabulary::SystemJunkFileSuffixes => {
+                list_contains(&exclusions.system_junk_file_suffixes, entry)
+            }
+            Vocabulary::PartialDownloadSuffixes => {
+                list_contains(&exclusions.partial_download_file_suffixes, entry)
+            }
+            Vocabulary::GeneratedMetadataFolderSuffixes => {
+                list_contains(&exclusions.generated_metadata_directory_suffixes, entry)
+            }
+            Vocabulary::EditionPhrases => self
+                .edition_phrases
+                .iter()
+                .any(|phrase| phrase.join(" ") == entry),
+            Vocabulary::ExtrasFolders => self.extras_folders.contains_key(entry),
+            Vocabulary::ExtrasSuffixes => self.extras_suffixes.contains_key(entry),
+            Vocabulary::ExtrasVideoNames => self.extras_video_names.contains_key(entry),
+            Vocabulary::ExtrasAudioNames => self.extras_audio_names.contains_key(entry),
+            Vocabulary::ArtworkRoles => self.artwork_roles.contains_key(entry),
+            Vocabulary::NfoNames => self.nfo_generic_names.contains_key(entry),
+            Vocabulary::Languages => self.language_spellings.contains_key(entry),
+            Vocabulary::ReleaseWords => self.release_words.contains_key(entry),
+            Vocabulary::AudioChannelWords => self.audio_channel_words.contains_key(entry),
+            Vocabulary::ReleaseSiteTags => self.release_site_tags.contains(entry),
+            Vocabulary::PartWords => self.part_words.contains(entry),
+            Vocabulary::DiscFolderWords => self.disc_folder_words.contains(entry),
+            Vocabulary::Format3dWords => self.format_3d_words.contains_key(entry),
+            Vocabulary::ReleaseGroupEndings => list_contains(&self.release_group_endings, entry),
+            Vocabulary::VideoHeights => self.video_heights.contains(entry),
+            Vocabulary::LetterFolds => entry
+                .chars()
+                .next()
+                .is_some_and(|letter| self.letter_folds.contains_key(&letter)),
+            Vocabulary::DiscImageExtensions => self.disc_image_extensions.contains(entry),
+            Vocabulary::UnsupportedVideoExtensions => {
+                self.unsupported_video_extensions.contains(entry)
+            }
+            Vocabulary::DiscStructureFolders => self.disc_structure_folders.contains(entry),
+            Vocabulary::NfoExtensions => self.nfo_extensions.contains(entry),
+            Vocabulary::StillImageSuffixes => self.still_image_suffixes.contains(entry),
+            Vocabulary::HearingImpairedOrLanguageWords => {
+                self.hearing_impaired_or_language_words.contains_key(entry)
+            }
+            Vocabulary::SubtitleFolders => self.subtitle_folder_names.contains(entry),
+            Vocabulary::AspectRatios => self.aspect_ratios.contains(entry),
+            Vocabulary::AudioCodecWords => self.audio_codec_words.contains(entry),
+            Vocabulary::FinalEpisodeWords => self.final_episode_words.contains(entry),
+            Vocabulary::AlternateTitleWords => self.alternate_title_words.contains(entry),
+            Vocabulary::RemuxMarkers => self.remux_markers.contains(entry),
+            Vocabulary::ScreenerMarkers => self.screener_markers.contains(entry),
+        }
+    }
+
     fn apply(&mut self, vocabulary: Vocabulary, entry: &str, action: &Action) {
         let entry = entry.to_owned();
         let exclusions = &mut self.built_in_exclusions;
@@ -1221,6 +1443,58 @@ impl Rules {
                     });
                 }
                 Vocabulary::ReleaseSiteTags => &mut self.release_site_tags,
+                Vocabulary::PartWords => &mut self.part_words,
+                Vocabulary::DiscFolderWords => &mut self.disc_folder_words,
+                Vocabulary::Format3dWords => {
+                    return apply_to_map(&mut self.format_3d_words, entry, action, |meaning| {
+                        match meaning {
+                            Meaning::Format3d(format) => Some(*format),
+                            _ => None,
+                        }
+                    });
+                }
+                Vocabulary::ReleaseGroupEndings => {
+                    return apply_to_list(&mut self.release_group_endings, entry, action);
+                }
+                Vocabulary::VideoHeights => &mut self.video_heights,
+                Vocabulary::LetterFolds => {
+                    let Some(letter) = entry.chars().next() else {
+                        return;
+                    };
+                    match action {
+                        Action::Add(Meaning::SpelledLetter(spelled)) => {
+                            self.letter_folds.insert(letter, spelled.clone());
+                        }
+                        Action::Remove => {
+                            self.letter_folds.remove(&letter);
+                        }
+                        Action::Add(_) => {}
+                    }
+                    return;
+                }
+                Vocabulary::DiscImageExtensions => &mut self.disc_image_extensions,
+                Vocabulary::UnsupportedVideoExtensions => &mut self.unsupported_video_extensions,
+                Vocabulary::DiscStructureFolders => &mut self.disc_structure_folders,
+                Vocabulary::NfoExtensions => &mut self.nfo_extensions,
+                Vocabulary::StillImageSuffixes => &mut self.still_image_suffixes,
+                Vocabulary::HearingImpairedOrLanguageWords => {
+                    return apply_to_map(
+                        &mut self.hearing_impaired_or_language_words,
+                        entry,
+                        action,
+                        |meaning| match meaning {
+                            Meaning::Language(tag) => Some(tag.clone()),
+                            _ => None,
+                        },
+                    );
+                }
+                Vocabulary::SubtitleFolders => &mut self.subtitle_folder_names,
+                Vocabulary::AspectRatios => &mut self.aspect_ratios,
+                Vocabulary::AudioCodecWords => &mut self.audio_codec_words,
+                Vocabulary::FinalEpisodeWords => &mut self.final_episode_words,
+                Vocabulary::AlternateTitleWords => &mut self.alternate_title_words,
+                Vocabulary::RemuxMarkers => &mut self.remux_markers,
+                Vocabulary::ScreenerMarkers => &mut self.screener_markers,
             };
         match action {
             Action::Add(_) => {
@@ -1249,6 +1523,10 @@ fn extra_kind(meaning: &Meaning) -> Option<ExtraKind> {
         Meaning::Extra(kind) => Some(*kind),
         _ => None,
     }
+}
+
+fn list_contains(list: &[String], entry: &str) -> bool {
+    list.iter().any(|existing| existing == entry)
 }
 
 fn apply_to_list<T: PartialEq>(list: &mut Vec<T>, entry: T, action: &Action) {

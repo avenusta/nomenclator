@@ -1,14 +1,12 @@
 //! Groups ordered parts: sibling files or folders that together make one representation.
 
 use std::collections::BTreeMap;
-use std::sync::LazyLock;
 
-use regex::Regex;
 use serde::Serialize;
 
-use crate::data;
 use crate::lexical;
 use crate::model::EntryKind;
+use crate::rules::Rules;
 
 /// Entries that are ordered parts of one representation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -30,17 +28,6 @@ pub struct Stacks {
     pub stacks: Vec<Stack>,
 }
 
-/// The pattern of a part word and its number or letter `a` to `d` at the end of a name,
-/// after a separator or bracket, optionally bracketed itself: `part1`, ` - cd 2`,
-/// `(Disc 01)`, `]pt.b`.
-static PART_MARKER_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
-    let words = data::PART_WORDS.join("|");
-    Regex::new(&format!(
-        r"(?i)^(.*[ ._\-\[\]()])?(?:{words})[ ._-]?(\d+|[a-d])\)?$"
-    ))
-    .expect("valid part marker pattern")
-});
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum PartIndex {
     Number(u32),
@@ -57,10 +44,25 @@ struct StackKey {
 }
 
 /// Groups root-relative paths (directories end in `/`) whose names differ only by a
-/// trailing part marker. Numbers and letters are not mixed in one stack. A single part is
-/// not a stack.
+/// trailing part marker, under the built-in rules. Numbers and letters are not mixed in one
+/// stack. A single part is not a stack.
+///
+/// Uses the built-in rules. [`Rules::group_parts`] takes other rules.
 #[must_use]
 pub fn group_parts(paths: &[String]) -> Stacks {
+    Rules::builtin().group_parts(paths)
+}
+
+impl Rules {
+    /// Groups root-relative paths (directories end in `/`) whose names differ only by a
+    /// trailing part marker. Numbers and letters are not mixed in one stack. A single part
+    /// is not a stack.
+    pub fn group_parts(&self, paths: &[String]) -> Stacks {
+        group_paths(self, paths)
+    }
+}
+
+fn group_paths(rules: &Rules, paths: &[String]) -> Stacks {
     let mut groups: BTreeMap<StackKey, Vec<(PartIndex, String)>> = BTreeMap::new();
     for path in paths {
         let is_directory = path.ends_with('/');
@@ -71,7 +73,7 @@ pub fn group_parts(paths: &[String]) -> Stacks {
         } else {
             EntryKind::File
         };
-        let Some((stack_name, index)) = part_marker(lexical::stem(name, kind)) else {
+        let Some((stack_name, index)) = part_marker(rules, lexical::stem(name, kind)) else {
             continue;
         };
         let key = StackKey {
@@ -103,8 +105,8 @@ pub fn group_parts(paths: &[String]) -> Stacks {
 
 /// Returns the name before a trailing part marker, and the marker's position. Returns
 /// `None` if the stem has no part marker.
-fn part_marker(stem: &str) -> Option<(String, PartIndex)> {
-    let captures = PART_MARKER_PATTERN.captures(stem)?;
+fn part_marker(rules: &Rules, stem: &str) -> Option<(String, PartIndex)> {
+    let captures = rules.patterns.part_marker.captures(stem)?;
     let prefix = captures.get(1).map_or("", |prefix| prefix.as_str());
     let marker = lexical::vocabulary_form(&captures[2]);
     let index = match marker.parse() {

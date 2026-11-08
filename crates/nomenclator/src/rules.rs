@@ -50,13 +50,16 @@ pub struct Rules {
     pub(crate) subtitle_extensions: BTreeSet<String>,
     pub(crate) audio_extensions: BTreeSet<String>,
     pub(crate) image_extensions: BTreeSet<String>,
-    pub(crate) nfo_extension: String,
+    pub(crate) nfo_extensions: BTreeSet<String>,
     pub(crate) nfo_generic_names: BTreeMap<String, NfoRole>,
-    pub(crate) still_image_suffix: String,
+    /// Suffixes that mark an image as the still of the video that it is named after.
+    pub(crate) still_image_suffixes: BTreeSet<String>,
     pub(crate) default_flag_words: BTreeSet<String>,
     pub(crate) forced_flag_words: BTreeSet<String>,
     pub(crate) hearing_impaired_flag_words: BTreeSet<String>,
-    pub(crate) hearing_impaired_or_hindi_word: String,
+    /// Words that mean hearing impaired beside another language, and otherwise the language
+    /// of each mapped BCP 47 tag.
+    pub(crate) hearing_impaired_or_language_words: BTreeMap<String, String>,
     /// Each spelling (the tag itself included) and the BCP 47 tag it names.
     pub(crate) language_spellings: BTreeMap<String, String>,
     pub(crate) extras_folders: BTreeMap<String, ExtraKind>,
@@ -69,6 +72,24 @@ pub struct Rules {
     pub(crate) series_season_words: BTreeSet<String>,
     pub(crate) specials_folder_names: BTreeSet<String>,
     pub(crate) video_heights: BTreeSet<String>,
+    /// Words that name a part before its number or letter (M11).
+    pub(crate) part_words: BTreeSet<String>,
+    /// Words that name a folder of episodes before its number (T18).
+    pub(crate) disc_folder_words: BTreeSet<String>,
+    /// Folder names that hold the subtitles of the videos beside them (S2).
+    pub(crate) subtitle_folder_names: BTreeSet<String>,
+    /// Aspect ratios, never a season and episode (T16).
+    pub(crate) aspect_ratios: BTreeSet<String>,
+    /// Audio codec words that a channel layout may follow (T16).
+    pub(crate) audio_codec_words: BTreeSet<String>,
+    /// Words after an episode number that mark the last episode of a release run (X20).
+    pub(crate) final_episode_words: BTreeSet<String>,
+    /// Words between separators that start another title of a movie (M16).
+    pub(crate) alternate_title_words: BTreeSet<String>,
+    /// Text that marks a release word spelling as a remux (X19).
+    pub(crate) remux_markers: BTreeSet<String>,
+    /// Text that marks a source spelling as a screener (X19).
+    pub(crate) screener_markers: BTreeSet<String>,
     pub(crate) letter_folds: BTreeMap<char, String>,
     pub(crate) leading_articles: BTreeSet<String>,
     /// Number words (Roman numerals, spelled numbers) and the number they read as.
@@ -233,6 +254,29 @@ pub(crate) struct Patterns {
     pub season_word_then_number: Regex,
     /// An ordinal, then a season word (`3. Staffel`).
     pub ordinal_then_season_word: Regex,
+    /// A part word and its number or letter `a` to `d` at the end of a name, after a
+    /// separator or bracket, optionally bracketed itself: `part1`, ` - cd 2`, `(Disc 01)`,
+    /// `]pt.b`.
+    pub part_marker: Regex,
+    /// A whole folder name of a disc word and its number (`Disc 1`).
+    pub disc_folder: Regex,
+    /// An alternate title word between separators (` AKA `).
+    pub alternate_title_separator: Regex,
+    /// The suffix after an episode number: an optional `v2` and an optional final word.
+    pub episode_suffix: Regex,
+}
+
+/// The vocabularies that [`Patterns`] are compiled from.
+#[derive(Default)]
+struct PatternWords<'a> {
+    aspect_ratios: Vec<&'a str>,
+    audio_codecs: Vec<&'a str>,
+    season_words: Vec<&'a str>,
+    ordinal_suffixes: Vec<&'a str>,
+    part_words: Vec<&'a str>,
+    disc_folder_words: Vec<&'a str>,
+    alternate_title_words: Vec<&'a str>,
+    final_episode_words: Vec<&'a str>,
 }
 
 static BUILTIN: LazyLock<Rules> = LazyLock::new(Rules::from_builtin_tables);
@@ -274,20 +318,21 @@ impl Rules {
 
     /// Compiles the patterns again. Called after the vocabularies change.
     fn recompile(&mut self) {
-        let season_words: Vec<&str> = self
-            .season_words
-            .iter()
-            .chain(&self.series_season_words)
-            .map(String::as_str)
-            .collect();
-        let ordinal_suffixes: Vec<&str> =
-            self.ordinal_suffixes.iter().map(String::as_str).collect();
-        self.patterns = Patterns::compile(
-            data::ASPECT_RATIOS,
-            data::AUDIO_CODEC_WORDS,
-            &season_words,
-            &ordinal_suffixes,
-        );
+        self.patterns = Patterns::compile(&PatternWords {
+            aspect_ratios: as_strs(&self.aspect_ratios),
+            audio_codecs: as_strs(&self.audio_codec_words),
+            season_words: self
+                .season_words
+                .iter()
+                .chain(&self.series_season_words)
+                .map(String::as_str)
+                .collect(),
+            ordinal_suffixes: as_strs(&self.ordinal_suffixes),
+            part_words: as_strs(&self.part_words),
+            disc_folder_words: as_strs(&self.disc_folder_words),
+            alternate_title_words: as_strs(&self.alternate_title_words),
+            final_episode_words: as_strs(&self.final_episode_words),
+        });
         self.release_patterns = OnceLock::new();
     }
 
@@ -313,11 +358,6 @@ impl Rules {
             .collect();
         let season_words: BTreeSet<String> = owned(data::SEASON_WORDS);
         let series_season_words: BTreeSet<String> = owned(data::SERIES_SEASON_WORDS);
-        let all_season_words: Vec<&str> = season_words
-            .iter()
-            .chain(&series_season_words)
-            .map(String::as_str)
-            .collect();
         let mut release_words = BTreeMap::new();
         for (fact, value, spellings) in data::RELEASE_WORDS {
             for spelling in *spellings {
@@ -330,12 +370,6 @@ impl Rules {
             .iter()
             .map(|(word, layout)| (lexical::vocabulary_form(word), (*layout).to_owned()))
             .collect();
-        let patterns = Patterns::compile(
-            data::ASPECT_RATIOS,
-            data::AUDIO_CODEC_WORDS,
-            &all_season_words,
-            data::ORDINAL_SUFFIXES,
-        );
         let mut rules = Rules {
             identity: RulesIdentity {
                 version: crate::RULES_VERSION.to_owned(),
@@ -362,16 +396,20 @@ impl Rules {
             subtitle_extensions: owned(data::SUBTITLE_EXTENSIONS),
             audio_extensions: owned(data::AUDIO_EXTENSIONS),
             image_extensions: owned(data::IMAGE_EXTENSIONS),
-            nfo_extension: data::NFO_EXTENSION.to_owned(),
+            // The canonical names add the extension and the suffix (X25).
+            nfo_extensions: BTreeSet::new(),
             nfo_generic_names: data::NFO_GENERIC_NAMES
                 .iter()
                 .map(|(word, role)| ((*word).to_owned(), *role))
                 .collect(),
-            still_image_suffix: data::STILL_IMAGE_SUFFIX.to_owned(),
+            still_image_suffixes: BTreeSet::new(),
             default_flag_words: owned(data::DEFAULT_FLAG_WORDS),
             forced_flag_words: owned(data::FORCED_FLAG_WORDS),
             hearing_impaired_flag_words: owned(data::HEARING_IMPAIRED_FLAG_WORDS),
-            hearing_impaired_or_hindi_word: data::HEARING_IMPAIRED_OR_HINDI_WORD.to_owned(),
+            hearing_impaired_or_language_words: data::HEARING_IMPAIRED_OR_LANGUAGE_WORDS
+                .iter()
+                .map(|(word, tag)| ((*word).to_owned(), (*tag).to_owned()))
+                .collect(),
             language_spellings,
             extras_folders: pairs(data::EXTRAS_FOLDERS),
             extras_suffixes: pairs(data::EXTRAS_SUFFIXES),
@@ -396,6 +434,19 @@ impl Rules {
             series_season_words,
             specials_folder_names: owned(data::SPECIALS_FOLDER_NAMES),
             video_heights: owned(data::VIDEO_HEIGHTS),
+            part_words: data::DISC_WORDS
+                .iter()
+                .chain(data::OTHER_PART_WORDS)
+                .map(|word| lexical::vocabulary_form(word))
+                .collect(),
+            disc_folder_words: owned(data::DISC_WORDS),
+            subtitle_folder_names: owned(data::SUBTITLE_FOLDER_NAMES),
+            aspect_ratios: owned(data::ASPECT_RATIOS),
+            audio_codec_words: owned(data::AUDIO_CODEC_WORDS),
+            final_episode_words: owned(data::FINAL_EPISODE_WORDS),
+            alternate_title_words: owned(data::ALTERNATE_TITLE_WORDS),
+            remux_markers: owned(data::REMUX_MARKERS),
+            screener_markers: owned(data::SCREENER_MARKERS),
             letter_folds: data::LETTER_FOLDS
                 .iter()
                 .map(|(letter, spelled)| (*letter, (*spelled).to_owned()))
@@ -411,13 +462,17 @@ impl Rules {
             audio_channel_words,
             release_site_tags: owned(data::RELEASE_SITE_TAGS),
             presets: Presets::default(),
-            patterns,
+            patterns: Patterns::compile(&PatternWords::default()),
             release_patterns: OnceLock::new(),
         };
         rules.add_canonical_names();
         rules.recompile();
         rules
     }
+}
+
+fn as_strs(words: &BTreeSet<String>) -> Vec<&str> {
+    words.iter().map(String::as_str).collect()
 }
 
 /// Returns the entries of a built-in table in the vocabulary form (X25).
@@ -428,14 +483,9 @@ fn owned<C: FromIterator<String>>(list: &[&str]) -> C {
 }
 
 impl Patterns {
-    fn compile(
-        aspect_ratios: &[&str],
-        audio_codecs: &[&str],
-        season_words: &[&str],
-        ordinal_suffixes: &[&str],
-    ) -> Self {
-        let alternation = |words: &mut dyn Iterator<Item = String>| {
-            let mut escaped: Vec<String> = words.map(|word| regex::escape(&word)).collect();
+    fn compile(words: &PatternWords) -> Self {
+        let alternation = |list: &mut dyn Iterator<Item = String>| {
+            let mut escaped: Vec<String> = list.map(|word| regex::escape(&word)).collect();
             // Longest first, so a word is never cut short by one it starts with.
             escaped.sort_by(|a, b| b.len().cmp(&a.len()).then_with(|| a.cmp(b)));
             escaped.dedup();
@@ -446,17 +496,41 @@ impl Patterns {
                 escaped.join("|")
             }
         };
-        let ratios = alternation(&mut aspect_ratios.iter().map(|ratio| (*ratio).to_owned()));
-        let codecs = alternation(&mut audio_codecs.iter().map(|codec| (*codec).to_owned()));
+        let ratios = alternation(&mut words.aspect_ratios.iter().map(|ratio| (*ratio).to_owned()));
+        let codecs = alternation(&mut words.audio_codecs.iter().map(|codec| (*codec).to_owned()));
         // Season words in both composed and decomposed Unicode forms (X3), so `Série`
         // matches however its accent is encoded.
-        let seasons = alternation(&mut season_words.iter().flat_map(|word| {
+        let seasons = alternation(&mut words.season_words.iter().flat_map(|word| {
             [
                 word.nfc().collect::<String>(),
                 word.nfd().collect::<String>(),
             ]
         }));
-        let ordinals = alternation(&mut ordinal_suffixes.iter().map(|suffix| (*suffix).to_owned()));
+        let ordinals = alternation(
+            &mut words
+                .ordinal_suffixes
+                .iter()
+                .map(|suffix| (*suffix).to_owned()),
+        );
+        let parts = alternation(&mut words.part_words.iter().map(|word| (*word).to_owned()));
+        let discs = alternation(
+            &mut words
+                .disc_folder_words
+                .iter()
+                .map(|word| (*word).to_owned()),
+        );
+        let alternates = alternation(
+            &mut words
+                .alternate_title_words
+                .iter()
+                .map(|word| (*word).to_owned()),
+        );
+        let finals = alternation(
+            &mut words
+                .final_episode_words
+                .iter()
+                .map(|word| (*word).to_owned()),
+        );
         Patterns {
             aspect_ratio: Regex::new(&format!("(?i)(?:{ratios})"))
                 .expect("valid aspect ratio pattern"),
@@ -468,6 +542,16 @@ impl Patterns {
                 r"(?i)(\d{{1,2}})(?:{ordinals})[ ._-]*({seasons})"
             ))
             .expect("valid ordinal season pattern"),
+            part_marker: Regex::new(&format!(
+                r"(?i)^(.*[ ._\-\[\]()])?(?:{parts})[ ._-]?(\d+|[a-d])\)?$"
+            ))
+            .expect("valid part marker pattern"),
+            disc_folder: Regex::new(&format!(r"(?i)^(?:{discs})[ ._-]*\d{{1,2}}$"))
+                .expect("valid disc folder pattern"),
+            alternate_title_separator: Regex::new(&format!(r"(?i)[ ._](?:{alternates})[ ._]"))
+                .expect("valid alternate title pattern"),
+            episode_suffix: Regex::new(&format!(r"(?i)^(?:v\d{{1,2}})?(?:{finals})?"))
+                .expect("valid episode suffix pattern"),
         }
     }
 }

@@ -16,7 +16,7 @@ use crate::{RULES_VERSION, WIRE_CONTRACT, wire};
 use nomenclator::model::{EntryKind, SidecarKind};
 use nomenclator::{
     CallerInputs, IgnoreFile, LibraryType, MatchFacts, NamingFacts, OutputProfile, RankQuery,
-    ReferenceMetadata, Rules, ScopeGroup, group_parts,
+    ReferenceMetadata, Rules, ScopeGroup,
 };
 use std::borrow::Cow;
 use tonic::Streaming;
@@ -327,7 +327,7 @@ impl Nomenclator for NamingService {
         let rules = rules.as_ref();
         let results = read_queries(&request)?
             .into_iter()
-            .map(|GroupPartsQuery { handle, paths }| with_handle(handle, group_parts(&paths)))
+            .map(|GroupPartsQuery { handle, paths }| with_handle(handle, rules.group_parts(&paths)))
             .collect::<Result<_, _>>()?;
         respond(rules, results)
     }

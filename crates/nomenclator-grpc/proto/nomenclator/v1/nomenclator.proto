@@ -607,6 +607,8 @@ message FileTypeCheck {
 
 message GroupPartsRequest {
   repeated GroupPartsQuery queries = 1;
+  // The rules to answer under; unset for the built-in rules.
+  RulesSelection rules = 2;
 }
 
 message GroupPartsQuery {
@@ -1170,6 +1172,9 @@ message OutputProfile {
   VersionLabelStyle version_label_style = 15;
   // Default lower.
   ExtensionCase extension_case = 16;
+  // Names that no path component may use before its first dot, in addition to the device
+  // names that the target filesystem reserves.
+  repeated string reserved_names = 17;
 }
 
 enum MovieLayout {

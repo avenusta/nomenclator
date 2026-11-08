@@ -5,7 +5,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::{Artwork, EntryIndex, Extra, FileRole, SidecarFile, parent_folder};
-use crate::data;
 use crate::lexical;
 use crate::model::{ArtworkRole, EntryKind, ExtraKind, Finding, NfoRole, SidecarKind};
 use crate::parsers::file_types::file_name;
@@ -274,11 +273,11 @@ struct SidecarPlace<'a> {
     is_in_subtitle_folder: bool,
 }
 
-fn sidecar_place(path: &str, kind: SidecarKind) -> SidecarPlace<'_> {
+fn sidecar_place<'a>(rules: &Rules, path: &'a str, kind: SidecarKind) -> SidecarPlace<'a> {
     let folder = parent_folder(path);
     let is_subtitle_folder = |folder: &str| {
         let name = lexical::vocabulary_form(file_name(folder));
-        data::SUBTITLE_FOLDER_NAMES.contains(&name.as_str())
+        rules.subtitle_folder_names.contains(&name)
     };
     match folder {
         _ if kind == SidecarKind::Image => SidecarPlace {
@@ -327,7 +326,7 @@ pub(crate) fn attach_sidecars(rules: &Rules, index: &EntryIndex) -> SidecarAttac
             FileRole::Image => SidecarKind::Image,
             _ => continue,
         };
-        let place = sidecar_place(path, kind);
+        let place = sidecar_place(rules, path, kind);
         let nearby = videos.get(&place.video_folder).unwrap_or(&no_videos);
         let Some((video, sidecar)) = sidecar_video(rules, index, nearby, &place, path, kind) else {
             continue;
