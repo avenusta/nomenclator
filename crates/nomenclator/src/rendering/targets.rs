@@ -428,7 +428,7 @@ impl TargetBuilder<'_> {
             year: movie.year,
             provider_ids: resolved_values(&movie.provider_ids),
             has_extras: movie_has_folder_files(movie),
-            ..empty_facts(LibraryType::Movies)
+            ..NamingFacts::of(LibraryType::Movies)
         };
         let base = self.with_library_work(base, &mut item_reasons);
         self.add_versions(&movie.versions, &base, &item_reasons, &leader);
@@ -750,28 +750,6 @@ fn movie_has_folder_files(movie: &Movie) -> bool {
     !movie.extras.is_empty() || !movie.artwork.is_empty() || folder_nfo
 }
 
-fn empty_facts(library: LibraryType) -> NamingFacts {
-    NamingFacts {
-        library,
-        title: None,
-        year: None,
-        provider_ids: BTreeMap::new(),
-        edition: None,
-        version_label: None,
-        part: None,
-        container: None,
-        season: None,
-        episodes: Vec::new(),
-        absolute: Vec::new(),
-        date: None,
-        episode_title: None,
-        extra: None,
-        sidecar: None,
-        has_extras: false,
-        asset: None,
-    }
-}
-
 fn series_facts(series: Option<&Series>, title: Option<String>, year: Option<u16>) -> NamingFacts {
     NamingFacts {
         title,
@@ -779,7 +757,7 @@ fn series_facts(series: Option<&Series>, title: Option<String>, year: Option<u16
         provider_ids: series
             .map(|series| resolved_values(&series.provider_ids))
             .unwrap_or_default(),
-        ..empty_facts(LibraryType::Tv)
+        ..NamingFacts::of(LibraryType::Tv)
     }
 }
 

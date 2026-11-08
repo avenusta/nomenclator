@@ -349,23 +349,10 @@ fn sample_id(shape: &IdShape) -> String {
 
 fn sample_facts(library: LibraryType) -> NamingFacts {
     NamingFacts {
-        library,
         title: Some(SAMPLE_TITLE.to_owned()),
         year: Some(SAMPLE_YEAR),
-        provider_ids: BTreeMap::new(),
-        edition: None,
-        version_label: None,
-        part: None,
         container: Some("mkv".to_owned()),
-        season: None,
-        episodes: Vec::new(),
-        absolute: Vec::new(),
-        date: None,
-        episode_title: None,
-        extra: None,
-        sidecar: None,
-        has_extras: false,
-        asset: None,
+        ..NamingFacts::of(library)
     }
 }
 

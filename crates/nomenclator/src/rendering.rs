@@ -84,6 +84,31 @@ pub struct NamingFacts {
     pub asset: Option<AssetFacts>,
 }
 
+impl NamingFacts {
+    /// Returns the facts of a work in `library` that states no fact.
+    pub(crate) fn of(library: LibraryType) -> NamingFacts {
+        NamingFacts {
+            library,
+            title: None,
+            year: None,
+            provider_ids: BTreeMap::new(),
+            edition: None,
+            version_label: None,
+            part: None,
+            container: None,
+            season: None,
+            episodes: Vec::new(),
+            absolute: Vec::new(),
+            date: None,
+            episode_title: None,
+            extra: None,
+            sidecar: None,
+            has_extras: false,
+            asset: None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 /// The facts of an asset: an NFO, artwork or theme file of an item (R19).
