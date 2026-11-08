@@ -181,3 +181,16 @@
   expect:
     season: null
     episodes: null
+
+- name: a date before 1900 is a date when the earliest plausible year allows it
+  overlays: ["name: early\npresets: { earliest_plausible_year: 1850 }\n"]
+  operation: parse_episode_name
+  input: { path: Newsreel/Newsreel 1895-03-12.mkv }
+  expect:
+    date: "1895-03-12"
+
+- name: a date before the earliest plausible year is no date
+  operation: parse_episode_name
+  input: { path: Newsreel/Newsreel 1895-03-12.mkv }
+  expect:
+    date: null

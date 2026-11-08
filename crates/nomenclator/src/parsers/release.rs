@@ -176,7 +176,7 @@ static RESOLUTION_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     .expect("valid resolution pattern")
 });
 static YEAR_PATTERN: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?:19|20)\d{2}").expect("valid year pattern"));
+    LazyLock::new(|| Regex::new(r"\d{4}").expect("valid year pattern"));
 static CHECKSUM_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"[\[(]([0-9A-Fa-f]{8})[\])]").expect("valid checksum pattern"));
 static DOMAIN_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
@@ -350,6 +350,7 @@ fn release_region_start(
     });
     let years = YEAR_PATTERN
         .find_iter(stem)
+        .filter(|found| lexical::parse_year(rules, found.as_str()).is_some())
         .map(|found| Span(found.start(), found.end()))
         .filter(|span| is_bounded(stem, *span));
     let signal = strong_words

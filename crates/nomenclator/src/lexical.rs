@@ -172,18 +172,12 @@ pub(crate) fn classify_word(rules: &Rules, word: &str) -> WordClass {
     WordClass::Plain
 }
 
-/// Returns `true` if the name grammar reads `word` regardless of the vocabularies: a year, an
-/// episode code, a technical pattern such as a resolution or codec, a release version, or a
-/// number.
+/// Returns `true` if the name grammar reads `word` regardless of the vocabularies: an episode
+/// code, a technical pattern such as a resolution or codec, a release version, or a number
+/// such as a year.
 pub(crate) fn is_reserved_word(word: &str) -> bool {
     let lower = vocabulary_form(word);
-    year_within(
-        word,
-        data::EARLIEST_PLAUSIBLE_YEAR,
-        data::LATEST_PLAUSIBLE_YEAR,
-    )
-    .is_some()
-        || EPISODE_MARKER_PATTERN.is_match(&lower)
+    EPISODE_MARKER_PATTERN.is_match(&lower)
         || TECHNICAL_PATTERN.is_match(&lower)
         || VERSION_WORD_PATTERN.is_match(&lower)
         || (!word.is_empty() && word.bytes().all(|byte| byte.is_ascii_digit()))
@@ -826,10 +820,10 @@ pub(crate) struct DateMatch {
 }
 
 static YEAR_FIRST_DATE_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"((?:19|20)\d{2})([-._ ])(\d{1,2})[-._ ](\d{1,2})").expect("valid date pattern")
+    Regex::new(r"(\d{4})([-._ ])(\d{1,2})[-._ ](\d{1,2})").expect("valid date pattern")
 });
 static YEAR_LAST_DATE_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(\d{1,2})([-._ ])(\d{1,2})[-._ ]((?:19|20)\d{2})").expect("valid date pattern")
+    Regex::new(r"(\d{1,2})([-._ ])(\d{1,2})[-._ ](\d{4})").expect("valid date pattern")
 });
 
 /// Finds the first date in `text`. Reads a year-first date as year, month, day. Reads a day-
