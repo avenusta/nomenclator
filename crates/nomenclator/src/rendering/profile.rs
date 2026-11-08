@@ -255,7 +255,6 @@ impl Default for OutputProfile {
 /// A filesystem that proposed names must be valid on.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "snake_case")]
-#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 pub enum TargetFilesystem {
     /// Names that are valid on Windows, macOS and Linux.
     #[default]

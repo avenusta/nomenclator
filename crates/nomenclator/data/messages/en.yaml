@@ -1,7 +1,6 @@
 # English diagnostic messages (R13). Each rule has a `text` template; `reasons` gives a
 # template for a specific reason. Placeholders: {path} (the first path), {paths} (all
 # paths, each in backticks, joined by commas), {reason}, {proposed_path} and {code}.
-# Another language is a file of the same shape, named by its BCP 47 tag.
 
 ambiguous_identity:
   text: "The identity of `{path}` is ambiguous ({reason}). Add a hint or rename the files so that they agree."

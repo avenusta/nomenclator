@@ -42,10 +42,12 @@ First release. It implements the conventions in `docs/decisions.md`, and the cor
 
 ### Library API
 
+- `OverlayDiagnostic` and `ProfileDiagnostic` implement `Display`. `model::serde_name` returns the written name of a fact value. The core has no `clap` feature.
+
 - Every operation is a method on `Rules`, and `Rules::builtin()` returns the built-in rules. Parsers: `parse_movie_name`, `parse_series_name`, `parse_season_folder`, `parse_episode_name`, `parse_provider_ids`, `parse_sidecar`, `classify_extra`, `classify_artwork`, `classify_nfo`. Whole libraries: `evaluate_ignore`, `group_parts`, `interpret`, `rank_candidates`, `render_names`, `plan_renames`, `validate`.
 - The parser modules are private. The crate root exports their types. `model` contains the shared fact types.
 - Templates (R14): `Template` renders facts into names and reads names into facts, with ambiguous readings reported.
-- Reporting (R13): `Diagnostic.code` and `Diagnostic.message`, `diagnostic_message`, `Validation.summary` (`ValidationSummary`, `RuleCount`), `OutputProfile.suppressions` (`Suppression`) and `RenamePlan.removals` (`ProposedRemoval`) for release junk.
+- Reporting (R13): `Diagnostic.code` and `Diagnostic.message`, `Validation.summary` (`ValidationSummary`, `RuleCount`), `OutputProfile.suppressions` (`Suppression`) and `RenamePlan.removals` (`ProposedRemoval`) for release junk.
 - Coverage (R12): `OutputProfile.required_assets` (`AssetItemKind`, `AssetRole`) and `OutputProfile.wanted_subtitles` (`WantedSubtitle`); the `missing_asset` and `missing_subtitle` rules.
 - Duplicates (R11): the `duplicate_work` and `duplicate_episode` rules. `episode_not_in_reference` is renamed `unexpected_episode`.
 - Alternate titles (M16): `MovieName.alternate_titles` (`AlternateTitle`) and `Movie.alternate_titles` from `AKA`, ` / ` and a trailing parenthesised title. A parenthesised original title is no longer part of the title.
@@ -113,6 +115,7 @@ First release. It implements the conventions in `docs/decisions.md`, and the cor
 
 ### CLI
 
+- `nomenclator run <operation> [FILE]` runs any library operation with its input fields from a YAML or JSON file or standard input.
 - `nomenclator parse`, `interpret` and `plan` read names and real folders (with `.ignore`/`.nomedia`) and print a table or `--format json` output. They do not rename any file.
 - `plan --target-filesystem posix` relaxes the portable character rules. `plan` marks proposals for unclaimed files.
 - `nomenclator validate` prints errors and warnings, and `--all` adds info diagnostics. It exits 1 if a diagnostic reaches the `--fail-on` severity (`error` by default).

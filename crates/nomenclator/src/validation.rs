@@ -2,6 +2,7 @@
 //! Validation renames nothing. A profile violation includes the path that the profile
 //! would give the file.
 
+use crate::model::serde_name;
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
@@ -50,7 +51,7 @@ pub struct Diagnostic {
     pub proposed_path: Option<String>,
     /// The rule's stable code (R13).
     pub code: &'static str,
-    /// The English message (R13). [`diagnostic_message`] renders it in another language.
+    /// The message (R13), from the template of the rule in `data/messages/en.yaml`.
     pub message: String,
 }
 
@@ -248,7 +249,6 @@ impl DiagnosticRule {
 /// The severity of a diagnostic. Variants are ordered from most to least serious.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 pub enum Severity {
     /// An entry that cannot be named safely.
     Error,
@@ -363,7 +363,7 @@ impl Rules {
         diagnostics.retain(|diagnostic| !is_suppressed(diagnostic, profile));
         let suppressed = before - diagnostics.len();
         for diagnostic in &mut diagnostics {
-            diagnostic.message = render_message(diagnostic, english_catalog());
+            diagnostic.message = render_message(diagnostic);
         }
         Validation {
             summary: summarize(&diagnostics, suppressed),
@@ -568,41 +568,20 @@ struct MessageTemplate {
     reasons: BTreeMap<String, String>,
 }
 
-static MESSAGE_CATALOGS: std::sync::LazyLock<BTreeMap<&'static str, MessageCatalog>> =
-    std::sync::LazyLock::new(|| {
-        crate::data::MESSAGE_CATALOGS
-            .iter()
-            .map(|(tag, document)| {
-                let catalog =
-                    crate::parse_document(document).expect("a message catalogue is valid YAML");
-                (*tag, catalog)
-            })
-            .collect()
-    });
+/// The diagnostic messages (R13).
+static MESSAGES: std::sync::LazyLock<MessageCatalog> = std::sync::LazyLock::new(|| {
+    crate::parse_document(crate::data::MESSAGES).expect("the message catalogue is valid YAML")
+});
 
-fn english_catalog() -> &'static MessageCatalog {
-    &MESSAGE_CATALOGS["en"]
-}
-
-/// Renders a diagnostic's message in `language`, a BCP 47 tag (R13). Falls back to
-/// English if no catalogue for the language exists, or if it has no template for the
-/// rule.
-pub fn diagnostic_message(diagnostic: &Diagnostic, language: &str) -> String {
-    let catalog = MESSAGE_CATALOGS
-        .get(lexical::vocabulary_form(language).as_str())
-        .filter(|catalog| catalog.contains_key(&serde_name(diagnostic.rule)))
-        .unwrap_or_else(|| english_catalog());
-    render_message(diagnostic, catalog)
-}
-
-fn render_message(diagnostic: &Diagnostic, catalog: &MessageCatalog) -> String {
+/// Renders the message of `diagnostic` from its rule's template.
+fn render_message(diagnostic: &Diagnostic) -> String {
     let rule = serde_name(diagnostic.rule);
     let reason = diagnostic
         .reason
         .as_ref()
         .map(reason_text)
         .unwrap_or_default();
-    let Some(template) = catalog.get(&rule) else {
+    let Some(template) = MESSAGES.get(&rule) else {
         return String::new();
     };
     let text = template.reasons.get(&reason).unwrap_or(&template.text);
@@ -1285,14 +1264,6 @@ fn first_video(versions: &[Version]) -> Option<String> {
         .cloned()
 }
 
-/// A vocabulary value's `snake_case` name (`episode_still`).
-fn serde_name(value: impl Serialize) -> String {
-    match serde_json::to_value(value) {
-        Ok(serde_json::Value::String(name)) => name,
-        _ => String::new(),
-    }
-}
-
 fn diagnose_unclaimed_files(
     rules: &Rules,
     interpretation: &Interpretation,
@@ -1357,14 +1328,14 @@ mod tests {
     }
 
     #[test]
-    fn english_catalog_has_a_message_for_every_rule() {
+    fn messages_have_a_template_for_every_rule() {
         for rule in DiagnosticRule::ALL {
             assert!(
-                english_catalog().contains_key(&serde_name(*rule)),
+                MESSAGES.contains_key(&serde_name(*rule)),
                 "no English message for `{}`",
                 serde_name(*rule)
             );
         }
-        assert_eq!(english_catalog().len(), DiagnosticRule::ALL.len());
+        assert_eq!(MESSAGES.len(), DiagnosticRule::ALL.len());
     }
 }

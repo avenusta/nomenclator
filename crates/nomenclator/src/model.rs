@@ -273,3 +273,13 @@ impl<T> Finding<T> {
         }
     }
 }
+
+/// Returns the name that `value` is written with: the `snake_case` name of a fact value,
+/// such as `behind_the_scenes` for [`ExtraKind::BehindTheScenes`].
+/// Returns an empty string if `value` is not written as a name.
+pub fn serde_name(value: impl Serialize) -> String {
+    match serde_json::to_value(value) {
+        Ok(serde_json::Value::String(name)) => name,
+        _ => String::new(),
+    }
+}

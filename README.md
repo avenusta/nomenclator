@@ -88,6 +88,9 @@ Examples use the binary built above:
 # Read resolution, source, codecs and audio.
 ./target/debug/nomenclator release "Blade.Runner.1982.1080p.BluRay.x264.DTS.5.1.mkv"
 
+# Run any library operation with its input fields (corpus/README.md lists them).
+echo '{ name_or_path: "Show (2019)/Season 01/" }' | ./target/debug/nomenclator run parse_series_name
+
 # Suggest a library type from its names.
 ./target/debug/nomenclator suggest ./Media
 

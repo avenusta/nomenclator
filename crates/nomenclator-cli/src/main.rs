@@ -3,13 +3,14 @@
 //! only names to the library. It never renames anything.
 
 use clap::{Parser, Subcommand, ValueEnum};
-use nomenclator::model::EntryKind;
+use nomenclator::model::serde_name;
 use nomenclator::{
-    CallerInputs, IgnoreDialect, IgnoreFile, ImportPlan, Interpretation, Item, LibraryType,
-    MatchFacts, OutputProfile, Overlay, ReferenceMetadata, RenamePlan, Rules, SearchQueries,
-    Severity, TargetFilesystem, Validation,
+    BlockedRename, CallerInputs, IgnoreDialect, IgnoreFile, ImportPlan, Interpretation, Item,
+    LibraryType, MatchFacts, OutputProfile, Overlay, ReferenceMetadata, RenamePlan, Rules,
+    SearchQueries, Severity, TargetFilesystem, Validation,
 };
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 use serde_json::Value as Json;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -63,7 +64,7 @@ enum Command {
         /// The name or root-relative path to parse.
         name: String,
         /// The library type. Required.
-        #[arg(long, value_enum)]
+        #[arg(long, value_parser = by_name::<LibraryType>)]
         library: LibraryType,
     },
     /// Reads the release facts of one name: resolution, source, codecs, audio, release
@@ -71,6 +72,15 @@ enum Command {
     Release {
         /// The name to read.
         name: String,
+    },
+    /// Runs one library operation, such as `parse_episode_name` or `render_names`, with its
+    /// input fields as listed in `corpus/README.md`, and prints its result.
+    Run {
+        /// The operation's name.
+        operation: String,
+        /// A YAML or JSON file with the operation's input fields. Defaults to standard
+        /// input.
+        input: Option<PathBuf>,
     },
     /// Suggests whether a library folder's names look like a Movies or a TV library, with
     /// the videos as evidence (X21).
@@ -83,7 +93,7 @@ enum Command {
         /// The library folder to read.
         directory: PathBuf,
         /// The library type. Required.
-        #[arg(long, value_enum)]
+        #[arg(long, value_parser = by_name::<LibraryType>)]
         library: LibraryType,
     },
     /// Interprets a library folder and prints the provider search queries of each movie,
@@ -92,7 +102,7 @@ enum Command {
         /// The library folder to read.
         directory: PathBuf,
         /// The library type. Required.
-        #[arg(long, value_enum)]
+        #[arg(long, value_parser = by_name::<LibraryType>)]
         library: LibraryType,
     },
     /// Proposes renames for a library folder. Prints the proposals and renames nothing.
@@ -100,11 +110,11 @@ enum Command {
         /// The library folder to read.
         directory: PathBuf,
         /// The library type. Required.
-        #[arg(long, value_enum)]
+        #[arg(long, value_parser = by_name::<LibraryType>)]
         library: LibraryType,
         /// The filesystem that the proposed names must be valid on. Defaults to the
         /// profile's target filesystem, which defaults to `portable`.
-        #[arg(long, value_enum)]
+        #[arg(long, value_parser = by_name::<TargetFilesystem>)]
         target_filesystem: Option<TargetFilesystem>,
         /// The output profile file (YAML or JSON) that wrote the library. The library is
         /// converted from its layout to the `--profile` layout (R18). Defaults to the
@@ -128,11 +138,11 @@ enum Command {
         /// The library folder to import into.
         library_directory: PathBuf,
         /// The library type. Required.
-        #[arg(long, value_enum)]
+        #[arg(long, value_parser = by_name::<LibraryType>)]
         library: LibraryType,
         /// The filesystem that the proposed names must be valid on. Defaults to the
         /// profile's target filesystem, which defaults to `portable`.
-        #[arg(long, value_enum)]
+        #[arg(long, value_parser = by_name::<TargetFilesystem>)]
         target_filesystem: Option<TargetFilesystem>,
         /// Prints a script for the shell that performs the moves, instead of the table.
         /// Defaults to no script.
@@ -150,7 +160,7 @@ enum Command {
         /// The library folder to read.
         directory: PathBuf,
         /// The library type. Required.
-        #[arg(long, value_enum)]
+        #[arg(long, value_parser = by_name::<LibraryType>)]
         library: LibraryType,
         /// One rule set: `builtin` or an overlay file. Pass the option exactly twice.
         #[arg(
@@ -168,17 +178,17 @@ enum Command {
         /// The library folder to read.
         directory: PathBuf,
         /// The library type. Required.
-        #[arg(long, value_enum)]
+        #[arg(long, value_parser = by_name::<LibraryType>)]
         library: LibraryType,
         /// The filesystem that the proposed names must be valid on. Defaults to the
         /// profile's target filesystem, which defaults to `portable`.
-        #[arg(long, value_enum)]
+        #[arg(long, value_parser = by_name::<TargetFilesystem>)]
         target_filesystem: Option<TargetFilesystem>,
         /// Shows info diagnostics, which report missing optional facts. Defaults to off.
         #[arg(long)]
         all: bool,
         /// The lowest severity that fails the run. Defaults to `error`.
-        #[arg(long, value_enum, default_value_t = Severity::Error)]
+        #[arg(long, value_parser = by_name::<Severity>, default_value = "error")]
         fail_on: Severity,
         /// A reference metadata file (YAML or JSON) with movie years and episode lists
         /// (X18). Defaults to no reference.
@@ -258,7 +268,7 @@ fn run(arguments: Arguments) -> Result<bool, String> {
                 OutputFormat::Json => print_json(&to_json(&suggestion)?)?,
                 OutputFormat::Table => {
                     let library = match &suggestion.library {
-                        nomenclator::model::Finding::Resolved { value, .. } => vocabulary(value),
+                        nomenclator::model::Finding::Resolved { value, .. } => serde_name(value),
                         nomenclator::model::Finding::Ambiguous { .. } => "ambiguous".to_owned(),
                         nomenclator::model::Finding::Unknown => "unknown".to_owned(),
                     };
@@ -272,47 +282,56 @@ fn run(arguments: Arguments) -> Result<bool, String> {
             }
             Ok(true)
         }
-        Command::Release { name } => {
-            let kind = if name.ends_with('/') {
-                EntryKind::Directory
-            } else {
-                EntryKind::File
-            };
-            let result = to_json(rules.parse_release(name.trim_end_matches('/'), kind))?;
-            match format {
-                OutputFormat::Json => print_json(&result)?,
-                OutputFormat::Table => {
-                    let mut rows = Vec::new();
-                    collect_fact_rows("", &result, &mut rows);
-                    print_table(&["FACT", "VALUE", "EVIDENCE"], rows);
+        Command::Run { operation, input } => {
+            let input: Json = match &input {
+                Some(path) => read_document(Some(path))?,
+                None => {
+                    let text = std::io::read_to_string(std::io::stdin())
+                        .map_err(|error| format!("standard input: cannot read it: {error}"))?;
+                    nomenclator::parse_document(&text).map_err(|error| {
+                        format!("standard input: cannot parse the YAML or JSON document: {error}")
+                    })?
                 }
-            }
-            Ok(true)
+            };
+            print_facts(
+                format,
+                &rules
+                    .run(&operation, input)
+                    .map_err(|error| error.to_string())?,
+            )
+        }
+        Command::Release { name } => {
+            let (name, kind) = name_and_kind(&name);
+            let input = serde_json::json!({ "name": name, "kind": kind });
+            print_facts(
+                format,
+                &rules
+                    .run("parse_release", input)
+                    .map_err(|error| error.to_string())?,
+            )
         }
         Command::Parse { name, library } => {
-            let kind = if name.ends_with('/') {
-                EntryKind::Directory
-            } else {
-                EntryKind::File
+            let (bare, kind) = name_and_kind(&name);
+            let (operation, input) = match (library, kind) {
+                (LibraryType::Movies, _) => (
+                    "parse_movie_name",
+                    serde_json::json!({ "name": bare, "kind": kind }),
+                ),
+                (LibraryType::Tv, "file") => (
+                    "parse_episode_name",
+                    serde_json::json!({ "path": name, "kind": kind }),
+                ),
+                (LibraryType::Tv, _) => (
+                    "parse_series_name",
+                    serde_json::json!({ "name_or_path": name }),
+                ),
             };
-            let result = match (library, kind) {
-                (LibraryType::Movies, _) => {
-                    to_json(rules.parse_movie_name(name.trim_end_matches('/'), kind))
-                }
-                (LibraryType::Tv, EntryKind::File) => {
-                    to_json(rules.parse_episode_name(&name, kind, None))
-                }
-                (LibraryType::Tv, EntryKind::Directory) => to_json(rules.parse_series_name(&name)),
-            }?;
-            match format {
-                OutputFormat::Json => print_json(&result)?,
-                OutputFormat::Table => {
-                    let mut rows = Vec::new();
-                    collect_fact_rows("", &result, &mut rows);
-                    print_table(&["FACT", "VALUE", "EVIDENCE"], rows);
-                }
-            }
-            Ok(true)
+            print_facts(
+                format,
+                &rules
+                    .run(operation, input)
+                    .map_err(|error| error.to_string())?,
+            )
         }
         Command::Interpret { directory, library } => {
             let scanned = scan_library(&directory, &rule_files)?;
@@ -352,7 +371,7 @@ fn run(arguments: Arguments) -> Result<bool, String> {
                 OutputFormat::Table => {
                     let rows = results.iter().flat_map(|(facts, queries)| {
                         let item = match &facts.kind {
-                            Some(kind) => vocabulary(kind),
+                            Some(kind) => serde_name(kind),
                             None => "-".to_owned(),
                         };
                         let item = format!("{item} {}", facts.title.clone().unwrap_or_default());
@@ -362,7 +381,7 @@ fn run(arguments: Arguments) -> Result<bool, String> {
                                 _ => query.title.clone().unwrap_or_default(),
                             };
                             let year = query.year.map(|year| year.to_string()).unwrap_or_default();
-                            vec![item.clone(), vocabulary(query.reason), text, year]
+                            vec![item.clone(), serde_name(query.reason), text, year]
                         })
                     });
                     print_table(&["ITEM", "QUERY", "TEXT", "YEAR"], rows.collect());
@@ -438,7 +457,8 @@ fn run(arguments: Arguments) -> Result<bool, String> {
                     &profile,
                 )
                 .map_err(|diagnostics| {
-                    let described: Vec<String> = diagnostics.iter().map(describe).collect();
+                    let described: Vec<String> =
+                        diagnostics.iter().map(ToString::to_string).collect();
                     format!(
                         "--from-profile: the rules cannot read the profile's folder names: {}. Use other folder names",
                         described.join("; ")
@@ -538,14 +558,7 @@ fn check_profile(rules: &Rules, profile: &OutputProfile) -> Result<(), String> {
     let problems: Vec<String> = rules
         .check_profile(profile)
         .iter()
-        .map(|diagnostic| {
-            format!(
-                "output profile: {:?}: fact {} slot {:?}. Change the template of the slot",
-                diagnostic.reason,
-                diagnostic.fact.as_deref().unwrap_or("-"),
-                diagnostic.slot,
-            )
-        })
+        .map(|diagnostic| format!("output profile: {diagnostic}. Change the template of the slot"))
         .collect();
     if problems.is_empty() {
         Ok(())
@@ -565,43 +578,24 @@ fn read_rules(paths: &[PathBuf], languages: &[String]) -> Result<Rules, String> 
         })?;
         match Overlay::parse(&text) {
             Ok(overlay) => overlays.push(overlay),
-            Err(diagnostics) => problems.extend(diagnostics.into_iter().map(|diagnostic| {
-                let line = diagnostic
-                    .line
-                    .map(|line| format!(":{line}"))
-                    .unwrap_or_default();
-                format!("{}{line}: {}", path.display(), describe(&diagnostic))
-            })),
+            Err(diagnostics) => problems.extend(
+                diagnostics
+                    .into_iter()
+                    .map(|diagnostic| format!("{}: {diagnostic}", path.display())),
+            ),
         }
     }
     if problems.is_empty() {
         Rules::for_languages(languages, &overlays).map_err(|diagnostics| {
             diagnostics
                 .iter()
-                .map(describe)
+                .map(ToString::to_string)
                 .collect::<Vec<_>>()
                 .join("\n")
         })
     } else {
         Err(problems.join("\n"))
     }
-}
-
-fn describe(diagnostic: &nomenclator::OverlayDiagnostic) -> String {
-    let mut parts = vec![vocabulary(diagnostic.reason)];
-    parts.extend(
-        diagnostic
-            .overlay
-            .iter()
-            .map(|name| format!("overlay {name}")),
-    );
-    parts.extend(diagnostic.vocabulary.clone());
-    parts.extend(diagnostic.entry.iter().map(|entry| format!("`{entry}`")));
-    if !diagnostic.overlays.is_empty() {
-        parts.push(format!("between {}", diagnostic.overlays.join(", ")));
-    }
-    parts.extend(diagnostic.message.clone());
-    parts.join(": ")
 }
 
 /// Returns `base` with `target_filesystem` applied if it is set.
@@ -639,20 +633,9 @@ fn rule_file_names(extra: &[String]) -> Result<Vec<(String, IgnoreDialect)>, Str
     let mut names = vec![(DEFAULT_RULE_FILE.to_owned(), IgnoreDialect::Gitignore)];
     for argument in extra {
         let (name, dialect) = match argument.rsplit_once(':') {
-            Some((name, dialect)) => match IgnoreDialect::from_str(dialect, false) {
+            Some((name, dialect)) => match by_name::<IgnoreDialect>(dialect) {
                 Ok(dialect) => (name, dialect),
-                Err(_) => {
-                    let known: Vec<String> = IgnoreDialect::value_variants()
-                        .iter()
-                        .filter_map(|variant| {
-                            Some(variant.to_possible_value()?.get_name().to_owned())
-                        })
-                        .collect();
-                    return Err(format!(
-                        "--rule-file {argument}: unknown dialect `{dialect}`. Use one of: {}",
-                        known.join(", ")
-                    ));
-                }
+                Err(error) => return Err(format!("--rule-file {argument}: {error}")),
             },
             None => (argument.as_str(), IgnoreDialect::Gitignore),
         };
@@ -742,7 +725,7 @@ fn print_interpretation(interpretation: &Interpretation) {
         let rule_file = entry.rule_file.as_deref().unwrap_or("-");
         vec![
             entry.path.clone(),
-            vocabulary(entry.reason),
+            serde_name(entry.reason),
             rule_file.to_owned(),
         ]
     });
@@ -763,7 +746,7 @@ fn print_interpretation(interpretation: &Interpretation) {
     let invalid = interpretation
         .invalid_entries
         .iter()
-        .map(|entry| vec![entry.path.clone(), vocabulary(entry.reason)]);
+        .map(|entry| vec![entry.path.clone(), serde_name(entry.reason)]);
     print_section("Invalid", &["PATH", "REASON"], invalid.collect());
     let unclaimed = interpretation
         .unclaimed_files
@@ -777,7 +760,7 @@ fn print_interpretation(interpretation: &Interpretation) {
         vec![
             diagnostic.rule_file.clone(),
             line,
-            vocabulary(diagnostic.reason),
+            serde_name(diagnostic.reason),
         ]
     });
     print_section(
@@ -839,7 +822,7 @@ fn item_row(item: &Item) -> Vec<String> {
             "extra".to_owned(),
             format!(
                 "{}: {}{}",
-                vocabulary(extra.extra),
+                serde_name(extra.extra),
                 title_and_year(&extra.title, extra.year),
                 ambiguity(extra.ambiguous, &[])
             ),
@@ -866,7 +849,7 @@ fn episode_coverage(episode: &nomenclator::Episode) -> String {
         let numbers: Vec<String> = absolute.iter().map(u32::to_string).collect();
         format!("absolute {}", numbers.join(", "))
     } else if let Some(special) = &episode.special {
-        let kind = vocabulary(special.kind);
+        let kind = serde_name(special.kind);
         match &special.number {
             Some(number) => format!("S00 {kind} {number}"),
             None => format!("S00 {kind}"),
@@ -882,27 +865,76 @@ fn episode_coverage(episode: &nomenclator::Episode) -> String {
 
 fn print_import(plan: &ImportPlan) {
     let proposals = plan.proposals.iter().map(|proposal| {
-        let mut notes = Vec::new();
-        if let Some(video) = &proposal.moves_with {
-            notes.push(format!("moves with {video}"));
-        }
-        if proposal.unclaimed {
-            notes.push("unclaimed".to_owned());
-        }
-        vec![proposal.from.clone(), proposal.to.clone(), notes.join("; ")]
+        let notes = move_notes(
+            false,
+            false,
+            proposal.moves_with.as_ref(),
+            proposal.unclaimed,
+        );
+        vec![proposal.from.clone(), proposal.to.clone(), notes]
     });
-    print_table(&["FROM", "TO", "NOTES"], proposals.collect());
-    let blocked = plan.blocked.iter().map(|blocked| {
-        let reasons: Vec<String> = blocked.reasons.iter().copied().map(vocabulary).collect();
-        let to = blocked.to.clone().unwrap_or_else(|| "-".to_owned());
-        vec![blocked.from.clone(), to, reasons.join(", ")]
-    });
-    print_section("blocked", &["FROM", "TO", "REASONS"], blocked.collect());
+    print_moves(proposals.collect(), &plan.blocked);
     let left = plan
         .left_in_place
         .iter()
-        .map(|file| vec![file.path.clone(), vocabulary(file.reason)]);
-    print_section("left in place", &["PATH", "REASON"], left.collect());
+        .map(|file| vec![file.path.clone(), serde_name(file.reason)]);
+    print_section("Left in place", &["PATH", "REASON"], left.collect());
+}
+
+fn print_plan(plan: &RenamePlan) {
+    let proposals = plan.proposals.iter().map(|proposal| {
+        let notes = move_notes(
+            proposal.case_only,
+            proposal.requires_temporary_step,
+            proposal.moves_with.as_ref(),
+            proposal.unclaimed,
+        );
+        vec![proposal.from.clone(), proposal.to.clone(), notes]
+    });
+    print_moves(proposals.collect(), &plan.blocked);
+    let removals = plan
+        .removals
+        .iter()
+        .map(|removal| vec![removal.path.clone(), serde_name(removal.reason)]);
+    print_section("Proposed removals", &["PATH", "REASON"], removals.collect());
+}
+
+/// Returns the notes of a proposed move.
+fn move_notes(
+    case_only: bool,
+    temporary_step: bool,
+    moves_with: Option<&String>,
+    unclaimed: bool,
+) -> String {
+    let mut notes = Vec::new();
+    if case_only {
+        notes.push("case only".to_owned());
+    }
+    if temporary_step {
+        notes.push("needs a temporary name".to_owned());
+    }
+    if let Some(video) = moves_with {
+        notes.push(format!("moves with {video}"));
+    }
+    if unclaimed {
+        notes.push("unclaimed".to_owned());
+    }
+    notes.join("; ")
+}
+
+/// Prints the proposed moves, then the blocked ones.
+fn print_moves(proposals: Vec<Vec<String>>, blocked: &[BlockedRename]) {
+    print_table(&["FROM", "TO", "NOTES"], proposals);
+    let blocked = blocked.iter().map(|blocked| {
+        let reasons: Vec<String> = blocked.reasons.iter().map(serde_name).collect();
+        let to = blocked.to.clone().unwrap_or_else(|| "-".to_owned());
+        vec![blocked.from.clone(), to, reasons.join(", ")]
+    });
+    print_section(
+        "Blocked",
+        &["FROM", "WOULD BE", "REASONS"],
+        blocked.collect(),
+    );
 }
 
 /// Returns `directory` as an absolute UTF-8 path. Fails if the path is not UTF-8.
@@ -924,41 +956,6 @@ fn write_file(path: &Path, text: &str) -> Result<(), String> {
         .map_err(|error| format!("{}: cannot write the file: {error}", path.display()))
 }
 
-fn print_plan(plan: &RenamePlan) {
-    let proposals = plan.proposals.iter().map(|proposal| {
-        let mut notes = Vec::new();
-        if proposal.case_only {
-            notes.push("case only".to_owned());
-        }
-        if proposal.requires_temporary_step {
-            notes.push("needs a temporary name".to_owned());
-        }
-        if let Some(video) = &proposal.moves_with {
-            notes.push(format!("moves with {video}"));
-        }
-        if proposal.unclaimed {
-            notes.push("unclaimed".to_owned());
-        }
-        vec![proposal.from.clone(), proposal.to.clone(), notes.join("; ")]
-    });
-    print_table(&["FROM", "TO", "NOTES"], proposals.collect());
-    let blocked = plan.blocked.iter().map(|blocked| {
-        let reasons: Vec<String> = blocked.reasons.iter().copied().map(vocabulary).collect();
-        let to = blocked.to.clone().unwrap_or_else(|| "-".to_owned());
-        vec![blocked.from.clone(), to, reasons.join(", ")]
-    });
-    print_section(
-        "Blocked",
-        &["FROM", "WOULD BE", "REASONS"],
-        blocked.collect(),
-    );
-    let removals = plan
-        .removals
-        .iter()
-        .map(|removal| vec![removal.path.clone(), vocabulary(removal.reason)]);
-    print_section("Proposed removals", &["PATH", "REASON"], removals.collect());
-}
-
 fn print_diff(diff: &nomenclator::RulesDiff) {
     let rows = diff.paths.iter().flat_map(|path| {
         path.facts.iter().map(move |fact| {
@@ -976,7 +973,7 @@ fn print_diff(diff: &nomenclator::RulesDiff) {
 
 fn print_validation(validation: &Validation) {
     let rows = validation.diagnostics.iter().map(|diagnostic| {
-        let mut detail: Vec<String> = diagnostic.reason.iter().map(vocabulary).collect();
+        let mut detail: Vec<String> = diagnostic.reason.iter().map(serde_name).collect();
         detail.extend(
             diagnostic
                 .proposed_path
@@ -984,9 +981,9 @@ fn print_validation(validation: &Validation) {
                 .map(|path| format!("→ {path}")),
         );
         vec![
-            vocabulary(diagnostic.severity),
+            serde_name(diagnostic.severity),
             diagnostic.code.to_owned(),
-            vocabulary(diagnostic.rule),
+            serde_name(diagnostic.rule),
             diagnostic.paths.join(", "),
             detail.join(" "),
         ]
@@ -1051,12 +1048,31 @@ fn show_scalar(json: &Json) -> String {
     }
 }
 
-/// Returns the documented `snake_case` name of a vocabulary value.
-fn vocabulary(value: impl Serialize) -> String {
-    serde_json::to_value(value)
-        .ok()
-        .and_then(|json| json.as_str().map(str::to_owned))
-        .unwrap_or_default()
+/// Reads a value of `T` by its `snake_case` name, such as `movies` or `half_side_by_side`.
+/// Fails with the names that `T` accepts.
+fn by_name<T: DeserializeOwned>(name: &str) -> Result<T, String> {
+    serde_json::from_value(Json::String(name.to_owned())).map_err(|error| error.to_string())
+}
+
+/// Returns `name` without a trailing `/`, and `directory` if it has one, else `file`.
+fn name_and_kind(name: &str) -> (&str, &'static str) {
+    match name.strip_suffix('/') {
+        Some(bare) => (bare, "directory"),
+        None => (name, "file"),
+    }
+}
+
+/// Prints the facts of a result as JSON, or as rows of fact, value and evidence.
+fn print_facts(format: OutputFormat, result: &Json) -> Result<bool, String> {
+    match format {
+        OutputFormat::Json => print_json(result)?,
+        OutputFormat::Table => {
+            let mut rows = Vec::new();
+            collect_fact_rows("", result, &mut rows);
+            print_table(&["FACT", "VALUE", "EVIDENCE"], rows);
+        }
+    }
+    Ok(true)
 }
 
 fn print_section(title: &str, headers: &[&str], rows: Vec<Vec<String>>) {

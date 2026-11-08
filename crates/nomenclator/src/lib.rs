@@ -198,5 +198,5 @@ pub use rules::{
 pub use suggestion::LibraryTypeSuggestion;
 pub use validation::{
     Diagnostic, DiagnosticReason, DiagnosticRule, MismatchedFact, RuleCount, Severity,
-    SeverityOverride, Validation, ValidationSummary, diagnostic_message,
+    SeverityOverride, Validation, ValidationSummary,
 };

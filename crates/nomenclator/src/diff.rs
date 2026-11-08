@@ -1,6 +1,7 @@
 //! Compares the interpretations of one listing under two rule sets and reports the facts
 //! that differ, per path (X15).
 
+use crate::model::serde_name;
 use std::collections::BTreeMap;
 use std::fmt::Display;
 
@@ -178,7 +179,7 @@ fn facts_by_path(interpretation: &Interpretation) -> BTreeMap<String, Facts> {
             Item::Extra(orphan) => {
                 for path in &orphan.paths {
                     let mut facts = item_facts("extra");
-                    facts.insert("extra", name_of(orphan.extra));
+                    facts.insert("extra", serde_name(orphan.extra));
                     set(&mut facts, "title", orphan.title.as_ref());
                     if orphan.ambiguous {
                         facts.insert("ambiguous", "owner".to_owned());
@@ -196,14 +197,17 @@ fn facts_by_path(interpretation: &Interpretation) -> BTreeMap<String, Facts> {
     for entry in &interpretation.excluded_entries {
         add(
             &entry.path,
-            outcome("excluded", Some(name_of(entry.reason))),
+            outcome("excluded", Some(serde_name(entry.reason))),
         );
     }
     for entry in &interpretation.undecided_entries {
         add(&entry.path, outcome("undecided", None));
     }
     for entry in &interpretation.invalid_entries {
-        add(&entry.path, outcome("invalid", Some(name_of(entry.reason))));
+        add(
+            &entry.path,
+            outcome("invalid", Some(serde_name(entry.reason))),
+        );
     }
     for path in &interpretation.unclaimed_files {
         add(path, outcome("unclaimed", None));
@@ -232,7 +236,7 @@ fn extras(add: &mut impl FnMut(&str, Facts), extras: &[Extra], owner: Option<&St
     for extra in extras {
         for path in &extra.paths {
             let mut facts = item_facts("extra");
-            facts.insert("extra", name_of(extra.extra));
+            facts.insert("extra", serde_name(extra.extra));
             set(&mut facts, "title", extra.title.as_ref());
             set(&mut facts, "year", extra.year);
             set(&mut facts, "owner", owner);
@@ -246,7 +250,7 @@ fn sidecars(add: &mut impl FnMut(&str, Facts), sidecars: &[SidecarFile], role: &
         let mut facts = item_facts(role);
         set(&mut facts, "language", finding(&sidecar.language));
         if !sidecar.flags.is_empty() {
-            let flags: Vec<String> = sidecar.flags.iter().map(|flag| name_of(*flag)).collect();
+            let flags: Vec<String> = sidecar.flags.iter().map(|flag| serde_name(*flag)).collect();
             facts.insert("flags", flags.join(", "));
         }
         set(&mut facts, "title", finding(&sidecar.title));
@@ -257,7 +261,7 @@ fn sidecars(add: &mut impl FnMut(&str, Facts), sidecars: &[SidecarFile], role: &
 fn artwork(add: &mut impl FnMut(&str, Facts), artwork: &[Artwork]) {
     for image in artwork {
         let mut facts = item_facts("artwork");
-        facts.insert("artwork_role", name_of(image.role));
+        facts.insert("artwork_role", serde_name(image.role));
         add(&image.path, facts);
     }
 }
@@ -288,12 +292,4 @@ fn finding<T: Display>(finding: &Finding<T>) -> Option<String> {
 fn numbers(numbers: &[u32]) -> String {
     let numbers: Vec<String> = numbers.iter().map(u32::to_string).collect();
     numbers.join(", ")
-}
-
-/// Returns the wire name of a vocabulary value, such as `behind_the_scenes`.
-fn name_of(value: impl Serialize) -> String {
-    match serde_json::to_value(value) {
-        Ok(serde_json::Value::String(name)) => name,
-        _ => String::new(),
-    }
 }

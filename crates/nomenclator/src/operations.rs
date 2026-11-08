@@ -38,16 +38,23 @@ impl fmt::Display for OperationError {
             ),
             OperationError::InvalidInput(message) => write!(formatter, "input: {message}"),
             OperationError::RejectedRules(diagnostics) => {
-                write!(formatter, "rules rejected: {diagnostics:?}")
+                write!(formatter, "the rules are rejected: {}", joined(diagnostics))
             }
-            OperationError::RejectedProfile(diagnostics) => {
-                write!(formatter, "profile rejected: {diagnostics:?}")
-            }
+            OperationError::RejectedProfile(diagnostics) => write!(
+                formatter,
+                "the rules cannot read the names of the source profile: {}",
+                joined(diagnostics)
+            ),
         }
     }
 }
 
 impl std::error::Error for OperationError {}
+
+fn joined(diagnostics: &[OverlayDiagnostic]) -> String {
+    let described: Vec<String> = diagnostics.iter().map(ToString::to_string).collect();
+    described.join("; ")
+}
 
 type Handler = fn(&Rules, Value) -> Result<Value, OperationError>;
 

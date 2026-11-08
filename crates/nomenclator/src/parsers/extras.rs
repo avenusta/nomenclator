@@ -15,7 +15,6 @@ use crate::rules::Rules;
 /// The kind of library that a path belongs to. Each kind has its own pipeline.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 pub enum LibraryType {
     /// A movies library.
     Movies,

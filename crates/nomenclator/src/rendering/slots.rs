@@ -109,6 +109,22 @@ pub struct ProfileDiagnostic {
     pub message: Option<String>,
 }
 
+/// Writes the reason, the slot, the fact and the message, each that the diagnostic
+/// states, joined by `: `.
+impl std::fmt::Display for ProfileDiagnostic {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut parts = vec![crate::model::serde_name(self.reason)];
+        parts.extend(
+            self.slot
+                .iter()
+                .map(|slot| format!("slot {}", crate::model::serde_name(slot))),
+        );
+        parts.extend(self.fact.iter().map(|fact| format!("fact {fact}")));
+        parts.extend(self.message.clone());
+        formatter.write_str(&parts.join(": "))
+    }
+}
+
 /// The reason that a profile's templates are rejected.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]

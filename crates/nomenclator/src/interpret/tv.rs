@@ -296,15 +296,6 @@ pub(super) fn interpret(
 }
 
 /// Formats an order as it is written in evidence: `dvd`.
-fn serde_order(order: EpisodeOrder) -> String {
-    match order {
-        EpisodeOrder::Aired => "aired",
-        EpisodeOrder::Dvd => "dvd",
-        EpisodeOrder::Absolute => "absolute",
-    }
-    .to_owned()
-}
-
 /// Applies the caller's numbering for the unit's series (X17). Under an `absolute` order, a
 /// number without a season is an absolute number. A scene map converts scene coordinates to
 /// aired coordinates, and an absolute map converts absolute numbers to aired coordinates,
@@ -567,7 +558,7 @@ fn apply_unit_hints(rules: &Rules, hints: &Hints, unit: &mut Unit) {
             }
         }
         if let Some(order) = hint.episode_order {
-            let value = serde_order(order);
+            let value = crate::model::serde_name(order);
             unit.hints
                 .push(settle(hint, "episode_order", value, None, false));
             unit.order_hint = Some(order);

@@ -153,6 +153,5 @@ pub(crate) const LANGUAGE_PACKS: &[(&str, &str)] = &[
     ("uk", include_str!("../data/languages/uk.yaml")),
 ];
 
-/// Diagnostic message catalogues by BCP 47 tag (R13). English is the fallback.
-pub(crate) const MESSAGE_CATALOGS: &[(&str, &str)] =
-    &[("en", include_str!("../data/messages/en.yaml"))];
+/// The diagnostic message templates (R13).
+pub(crate) const MESSAGES: &str = include_str!("../data/messages/en.yaml");

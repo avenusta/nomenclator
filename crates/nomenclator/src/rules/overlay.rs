@@ -125,6 +125,23 @@ pub enum OverlayDiagnosticReason {
     IneffectiveRemoval,
 }
 
+/// Writes the reason, the overlay, its line, the vocabulary, the entry, the conflicting
+/// overlays and the parser's message, each that the diagnostic states, joined by `: `.
+impl std::fmt::Display for OverlayDiagnostic {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut parts = vec![crate::model::serde_name(self.reason)];
+        parts.extend(self.overlay.iter().map(|name| format!("overlay {name}")));
+        parts.extend(self.line.iter().map(|line| format!("line {line}")));
+        parts.extend(self.vocabulary.clone());
+        parts.extend(self.entry.iter().map(|entry| format!("`{entry}`")));
+        if !self.overlays.is_empty() {
+            parts.push(format!("between {}", self.overlays.join(", ")));
+        }
+        parts.extend(self.message.clone());
+        formatter.write_str(&parts.join(": "))
+    }
+}
+
 /// One change to one entry of one vocabulary.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Change {

@@ -30,7 +30,6 @@ pub struct IgnoreFile {
 /// The syntax of a rule file's lines (X14).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 pub enum IgnoreDialect {
     /// gitignore: negation with `!`, escapes with `\`, a trailing `/` for folders only.
     #[default]
