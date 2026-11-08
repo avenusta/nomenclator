@@ -7,7 +7,6 @@ use std::sync::LazyLock;
 use regex::Regex;
 use serde::Serialize;
 
-use crate::data;
 use crate::lexical::{self, BracketClass, TitlePart as Part, Token, TokenKind, WordClass};
 use crate::model::{Evidence, Finding, Rule, Span};
 use crate::rules::Rules;
@@ -23,6 +22,8 @@ pub struct SeriesName {
     pub season: Finding<u16>,
     /// Provider IDs from the bracketed tags, keyed by provider.
     pub provider_ids: BTreeMap<String, Finding<String>>,
+    /// The `{key-value}` tags whose keys state no typed fact, keyed by tag key (X29).
+    pub tags: BTreeMap<String, Finding<String>>,
 }
 
 /// Reads the title, year, season and provider IDs from a series folder name. If the input is
@@ -65,6 +66,7 @@ impl Rules {
             year: parts.year_finding(),
             season: marker.map_or(Finding::Unknown, |marker| marker.finding()),
             provider_ids: lexical::provider_ids(rules, name, true),
+            tags: lexical::custom_tags(rules, name),
         }
     }
 }
@@ -73,7 +75,7 @@ impl Rules {
 /// (T16), up to the `latest_plausible_year` preset (X12).
 pub(crate) fn is_valid_season(rules: &Rules, number: u32) -> bool {
     number <= 99
-        || (u32::from(data::EARLIEST_PLAUSIBLE_YEAR)
+        || (u32::from(rules.presets.earliest_plausible_year)
             ..=u32::from(rules.presets.latest_plausible_year))
             .contains(&number)
 }
@@ -123,7 +125,7 @@ impl TitleParts {
 /// episode number also end the title. If the name has only bracket groups, the title is the
 /// last plain group.
 pub(crate) fn title_parts(rules: &Rules, text: &str, offset: usize) -> TitleParts {
-    let tokens: Vec<(Token, Part)> = lexical::tokenize(text)
+    let tokens: Vec<(Token, Part)> = lexical::tokenize(rules, text)
         .into_iter()
         .map(|token| (token, lexical::classify_title_token(rules, text, token)))
         .filter(|(_, part)| !part.is_dropped_bracket())
@@ -147,7 +149,7 @@ pub(crate) fn title_parts(rules: &Rules, text: &str, offset: usize) -> TitlePart
             .find(|(_, part)| *part == Part::Bracket(BracketClass::Other))
             && let TokenKind::Bracket { inner } = token.kind
         {
-            let value = lexical::display_title(&text[inner.0..inner.1]);
+            let value = lexical::display_title(rules, &text[inner.0..inner.1]);
             let span = Span(offset + inner.0, offset + inner.1);
             parts.title = Some((value, span, Rule::WholeName));
         }
@@ -197,14 +199,14 @@ pub(crate) fn title_parts(rules: &Rules, text: &str, offset: usize) -> TitlePart
         }
     }
 
-    let Some((value, span)) = title_text(text, &tokens, start, end) else {
+    let Some((value, span)) = title_text(rules, text, &tokens, start, end) else {
         return parts;
     };
     parts.title = Some((value, Span(offset + span.0, offset + span.1), end_rule));
     if parts.year.is_none()
         && end - start > 1
         && let Part::Word(WordClass::Year(year)) = tokens[end - 1].1
-        && let Some((before_year, _)) = title_text(text, &tokens, start, end - 1)
+        && let Some((before_year, _)) = title_text(rules, text, &tokens, start, end - 1)
     {
         parts.title_before_trailing_year = Some((before_year, year));
     }
@@ -212,6 +214,7 @@ pub(crate) fn title_parts(rules: &Rules, text: &str, offset: usize) -> TitlePart
 }
 
 fn title_text(
+    rules: &Rules,
     text: &str,
     tokens: &[(Token, Part)],
     start: usize,
@@ -255,7 +258,7 @@ fn title_text(
     let value = if text[span_start..].contains(' ') {
         raw.to_owned()
     } else {
-        lexical::display_title(display_source)
+        lexical::display_title(rules, display_source)
     };
     if value.is_empty() {
         return None;

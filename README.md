@@ -1,62 +1,149 @@
 # nomenclator
 
-nomenclator implements reusable media naming conventions for movie and TV libraries. It reads file and folder names and returns titles, years, provider IDs, seasons, episodes, extras, sidecars and ignore decisions. If the names do not determine a fact, the result marks the fact as ambiguous or unknown.
+A universal naming scheme for media libraries.
 
-The project is a work in progress. It contains a pure Rust library (`crates/nomenclator`), a gRPC server that exposes the same implementation to other languages (`crates/nomenclator-grpc`), and a diagnostics CLI (`crates/nomenclator-cli`).
+nomenclator's  goal is to bring and enforce a universal naming scheme for media libraries. It recognizes and reads a broad range of existing file and folder naming styles, gathered from existing naming conventions. It validates them against one clean, consistent scheme. It reports naming violations and proposes corrections, so libraries can adopt the same convention
+
+For a library that contains `Blade.Runner.1982.1080p.BluRay.x264.mkv`:
 
 ```sh
-just check
+nomenclator validate ./Movies --library movies
 ```
 
-## gRPC server
+```text
+SEVERITY  CODE  RULE               PATHS                                    DETAIL
+warning   N403  profile_violation  Blade.Runner.1982.1080p.BluRay.x264.mkv  → Blade Runner (1982)/Blade Runner (1982).mkv
+0 errors, 1 warnings, 1 infos, 0 suppressed
+```
 
-The contract is `crates/nomenclator-grpc/proto/nomenclator/v1/nomenclator.proto` (package `nomenclator.v1`). It defines the batched operations `ParseNames`, `GroupParts`, `EvaluateIgnore`, `Interpret`, `RankCandidates`, `RenderNames`, `PlanRenames` and `Validate`, plus `GetVersion`. Each query carries a caller handle, and its result returns the same handle. Each result contains the library's facts, outcomes and evidence with one wire field per library field. The server is stateless. It calls the library directly and does not reimplement any rule.
+The tool reads the title and year, warns that the path does not follow the naming scheme, and proposes a corrected path. It does not rename the file.
+
+The project is a work in progress.
+
+## Build
+
+Install Rust with rustup, then run from the repository root:
+
+```sh
+cargo build -p nomenclator-cli
+```
+
+`rust-toolchain.toml` pins the toolchain. Rustup installs it on the first build. The examples below use `cargo run` to build and run the CLI from this checkout.
+
+## Quick start
+
+Parse a movie name with provider IDs, an edition tag, a 3D layout and release details:
+
+```sh
+cargo run -p nomenclator-cli -- parse \
+  "Avatar (2009) {tmdb-19995} {imdb-tt0499549} {edition-Extended} 3D HSBS 1080p BluRay x264 DTS 5.1.mkv" \
+  --library movies
+```
+
+The result includes the title, year, both provider IDs, edition, 3D layout and container, with evidence spans for the parsed facts:
+
+```text
+FACT               VALUE              EVIDENCE
+alternate_titles   -
+container          mkv
+edition            Extended           edition_tag [53,61]
+edition_hint       unknown
+format_3d          half_side_by_side  format3d_word [66,70]
+provider_ids.imdb  tt0499549
+provider_ids.tmdb  19995
+title              Avatar             text_before_year [0,6]
+trusted            true
+year               2009               bracketed_year [8,12]
+```
+
+Read the release details from the same name:
+
+```sh
+cargo run -p nomenclator-cli -- release \
+  "Avatar (2009) {tmdb-19995} {imdb-tt0499549} {edition-Extended} 3D HSBS 1080p BluRay x264 DTS 5.1.mkv"
+```
+
+This resolves the resolution to `1080p`, source to `bluray`, video codec to `h264`, audio codec to `dts`, and audio channels to `5.1`.
+
+Parse a TV episode, inspect a library, or propose renames:
+
+```sh
+cargo run -p nomenclator-cli -- parse "Show/Season 02/Show S02E03E04.mkv" --library tv
+cargo run -p nomenclator-cli -- interpret ~/Media/Movies --library movies
+cargo run -p nomenclator-cli -- plan ~/Media/TV --library tv --format json
+```
+
+- `--library movies` and `--library tv` select separate naming pipelines. In TV mode, `parse` reads a file as an episode and a path with a trailing `/` as a series folder.
+- The CLI prints tables by default. Use `--format json` for structured output.
+- `plan` prints proposals and blocked renames. It does not rename files. No nomenclator command moves or renames media files.
+
+## Commands
+
+Examples use the binary built above:
+
+```sh
+# Read a title, year and provider IDs.
+./target/debug/nomenclator parse "Blade Runner (1982) {tmdb-78}.mkv" --library movies
+
+# Read resolution, source, codecs and audio.
+./target/debug/nomenclator release "Blade.Runner.1982.1080p.BluRay.x264.DTS.5.1.mkv"
+
+# Suggest a library type from its names.
+./target/debug/nomenclator suggest ./Media
+
+# Group movies, episodes, extras, subtitles and artwork.
+./target/debug/nomenclator interpret ./Movies --library movies
+
+# Report naming violations; exit 1 on warnings or errors.
+./target/debug/nomenclator validate ./Movies --library movies --fail-on warning
+
+# Propose canonical paths without renaming files.
+./target/debug/nomenclator plan ./Movies --library movies
+
+# Propose moves from a download folder into a library.
+./target/debug/nomenclator import ./Downloads ./Movies --library movies
+
+# Produce provider search queries without calling provider APIs.
+./target/debug/nomenclator queries ./Movies --library movies
+
+# Compare built-in rules with a vocabulary overlay.
+./target/debug/nomenclator diff ./Movies --library movies --rules builtin --rules mine.yaml
+```
+
+Use `--help` or `<command> --help` for details.
+
+## Options
+
+| Feature | Example | Effect |
+|---|---|---|
+| JSON output | `--format json` | Return structured results instead of tables. |
+| Languages | `--language en --language de` | Read English, German and shared vocabulary. Default: all languages. |
+| Vocabulary | `--overlay words.yaml` | Add or remove vocabulary words. Repeatable; accepts YAML or JSON. |
+| Overrides | `--inputs inputs.yaml` | Supply known facts, hints and series numbering. |
+| Ignore files | `--rule-file .skip:glob` | Read additional ignore rules. `.ignore` and `.nomedia` are read by default. |
+| Output profile | `--profile profile.yaml` | Set naming layout and validation options. |
+| Layout conversion | `plan --from-profile old.yaml --profile new.yaml` | Propose changes between layouts. |
+| Rename script | `plan --script sh --undo-script undo.sh` | Print a shell script and write its reversal script. PowerShell: `--script ps1`. |
+| Filesystem | `--target-filesystem posix` | Relax portable filename restrictions. |
+| Reference checks | `validate --reference reference.yaml` | Check catalogue years and episode lists. |
+
+## Library and gRPC
+
+- **Rust:** use the pure library independently of the CLI. See the [API examples](crates/nomenclator/src/lib.rs), or run `cargo doc -p nomenclator --open`.
+- **Other languages:** generate a client from the [gRPC contract](crates/nomenclator-grpc/proto/nomenclator/v1/nomenclator.proto). Start the stateless server with:
 
 ```sh
 cargo run -p nomenclator-grpc --bin nomenclator-server -- --tcp 127.0.0.1:50051
-cargo run -p nomenclator-grpc --bin nomenclator-server -- --unix /tmp/nomenclator.sock
 ```
 
-The server prints one `listening on tcp:...` or `listening on unix:...` line. With `--tcp 127.0.0.1:0`, the operating system chooses the port. The server stops on Ctrl-C and removes its socket file. The socket file must not exist when the server starts. You can generate a client from the `.proto` file in any language. The build does not require a system `protoc`.
+## Reference
 
-- Paths are root-relative and separated by `/`. A folder path ends in `/`.
-- Protobuf strings are UTF-8. If a name is not valid UTF-8, the caller reports it as `unsupported_encoding` itself and does not send it (X4).
-- The project keeps three separate versions: the wire contract (`nomenclator.v1`), the naming rules (`rules_version`, the library's version) and the build (`implementation_version`). A compatible wire change can come with a change in naming behaviour. Every response states the rules it was answered under in `rules`.
-
-`cargo test` also runs every non-pending corpus case through an in-process server. This test checks that direct calls and wire calls return the same facts.
-
-## Diagnostics CLI
-
-`nomenclator` reads names and real folders the way a caller does (entries and `.ignore`/`.nomedia` files). It prints the library's results as a table, or as JSON with `--format json`. It does not rename any file.
-
-```sh
-cargo run -p nomenclator-cli -- parse "Northern Passage (2021) {edition-Extended}.mkv" --library movies
-cargo run -p nomenclator-cli -- parse "Show/Season 02/Show S02E03E04.mkv" --library tv
-cargo run -p nomenclator-cli -- release "Northern.Passage.2021.2160p.UHD.BluRay.REMUX.HDR10.HEVC.TrueHD.Atmos.7.1-NPX.mkv"
-cargo run -p nomenclator-cli -- interpret ~/Media/Movies --library movies
-cargo run -p nomenclator-cli -- plan ~/Media/TV --library tv --format json
-cargo run -p nomenclator-cli -- validate ~/Media/Movies --library movies --fail-on warning
-cargo run -p nomenclator-cli -- diff ~/Media/Movies --library movies --rules builtin --rules mine.yaml
-```
-
-`--language <tag>` is repeatable, such as `--language en --language de`. It limits the vocabulary to the words of those languages plus the shared base (decision X11). `--inputs inputs.yaml` passes facts that you already know: hints per path, overrides and series numbering (decisions T20, X16, X17). `validate --reference reference.yaml` checks the library against catalogue years and episode lists (X18). `--rule-file .mediaignore` or `--rule-file .skip:glob` is repeatable and reads additional rule files, in gitignore syntax or with one glob per line (X14). `--overlay <file>` is repeatable and applies YAML or JSON overlays that add or remove vocabulary words. For example, an overlay can remove a release word that truncates your titles (decision X10).
-
-With `movies`, `parse` reads a movie name. With `tv`, `parse` reads an episode file, or a series folder if the name has a trailing `/`. `plan` prints proposals and blocked renames under the default profile. `--profile profile.yaml` sets the output profile for `plan` and `validate`, such as `movie_layout: flat` or `provider_tag_style: brackets_id` (decision R15). `plan --from-profile old.yaml --profile new.yaml` converts a library from one layout to another (R18). `--target-filesystem posix` relaxes the portable character rules. `plan --script sh` or `--script ps1` prints a script that performs the proposals, and `--undo-script undo.sh` writes the script that reverses them (R16). `queries <dir>` prints the provider search queries of each item (P7). `import <download> <library>` proposes moves of a download folder's files into a library: season packs split into episodes, a known work goes into its library folder, samples and release junk stay, and collisions with library files are blocked (R17). nomenclator itself never renames a file. `validate` prints errors and warnings, and `--all` adds info diagnostics. `validate` exits 1 if a diagnostic reaches the `--fail-on` severity (`error` by default). Any command exits 2 if it cannot run.
-
-## Versioning
-
-The project has three versions, and each has its own compatibility guarantee:
-
-- **Wire contract** (`nomenclator.v1`). It changes only compatibly. An incompatible change creates a new package (`v2`).
-- **Naming rules** (`rules_version`, the library's version). While the version is 0.x, any minor version bump may change naming results. A patch version bump only fixes bugs, and a corpus case pins each fix.
-- **Implementation** (`implementation_version`). It identifies the build that produced a result.
-
-Every crate, and every package for another platform, has the same version. `CHANGELOG.md` is the one list of changes for all of them. It lists naming-behaviour changes first, then changes to the library API, the wire contract, the CLI and the packages. Each release on GitHub has that version's section as its notes.
-
-## Contributing
-
-`CONTRIBUTING.md` describes how to send a change, and `AGENTS.md` and `CODING_STANDARDS.md` hold the rules for people and coding agents. Report a vulnerability as `SECURITY.md` describes.
+- [Naming conventions](docs/decisions.md)
+- [Release facts](docs/release-facts.md)
+- [Changelog](CHANGELOG.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security](SECURITY.md)
 
 ## License
 
-MIT, see `LICENSE`.
+[MIT](LICENSE).

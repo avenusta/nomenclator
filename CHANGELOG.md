@@ -34,6 +34,11 @@ First release. It implements the conventions in `docs/decisions.md`, and the cor
 - A season that is a year follows the `latest_plausible_year` preset (T16, X12). Under a lowered preset, `Season 2050` and `S2050E01` state no season.
 - A lone `UHD` in a release name is a 2160p resolution (X19). An explicit height in the same name takes precedence, as it does over `4K`. Version labels and release facts read resolutions with one function.
 
+- `{key-value}` tags with an unknown key are reported in `tags` and no longer reach a title or a version label (X29).
+- The built-in rules read episode words of every language pack, such as `Folge` and `Capitulo`, and a season word before an episode word (X30).
+- `clearart` and `discart` images have their own artwork roles, and `Openings` and `Endings` folders hold extras of their own kinds (X31).
+- `【】` is a bracket pair (X34).
+
 ### Library API
 
 - Parsers: `parse_movie_name`, `parse_series_name`, `parse_season_folder`, `parse_episode_name`, `parse_provider_ids`, `parse_sidecar`, `classify_extra`, `classify_artwork`, `classify_nfo`.
@@ -68,7 +73,12 @@ First release. It implements the conventions in `docs/decisions.md`, and the cor
 - An overlay that removes an entry that the built-in rules do not contain is rejected with `OverlayDiagnosticReason::IneffectiveRemoval` (X28).
 - An overlay can remove the codec words `x264`, `x265`, `h264`, `h265`, `mpeg2`, `mpeg4`, `hdr10` and `hdr10+` from `technical_words`. These words are no longer `reserved_token`s.
 - `OutputProfile.reserved_names` lists names that a path component must not use (R5).
-- `Format3d` implements `Deserialize` and `Ord`.
+- `Format3d` implements `Deserialize` and `Ord`. `SpecialKind` implements `Deserialize`.
+- The overlay vocabulary `tags` replaces `provider_keys` and gives each key a typed fact (X29). Results have a `tags` map.
+- Overlay vocabularies `episode_words`, `special_prefixes`, `animation_special_words`, `episode_tokens`, `separators` and `bracket_pairs` (X30, X34), and the preset `earliest_plausible_year` (X12).
+- `ArtworkRole::ClearArt`, `ArtworkRole::DiscArt`, `AssetRole::ClearArt`, `AssetRole::DiscArt`, `ExtraKind::Opening` and `ExtraKind::Ending` (X31). The public enums of facts are `#[non_exhaustive]`.
+- A user overlay overrides a language pack, and `replace` sets a vocabulary (X32).
+- `OutputProfile.templates`, `TemplateSlot` and `Rules::check_profile` (X33).
 
 ### Wire contract
 
@@ -94,7 +104,10 @@ First release. It implements the conventions in `docs/decisions.md`, and the cor
 - `RulesSelection rules` on `ParseNames`, `EvaluateIgnore`, `Interpret`, `RankCandidates`, `PlanRenames` and `Validate` requests. The field holds overlay documents that apply to that call. If an overlay is rejected, the call fails with `INVALID_ARGUMENT` and lists the diagnostics. `RulesIdentity.overlays` lists the applied overlays.
 - `RulesIdentity`: every response, including `GetVersion`, states the rules it was answered under in `rules`.
 - `GroupPartsRequest.rules` selects the rules of a `GroupParts` call.
-- `OutputProfile.reserved_names`.
+- `OutputProfile.reserved_names` and `OutputProfile.templates`.
+- `tags` on `MovieName`, `SeriesName`, `EpisodeName`, `Movie`, `Series` and `Episode`.
+- New values of `ExtraKind`, `ArtworkRole` and `AssetRole`.
+- A request whose output profile does not read back fails with `INVALID_ARGUMENT` (X33).
 
 ### CLI
 

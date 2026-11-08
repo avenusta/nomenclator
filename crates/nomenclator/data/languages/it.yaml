@@ -35,3 +35,5 @@ languages:
   add: { it: ["italiano"] }
 artwork_roles:
   add: { "locandina": poster, "copertina": poster, "sfondo": backdrop }
+episode_words:
+  add: ["episodio", "puntata"]

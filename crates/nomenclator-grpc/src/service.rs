@@ -461,7 +461,7 @@ impl Nomenclator for NamingService {
         let request = read_request(request.get_ref())?;
         let rules = request_rules(&request)?;
         let rules = rules.as_ref();
-        let profile = read_profile(&request)?;
+        let profile = read_profile(&request, rules)?;
         let results = read_queries(&request)?
             .into_iter()
             .map(|RenderNamesQuery { handle, facts }| {
@@ -478,7 +478,7 @@ impl Nomenclator for NamingService {
         let request = read_request(request.get_ref())?;
         let rules = request_rules(&request)?;
         let rules = rules.as_ref();
-        let profile = read_profile(&request)?;
+        let profile = read_profile(&request, rules)?;
         let results = read_queries(&request)?
             .into_iter()
             .map(|tree: LibraryTreeQuery| {
@@ -504,6 +504,8 @@ impl Nomenclator for NamingService {
         let rules = rules.as_ref();
         let from: OutputProfile = read_field(&request, "from_profile")?;
         let to: OutputProfile = read_field(&request, "to_profile")?;
+        check_profile(rules, &from)?;
+        check_profile(rules, &to)?;
         let mut identity = rules.identity().clone();
         let mut results = Vec::new();
         for tree in read_queries::<LibraryTreeQuery>(&request)? {
@@ -536,7 +538,7 @@ impl Nomenclator for NamingService {
         let request = read_request(request.get_ref())?;
         let rules = request_rules(&request)?;
         let rules = rules.as_ref();
-        let profile = read_profile(&request)?;
+        let profile = read_profile(&request, rules)?;
         let results = read_queries(&request)?
             .into_iter()
             .map(|query: ImportQuery| {
@@ -581,7 +583,7 @@ impl Nomenclator for NamingService {
         let request = read_request(request.get_ref())?;
         let rules = request_rules(&request)?;
         let rules = rules.as_ref();
-        let profile = read_profile(&request)?;
+        let profile = read_profile(&request, rules)?;
         let results = read_queries(&request)?
             .into_iter()
             .map(|tree: LibraryTreeQuery| {
@@ -663,8 +665,22 @@ fn read_field<T: DeserializeOwned + Default>(request: &Json, field: &str) -> Res
     }
 }
 
-fn read_profile(request: &Json) -> Result<OutputProfile, Status> {
-    read_field(request, "profile")
+/// Fails with `INVALID_ARGUMENT` if the reader does not read back a name that `profile`
+/// writes.
+fn check_profile(rules: &Rules, profile: &OutputProfile) -> Result<(), Status> {
+    let diagnostics = rules.check_profile(profile);
+    if diagnostics.is_empty() {
+        return Ok(());
+    }
+    Err(Status::invalid_argument(format!(
+        "the output profile is rejected: {diagnostics:?}"
+    )))
+}
+
+fn read_profile(request: &Json, rules: &Rules) -> Result<OutputProfile, Status> {
+    let profile = read_field(request, "profile")?;
+    check_profile(rules, &profile)?;
+    Ok(profile)
 }
 
 /// Returns `result` with its handle. Removes the rules identity, because the response

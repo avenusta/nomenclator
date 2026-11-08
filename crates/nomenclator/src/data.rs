@@ -2,6 +2,7 @@
 //! lowercase.
 
 use crate::model::{ArtworkRole, ExtraKind, Format3d, NfoRole, SidecarFlag};
+use crate::parsers::episode_name::SpecialKind;
 use crate::parsers::release::ReleaseFact;
 
 /// Release words that cut a title wherever they appear.
@@ -96,15 +97,19 @@ pub(crate) const FORMAT_3D_WORDS: &[(&str, Format3d)] = &[
     ("3d", Format3d::Unspecified),
 ];
 
-/// Provider keys recognised in tags, each optionally followed by `id`.
-pub(crate) const PROVIDER_KEYS: &[&str] = &[
-    "tmdb",
-    "imdb",
-    "tvdb",
-    "tvmaze",
-    "anidb",
-    "anilist",
-    "anisearch",
+/// The prefix, the fewest digits and the most digits of a prefixed provider ID.
+pub(crate) type PrefixedId = (&'static str, u8, u8);
+
+/// Provider tag keys (M7), each optionally followed by `id`, with the shape of a prefixed ID.
+/// A key without a prefix takes a positive integer.
+pub(crate) const PROVIDER_TAGS: &[(&str, Option<PrefixedId>)] = &[
+    ("tmdb", None),
+    ("imdb", Some(("tt", 7, 10))),
+    ("tvdb", None),
+    ("tvmaze", None),
+    ("anidb", None),
+    ("anilist", None),
+    ("anisearch", None),
 ];
 
 /// Endings that mark a leading bracket as a release group.
@@ -226,8 +231,11 @@ pub(crate) const LANGUAGES: &[(&str, &[&str])] = &[
     ("zh", &["zho", "chi", "chinese"]),
 ];
 
-/// The earliest year that a name can state (M2).
+/// The default earliest year that a name can state (M2).
 pub(crate) const EARLIEST_PLAUSIBLE_YEAR: u16 = 1900;
+
+/// The smallest value of the `earliest_plausible_year` preset (X12).
+pub(crate) const LOWEST_EARLIEST_YEAR: u16 = 1800;
 
 /// The default latest year that a name can state, and the largest value of the
 /// `latest_plausible_year` preset (M2).
@@ -276,6 +284,7 @@ pub(crate) const ARTWORK_ROLES: &[(&str, ArtworkRole)] = &[
     ("background", ArtworkRole::Backdrop),
     ("logo", ArtworkRole::Logo),
     ("thumb", ArtworkRole::Thumb),
+    ("disc", ArtworkRole::DiscArt),
 ];
 
 /// NAS, OS and sync-tool entries, excluded wherever they appear. Matched as whole names.
@@ -326,6 +335,55 @@ pub(crate) const NO_MEDIA_MARKERS: &[&str] = &[".nomedia"];
 
 /// Endings of generated preview-image folders.
 pub(crate) const GENERATED_METADATA_DIRECTORY_SUFFIXES: &[&str] = &[".trickplay"];
+
+/// The episode words that every library reads. The canonical section holds `e`.
+pub(crate) const EPISODE_BASE_WORDS: &[&str] = &["episode", "ep"];
+
+/// The episode words of the language packs (X30): a word before an episode number.
+pub(crate) const EPISODE_WORDS: &[&str] = &[
+    "aflevering",
+    "afsnit",
+    "avsnitt",
+    "bölüm",
+    "capitulo",
+    "capítulo",
+    "diel",
+    "díl",
+    "episod",
+    "episodio",
+    "episodul",
+    "episódio",
+    "epizoda",
+    "epizóda",
+    "folge",
+    "jakso",
+    "odcinek",
+    "puntata",
+    "épisode",
+    "епизод",
+    "епізод",
+    "серия",
+    "серія",
+    "эпизод",
+    "エピソード",
+    "에피소드",
+];
+
+/// Prefixes joined to a number that state an episode of season 0 (T12).
+pub(crate) const SPECIAL_PREFIXES: &[&str] = &["sp"];
+
+/// Animation special markers and the kind of each (X20).
+pub(crate) const ANIMATION_SPECIAL_WORDS: &[(&str, SpecialKind)] = &[
+    ("ova", SpecialKind::Ova),
+    ("oad", SpecialKind::Oad),
+    ("ona", SpecialKind::Ona),
+];
+
+/// Characters between words, other than the dash (M6). The canonical section holds the space.
+pub(crate) const SEPARATORS: &[char] = &['.', '_'];
+
+/// Bracket pairs that the writer does not write (M5). The canonical section holds the others.
+pub(crate) const BRACKET_PAIRS: &[(char, char)] = &[('【', '】')];
 
 /// Words naming a season folder, before or after its number (`Season 2`, `3. Staffel`).
 pub(crate) const SEASON_WORDS: &[&str] = &[
@@ -441,6 +499,8 @@ pub(crate) const ARTWORK_OUTPUT_WORDS: &[(ArtworkRole, &str)] = &[
     (ArtworkRole::Banner, "banner"),
     (ArtworkRole::Logo, "clearlogo"),
     (ArtworkRole::Thumb, "landscape"),
+    (ArtworkRole::ClearArt, "clearart"),
+    (ArtworkRole::DiscArt, "discart"),
 ];
 
 /// The generic NFO name of each role (R19, S9), read as `nfo_names`.
@@ -461,6 +521,15 @@ pub(crate) const THEME_OUTPUT_STEM: &str = "theme";
 
 /// The word of a season folder (R2), read as `season_words`.
 pub(crate) const SEASON_FOLDER_WORD: &str = "Season";
+
+/// The separator between the words of a written name, read as `separators`.
+pub(crate) const SPACE_SEPARATOR: char = ' ';
+
+/// The bracket pairs of a written name (R1, R15), read as `bracket_pairs`.
+pub(crate) const CANONICAL_BRACKET_PAIRS: &[(char, char)] = &[('(', ')'), ('[', ']'), ('{', '}')];
+
+/// The letter before an episode number in an episode token (R2), read as `episode_words`.
+pub(crate) const EPISODE_OUTPUT_LETTER: &str = "e";
 
 /// The word of a part number (R1), read as `part_words`.
 pub(crate) const PART_OUTPUT_WORD: &str = "part";
@@ -484,6 +553,8 @@ pub(crate) const EXTRAS_OUTPUT_FOLDERS: &[(ExtraKind, &str)] = &[
     (ExtraKind::ThemeVideo, "Backdrops"),
     (ExtraKind::Other, "Other"),
     (ExtraKind::Extra, "Extras"),
+    (ExtraKind::Opening, "Openings"),
+    (ExtraKind::Ending, "Endings"),
 ];
 
 /// Device names that no path component may use before its first dot on the portable target

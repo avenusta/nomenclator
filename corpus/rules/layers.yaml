@@ -1,0 +1,87 @@
+# Overlay layers and `replace` (decision X32). Language packs are applied first and user
+# overlays after them.
+
+- name: a user overlay removes a word that a declared language pack adds
+  languages: [de]
+  overlays: ["name: no-staffel\nseason_words:\n  remove: [staffel]\n"]
+  operation: parse_season_folder
+  input: { name: Staffel 2 }
+  expect:
+    season: null
+
+- name: a user overlay gives a language pack word another meaning
+  languages: [de]
+  overlays: ["name: plakat\nartwork_roles:\n  add: { plakat: backdrop }\n"]
+  operation: classify_artwork
+  input: { name: plakat.jpg }
+  expect:
+    role: backdrop
+
+- name: a user overlay moves a language pack word to a rival vocabulary
+  operation: build_rules
+  input:
+    languages: [de]
+    overlays: ["name: move\nseason_words:\n  remove: [staffel]\nseries_season_words:\n  add: [staffel]\n"]
+  expect:
+    diagnostics: []
+
+- name: a removal of a word that only a declared pack adds is effective
+  operation: build_rules
+  input:
+    languages: [de]
+    overlays: ["name: no-deutsch\nlanguages:\n  remove: [deutsch]\n"]
+  expect:
+    diagnostics: []
+
+- name: replace drops the built-in entries of a vocabulary
+  overlays: ["name: only-bonus\nextras_suffixes:\n  replace: { bonus: extra }\n"]
+  operation: classify_extra
+  input: { path: Heat-trailer.mkv, kind: file, library: movies, context_paths: [] }
+  expect:
+    extra: null
+
+- name: replace adds the listed entries
+  overlays: ["name: only-bonus\nextras_suffixes:\n  replace: { bonus: extra }\n"]
+  operation: classify_extra
+  input: { path: Heat-bonus.mkv, kind: file, library: movies, context_paths: [] }
+  expect:
+    extra: extra
+
+- name: replace on one vocabulary keeps the other vocabularies
+  overlays: ["name: only-bonus\nextras_suffixes:\n  replace: { bonus: extra }\n"]
+  operation: parse_movie_name
+  input: { name: Northern.Passage.2021.1080p.mkv, kind: file }
+  expect:
+    title: Northern Passage
+    year: 2021
+
+- name: replace keeps the canonical names of the vocabulary
+  overlays: ["name: only-bonus\nextras_folders:\n  replace: { Bonus: extra }\n"]
+  operation: classify_extra
+  input:
+    path: Heat (1995)/Trailers/One.mkv
+    kind: file
+    library: movies
+    context_paths: [Heat (1995)/Heat (1995).mkv]
+  expect:
+    extra: trailer
+
+- name: replace beside add in one vocabulary is malformed
+  operation: build_rules
+  input:
+    overlays: ["name: bad\nedition_words:\n  replace: [redux]\n  add: [cut]\n"]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: malformed_vocabulary, overlay: bad, vocabulary: edition_words }
+
+- name: two overlays that replace one vocabulary conflict
+  operation: build_rules
+  input:
+    overlays:
+      - "name: one\nedition_words:\n  replace: [redux]\n"
+      - "name: two\nedition_words:\n  replace: [recut]\n"
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: conflicting_change, vocabulary: edition_words, overlays: [one, two] }

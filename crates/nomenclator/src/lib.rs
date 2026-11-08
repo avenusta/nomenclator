@@ -184,10 +184,10 @@ pub use parsers::sidecar::{Sidecar, parse_sidecar};
 pub use rendering::{
     AssetFacts, AssetItemKind, AssetRole, BlockReason, BlockedRename, ExtensionCase, ExtraFacts,
     ImportPlan, ImportProposal, LeftFile, LeftReason, MovieLayout, NamingFacts, OutputProfile,
-    ProposedRemoval, ProviderTagStyle, RemovalReason, RenamePlan, RenameProposal, RenderedName,
-    RenderedTemplate, SeasonFolderStyle, SidecarFacts, Suppression, TargetFilesystem, Template,
-    TemplateError, TemplateErrorReason, TemplateFacts, VersionLabelStyle, WantedSubtitle,
-    plan_renames, render_names,
+    ProfileDiagnostic, ProfileDiagnosticReason, ProposedRemoval, ProviderTagStyle, RemovalReason,
+    RenamePlan, RenameProposal, RenderedName, RenderedTemplate, SeasonFolderStyle, SidecarFacts,
+    Suppression, TargetFilesystem, Template, TemplateError, TemplateErrorReason, TemplateFacts,
+    TemplateSlot, VersionLabelStyle, WantedSubtitle, plan_renames, render_names,
 };
 pub use rules::{
     Overlay, OverlayDiagnostic, OverlayDiagnosticReason, OverlayIdentity, Rules, RulesIdentity,

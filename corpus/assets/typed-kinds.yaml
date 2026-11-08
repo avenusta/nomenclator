@@ -1,0 +1,69 @@
+# Artwork roles and extra kinds that X31 adds to the typed facts.
+
+- name: clear art is an artwork role
+  operation: classify_artwork
+  input: { name: clearart.png }
+  expect:
+    role: clear_art
+
+- name: disc art is an artwork role, also from the word disc
+  operation: classify_artwork
+  input: { name: disc.png }
+  expect:
+    role: disc_art
+
+- name: a named work's clear art follows its stem
+  operation: classify_artwork
+  input: { name: Heat (1995)-discart.png }
+  expect:
+    role: disc_art
+
+- name: a movie's clear art is written under its generic name
+  operation: render_names
+  input:
+    facts: { library: movies, title: Heat, year: 1995, asset: { role: clear_art, extension: png } }
+    profile: {}
+  expect:
+    path: Heat (1995)/clearart.png
+
+- name: an episode's disc art follows the episode's stem
+  operation: render_names
+  input:
+    facts: { library: tv, title: Show, season: 1, episodes: [2], asset: { role: disc_art, extension: png } }
+    profile: {}
+  expect:
+    path: Show/Season 01/Show - S01E02-discart.png
+
+- name: a file in an owned Openings folder is an opening
+  operation: classify_extra
+  input:
+    path: Show/Openings/Opening One.mkv
+    kind: file
+    library: tv
+    context_paths: [Show/Season 01/Show S01E01.mkv]
+  expect:
+    extra: opening
+
+- name: a file in an owned Endings folder is an ending
+  operation: classify_extra
+  input:
+    path: Show/Endings/Ending One.mkv
+    kind: file
+    library: tv
+    context_paths: [Show/Season 01/Show S01E01.mkv]
+  expect:
+    extra: ending
+
+- name: a name that ends in the word ending is not an extra
+  operation: classify_extra
+  input: { path: The.Ending.mkv, kind: file, library: movies, context_paths: [] }
+  expect:
+    extra: null
+
+- name: an opening is written in its folder
+  operation: render_names
+  input:
+    facts: { library: tv, title: Show, extra: { kind: opening, title: Opening One }, container: mkv }
+    profile: {}
+  expect:
+    path: Show/Openings/Opening One.mkv

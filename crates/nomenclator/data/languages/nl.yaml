@@ -33,3 +33,5 @@ languages:
   add: { nl: ["nederlands"] }
 artwork_roles:
   add: { "affiche": poster, "hoes": poster, "achtergrond": backdrop }
+episode_words:
+  add: ["aflevering"]

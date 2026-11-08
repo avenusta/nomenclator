@@ -5,7 +5,7 @@
 //! of zeros, and `[...]` an optional section that is left out if any field in it has no
 //! value. `{{`, `}}`, `[[` and `]]` are the literal characters. A `/` separates folders.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Serialize;
 
@@ -22,7 +22,7 @@ const NUMBER_FIELDS: &[&str] = &[
 ];
 
 /// A compiled name template.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Template {
     source: String,
     pieces: Vec<Piece>,
@@ -93,6 +93,83 @@ impl Template {
     #[must_use]
     pub fn source(&self) -> &str {
         &self.source
+    }
+
+    /// Returns the names of the fields that the template uses.
+    pub(crate) fn fields(&self) -> BTreeSet<&str> {
+        fn collect<'a>(pieces: &'a [Piece], fields: &mut BTreeSet<&'a str>) {
+            for piece in pieces {
+                match piece {
+                    Piece::Literal(_) => {}
+                    Piece::Field { name, .. } => {
+                        fields.insert(name);
+                    }
+                    Piece::Optional(inner) => collect(inner, fields),
+                }
+            }
+        }
+        let mut fields = BTreeSet::new();
+        collect(&self.pieces, &mut fields);
+        fields
+    }
+
+    /// Returns the names of the fields that the template uses outside optional sections.
+    pub(crate) fn required_fields(&self) -> BTreeSet<&str> {
+        self.pieces
+            .iter()
+            .filter_map(|piece| match piece {
+                Piece::Field { name, .. } => Some(name.as_str()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// Returns `true` if the template has an optional section or uses a field twice.
+    pub(crate) fn has_optional_or_repeated_field(&self) -> bool {
+        let fields = self
+            .pieces
+            .iter()
+            .filter(|piece| matches!(piece, Piece::Field { .. }))
+            .count();
+        fields != self.required_fields().len()
+            || self
+                .pieces
+                .iter()
+                .any(|piece| matches!(piece, Piece::Optional(_)))
+    }
+
+    /// Returns the regular expression of an episode token (X34). A space in the template's
+    /// text matches a space, `.`, `-`, `_` or nothing, as in a release word spelling (X19).
+    pub(crate) fn token_pattern(&self) -> String {
+        self.pieces
+            .iter()
+            .map(|piece| match piece {
+                Piece::Literal(literal) => literal
+                    .split(' ')
+                    .map(regex::escape)
+                    .collect::<Vec<_>>()
+                    .join("[ ._-]?"),
+                Piece::Field { name, .. } if name == "season" => r"(?P<season>\d{1,4})".to_owned(),
+                Piece::Field { name, .. } => format!(r"(?P<{name}>\d{{1,6}})"),
+                Piece::Optional(_) => String::new(),
+            })
+            .collect()
+    }
+
+    /// Returns the literal text of the template, with each field replaced by a space.
+    pub(crate) fn literal_text(&self) -> String {
+        fn collect(pieces: &[Piece], text: &mut String) {
+            for piece in pieces {
+                match piece {
+                    Piece::Literal(literal) => text.push_str(literal),
+                    Piece::Field { .. } => text.push(' '),
+                    Piece::Optional(inner) => collect(inner, text),
+                }
+            }
+        }
+        let mut text = String::new();
+        collect(&self.pieces, &mut text);
+        text
     }
 
     /// Renders `facts`. A field outside an optional section that has no value is reported in

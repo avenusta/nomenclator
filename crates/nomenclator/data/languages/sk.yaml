@@ -7,3 +7,5 @@ series_season_words:
   add: ["séria"]
 languages:
   add: { sk: ["slovenčina", "slovencina"] }
+episode_words:
+  add: ["diel", "epizóda"]

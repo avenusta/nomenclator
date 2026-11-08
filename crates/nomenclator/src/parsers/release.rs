@@ -445,7 +445,7 @@ fn language_words(
     words: &[FoundWord],
 ) -> Vec<(String, Span)> {
     let mut found = Vec::new();
-    for token in lexical::tokenize(&stem[region_start..]) {
+    for token in lexical::tokenize(rules, &stem[region_start..]) {
         if token.kind != lexical::TokenKind::Word {
             continue;
         }

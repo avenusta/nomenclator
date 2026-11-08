@@ -51,7 +51,7 @@ impl Rules {
     ) -> SeasonFolder {
         let rules = self;
         let original = name;
-        let name = unwrap_single_bracket_group(name.trim());
+        let name = unwrap_single_bracket_group(rules, name.trim());
         let offset = name.as_ptr() as usize - original.as_ptr() as usize;
         let folded = lexical::vocabulary_form(name);
         let season = match season(rules, name, &folded, parent_name, parent_is_series_folder) {
@@ -133,8 +133,8 @@ fn resolved(value: u16, rule: Rule, span: Span) -> Finding<u16> {
 
 /// Returns the contents of a name that is a single bracket group, so `[Show.S04.1080p]` is
 /// read as `Show.S04.1080p`. Returns `name` unchanged otherwise.
-fn unwrap_single_bracket_group(name: &str) -> &str {
-    match lexical::tokenize(name).as_slice() {
+fn unwrap_single_bracket_group<'a>(rules: &Rules, name: &'a str) -> &'a str {
+    match lexical::tokenize(rules, name).as_slice() {
         [token] => match token.kind {
             TokenKind::Bracket { inner } if token.span == Span(0, name.len()) => {
                 &name[inner.0..inner.1]

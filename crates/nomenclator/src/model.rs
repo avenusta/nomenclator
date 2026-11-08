@@ -114,6 +114,7 @@ pub enum SidecarKind {
 /// A track flag read from a sidecar name, in canonical order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum SidecarFlag {
     /// The default track.
     Default,
@@ -126,6 +127,7 @@ pub enum SidecarFlag {
 /// A 3D layout named in a file or folder name.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum Format3d {
     /// `sbs`.
     SideBySide,
@@ -148,6 +150,7 @@ pub enum Format3d {
 /// The kind of extra that a file or folder is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum ExtraKind {
     /// A trailer.
     Trailer,
@@ -177,11 +180,16 @@ pub enum ExtraKind {
     Other,
     /// An extra of no stated kind, from an `extras` folder or suffix.
     Extra,
+    /// An opening video (E10).
+    Opening,
+    /// An ending video (E10).
+    Ending,
 }
 
 /// The item that a local NFO file describes, by its name (S9).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum NfoRole {
     /// The item of the video it is named after.
     Video,
@@ -197,6 +205,7 @@ pub enum NfoRole {
 /// The role a local artwork image plays.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum ArtworkRole {
     /// `poster`, `cover`, `default`, `folder`.
     Poster,
@@ -208,6 +217,10 @@ pub enum ArtworkRole {
     Logo,
     /// `thumb`, `landscape`.
     Thumb,
+    /// `clearart`.
+    ClearArt,
+    /// `discart`, `disc`.
+    DiscArt,
     /// A video's still, `<video stem>-thumb` (S6).
     EpisodeStill,
     /// An image whose name gives no role.
@@ -216,6 +229,8 @@ pub enum ArtworkRole {
 
 /// The ambiguity reason of an item with two values of one provider's ID.
 pub(crate) const CONFLICTING_PROVIDER_ID: &str = "conflicting_provider_id";
+/// The ambiguity reason of a bracket tag key with two values (X29).
+pub(crate) const CONFLICTING_TAG: &str = "conflicting_tag";
 /// The ambiguity reason of parts with a gap (M11).
 pub(crate) const MISSING_PART: &str = "missing_part";
 /// The ambiguity reason of parts with a repeated number (M11).

@@ -7,3 +7,5 @@ ordinal_suffixes:
   add: ["."]
 languages:
   add: { da: ["dansk"] }
+episode_words:
+  add: ["afsnit"]

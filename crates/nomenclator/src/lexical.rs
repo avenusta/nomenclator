@@ -10,7 +10,7 @@ use unicode_normalization::UnicodeNormalization;
 
 use crate::data;
 use crate::model::{EntryKind, Finding, Format3d, SidecarFlag, Span};
-use crate::rules::{DateOrder, Rules};
+use crate::rules::{DateOrder, Rules, TagFact};
 
 /// Returns the part of `name` before its extension.
 /// Returns all of `name` if `kind` is a folder, because folders have no extension.
@@ -49,10 +49,10 @@ pub(crate) struct Token {
     pub kind: TokenKind,
 }
 
-/// Splits a name into words, bracket groups and standalone dashes. Spaces, dots,
-/// underscores and in-word dashes (`x264-GRP`) separate words; a dash between digits
-/// (`2013-12-09`) does not.
-pub(crate) fn tokenize(text: &str) -> Vec<Token> {
+/// Splits a name into words, bracket groups and standalone dashes. The separators of `rules`
+/// and in-word dashes (`x264-GRP`) separate words; a dash between digits (`2013-12-09`) does
+/// not.
+pub(crate) fn tokenize(rules: &Rules, text: &str) -> Vec<Token> {
     let bytes = text.as_bytes();
     let mut tokens = Vec::new();
     let mut word_start: Option<usize> = None;
@@ -65,57 +65,53 @@ pub(crate) fn tokenize(text: &str) -> Vec<Token> {
             });
         }
     };
-    while index < bytes.len() {
-        if let Some(close) = matching_close(bytes, index) {
+    while let Some(character) = text[index..].chars().next() {
+        if let Some(&close) = rules.bracket_pairs.get(&character)
+            && let Some(close_index) = matching_close(text, index, character, close)
+        {
             flush(&mut tokens, &mut word_start, index);
+            let end = close_index + close.len_utf8();
             tokens.push(Token {
-                span: Span(index, close + 1),
+                span: Span(index, end),
                 kind: TokenKind::Bracket {
-                    inner: Span(index + 1, close),
+                    inner: Span(index + character.len_utf8(), close_index),
                 },
             });
-            index = close + 1;
+            index = end;
             continue;
         }
         let between_digits = index > 0
             && bytes[index - 1].is_ascii_digit()
             && bytes.get(index + 1).is_some_and(u8::is_ascii_digit);
-        match bytes[index] {
-            b' ' | b'.' | b'_' => flush(&mut tokens, &mut word_start, index),
-            b'-' if word_start.is_some() && !between_digits => {
-                flush(&mut tokens, &mut word_start, index);
-            }
-            b'-' if word_start.is_none() => {
-                tokens.push(Token {
-                    span: Span(index, index + 1),
-                    kind: TokenKind::Dash,
-                });
-            }
-            _ if word_start.is_none() => word_start = Some(index),
-            _ => {}
+        let ends_word = rules.separators.contains(&character)
+            || (character == '-' && word_start.is_some() && !between_digits);
+        if ends_word {
+            flush(&mut tokens, &mut word_start, index);
+        } else if character == '-' && word_start.is_none() {
+            tokens.push(Token {
+                span: Span(index, index + 1),
+                kind: TokenKind::Dash,
+            });
+        } else if word_start.is_none() {
+            word_start = Some(index);
         }
-        index += 1;
+        index += character.len_utf8();
     }
     flush(&mut tokens, &mut word_start, bytes.len());
     tokens
 }
 
-fn matching_close(bytes: &[u8], open_index: usize) -> Option<usize> {
-    let open = bytes[open_index];
-    let close = match open {
-        b'(' => b')',
-        b'[' => b']',
-        b'{' => b'}',
-        _ => return None,
-    };
+/// Returns the byte offset of the `close` that balances the `open` at `open_index`.
+/// Returns `None` if the group is not closed.
+fn matching_close(text: &str, open_index: usize, open: char, close: char) -> Option<usize> {
     let mut depth = 0;
-    for (index, &byte) in bytes.iter().enumerate().skip(open_index) {
-        if byte == open {
+    for (offset, character) in text[open_index..].char_indices() {
+        if character == open {
             depth += 1;
-        } else if byte == close {
+        } else if character == close {
             depth -= 1;
             if depth == 0 {
-                return Some(index);
+                return Some(open_index + offset);
             }
         }
     }
@@ -178,7 +174,12 @@ pub(crate) fn classify_word(rules: &Rules, word: &str) -> WordClass {
 /// number.
 pub(crate) fn is_reserved_word(word: &str) -> bool {
     let lower = vocabulary_form(word);
-    year_up_to(word, data::LATEST_PLAUSIBLE_YEAR).is_some()
+    year_within(
+        word,
+        data::EARLIEST_PLAUSIBLE_YEAR,
+        data::LATEST_PLAUSIBLE_YEAR,
+    )
+    .is_some()
         || EPISODE_MARKER_PATTERN.is_match(&lower)
         || TECHNICAL_PATTERN.is_match(&lower)
         || VERSION_WORD_PATTERN.is_match(&lower)
@@ -202,7 +203,8 @@ impl TitlePart {
             TitlePart::Bracket(
                 BracketClass::Metadata
                     | BracketClass::ProviderTag { .. }
-                    | BracketClass::BareImdbId(_)
+                    | BracketClass::BareProviderId { .. }
+                    | BracketClass::CustomTag { .. }
                     | BracketClass::EditionTag(_)
             )
         )
@@ -229,7 +231,7 @@ pub(crate) fn classify_title_token(rules: &Rules, text: &str, token: Token) -> T
     match token.kind {
         TokenKind::Word => TitlePart::Word(classify_word(rules, &text[token.span.0..token.span.1])),
         TokenKind::Bracket { inner } => {
-            TitlePart::Bracket(classify_bracket(rules, &text[inner.0..inner.1]))
+            TitlePart::Bracket(classify_bracket(rules, text, token.span, inner))
         }
         TokenKind::Dash => TitlePart::Dash,
     }
@@ -269,20 +271,24 @@ pub(crate) fn format_3d_word(rules: &Rules, word: &str) -> Option<Format3d> {
     rules.format_3d_words.get(&vocabulary_form(word)).copied()
 }
 
-/// Parses `word` as a four-digit year from 1900 to the latest plausible year of the rules (X5,
-/// 2099 by default).
+/// Parses `word` as a four-digit year between the earliest and the latest plausible year of
+/// the rules (X5, 1900 to 2099 by default).
 /// Returns `None` if `word` is not such a year.
 pub(crate) fn parse_year(rules: &Rules, word: &str) -> Option<u16> {
-    year_up_to(word, rules.presets.latest_plausible_year)
+    year_within(
+        word,
+        rules.presets.earliest_plausible_year,
+        rules.presets.latest_plausible_year,
+    )
 }
 
-fn year_up_to(word: &str, latest: u16) -> Option<u16> {
+fn year_within(word: &str, earliest: u16, latest: u16) -> Option<u16> {
     if word.len() != 4 || !word.bytes().all(|byte| byte.is_ascii_digit()) {
         return None;
     }
     word.parse()
         .ok()
-        .filter(|year| (data::EARLIEST_PLAUSIBLE_YEAR..=latest).contains(year))
+        .filter(|year| (earliest..=latest).contains(year))
 }
 
 /// What a bracket group holds.
@@ -293,7 +299,16 @@ pub(crate) enum BracketClass {
         provider: String,
         id: String,
     },
-    BareImdbId(String),
+    /// A provider ID that has a prefixed shape, alone in brackets.
+    BareProviderId {
+        provider: String,
+        id: String,
+    },
+    /// A `{key-value}` tag whose key states no typed fact (X29).
+    CustomTag {
+        key: String,
+        value: String,
+    },
     EditionTag(String),
     /// Checksums, subtitle or audio markers, and unfilled templates. These brackets are removed
     /// from the title entirely.
@@ -306,47 +321,22 @@ pub(crate) enum BracketClass {
     Other,
 }
 
-static PROVIDER_TAG_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)^\s*([a-z]+?)(?:id)?\s*[-=]\s*(\S+)\s*$").expect("valid provider pattern")
+/// A key, its separator and its value: `tmdb-1`, `imdbid=tt0000001`, `edition-Final Cut`.
+static TAG_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)^([a-z][a-z0-9_]*?)(\s*[-=]\s*)(.*)$").expect("valid tag pattern")
 });
-/// A provider key with no value, as left by an unfilled template: `{imdb-}`.
-static UNFILLED_PROVIDER_TAG_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)^\s*([a-z]+?)(?:id)?\s*[-=]\s*$").expect("valid provider pattern")
-});
-static IMDB_ID_PATTERN: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^tt\d{7,10}$").expect("valid imdb pattern"));
 static METADATA_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)^(?:[0-9a-f]{8}|(?:multi(?:ple)?|dual)[ ._-]?(?:audio|subs?|subtitles?)?|字)$")
         .expect("valid metadata pattern")
 });
-static EDITION_TAG_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(&format!(r"(?i)^{}-(.+)$", data::EDITION_TAG_KEY)).expect("valid edition pattern")
-});
-
-pub(crate) fn classify_bracket(rules: &Rules, inner: &str) -> BracketClass {
-    let trimmed = inner.trim();
+/// Classifies the bracket group at `span` of `text`, whose content is at `inner`.
+pub(crate) fn classify_bracket(rules: &Rules, text: &str, span: Span, inner: Span) -> BracketClass {
+    let trimmed = text[inner.0..inner.1].trim();
     if let Some(year) = parse_year(rules, trimmed) {
         return BracketClass::Year(year);
     }
-    if let Some(captures) = EDITION_TAG_PATTERN.captures(trimmed) {
-        return BracketClass::EditionTag(captures[1].trim().to_owned());
-    }
-    if IMDB_ID_PATTERN.is_match(trimmed) {
-        return BracketClass::BareImdbId(trimmed.to_owned());
-    }
-    if let Some(captures) = PROVIDER_TAG_PATTERN.captures(trimmed) {
-        let provider = vocabulary_form(&captures[1]);
-        if rules.provider_keys.contains(&provider) {
-            return match valid_provider_id(&provider, &captures[2]) {
-                Some(id) => BracketClass::ProviderTag { provider, id },
-                None => BracketClass::Metadata,
-            };
-        }
-    }
-    if let Some(captures) = UNFILLED_PROVIDER_TAG_PATTERN.captures(trimmed)
-        && rules.provider_keys.contains(&vocabulary_form(&captures[1]))
-    {
-        return BracketClass::Metadata;
+    if let Some(class) = classify_tag(rules, trimmed, text[span.0..].starts_with('{')) {
+        return class;
     }
     if trimmed.contains('{') || METADATA_PATTERN.is_match(trimmed) {
         return BracketClass::Metadata;
@@ -362,7 +352,7 @@ pub(crate) fn classify_bracket(rules: &Rules, inner: &str) -> BracketClass {
     {
         return BracketClass::ReleaseGroup;
     }
-    let word_classes: Vec<WordClass> = tokenize(trimmed)
+    let word_classes: Vec<WordClass> = tokenize(rules, trimmed)
         .iter()
         .filter(|token| token.kind == TokenKind::Word)
         .map(|token| classify_word(rules, &trimmed[token.span.0..token.span.1]))
@@ -379,60 +369,100 @@ pub(crate) fn classify_bracket(rules: &Rules, inner: &str) -> BracketClass {
     }
 }
 
-/// Returns `value` if it is a valid ID of `provider`: an IMDb `tt` ID, or a positive
-/// integer for the other providers.
-pub(crate) fn valid_provider_id(provider: &str, value: &str) -> Option<String> {
-    if provider == "imdb" {
-        let is_valid =
-            IMDB_ID_PATTERN.is_match(value) && value[2..].bytes().any(|byte| byte != b'0');
-        return is_valid.then(|| value.to_owned());
+/// Classifies `text` as a tag: a provider ID alone, a known key with its value, or a curly
+/// `key-value` tag (X29).
+/// Returns `None` if `text` is not a tag.
+fn classify_tag(rules: &Rules, text: &str, is_curly: bool) -> Option<BracketClass> {
+    if let Some(provider) = bare_id_provider(rules, text) {
+        return Some(BracketClass::BareProviderId {
+            provider,
+            id: text.to_owned(),
+        });
     }
-    let is_positive_integer = !value.is_empty()
-        && value.bytes().all(|byte| byte.is_ascii_digit())
-        && value.bytes().any(|byte| byte != b'0');
-    is_positive_integer.then(|| value.to_owned())
+    let captures = TAG_PATTERN.captures(text)?;
+    let key = vocabulary_form(&captures[1]);
+    let value = &captures[3];
+    match rules.tag(&key) {
+        Some((_, TagFact::Edition)) if &captures[2] == "-" && !value.is_empty() => {
+            Some(BracketClass::EditionTag(value.trim().to_owned()))
+        }
+        Some((provider, TagFact::ProviderId { id: shape }))
+            if !value.contains(char::is_whitespace) =>
+        {
+            Some(if shape.is_valid(value) {
+                BracketClass::ProviderTag {
+                    provider,
+                    id: value.to_owned(),
+                }
+            } else {
+                // An unfilled template (`{imdb-}`) or an invalid ID.
+                BracketClass::Metadata
+            })
+        }
+        None if is_curly && !value.is_empty() => Some(BracketClass::CustomTag {
+            key,
+            value: value.to_owned(),
+        }),
+        _ => None,
+    }
+}
+
+/// Returns the provider whose prefixed shape `text` has.
+/// Returns `None` if no provider has that shape.
+fn bare_id_provider(rules: &Rules, text: &str) -> Option<String> {
+    rules.tags.iter().find_map(|(key, fact)| match fact {
+        TagFact::ProviderId { id: shape } if shape.is_prefixed() && shape.has_form(text) => {
+            Some(key.clone())
+        }
+        _ => None,
+    })
 }
 
 /// Reads the provider IDs from every bracket group in `text`.
 /// Returns an ambiguous finding for a provider that is claimed with different values.
-/// Uses a bare IMDb ID only if no tag supplies the IMDb ID. Uses an unbracketed IMDb ID that
-/// ends the text only if `accept_final_bare_imdb_id` is `true` (M7: the final token of a
-/// folder name).
+/// Uses a provider ID alone in brackets only if no tag supplies an ID of that provider. Uses
+/// an unbracketed ID that ends the text only if `accept_final_bare_id` is `true` (M7: the
+/// final token of a folder name).
 pub(crate) fn provider_ids(
     rules: &Rules,
     text: &str,
-    accept_final_bare_imdb_id: bool,
+    accept_final_bare_id: bool,
 ) -> BTreeMap<String, Finding<String>> {
     let mut claims: BTreeMap<String, Vec<String>> = BTreeMap::new();
-    let mut bare_imdb = None;
-    for token in tokenize(text) {
+    let mut bare_ids: BTreeMap<String, String> = BTreeMap::new();
+    for token in tokenize(rules, text) {
         let TokenKind::Bracket { inner } = token.kind else {
             continue;
         };
-        match classify_bracket(rules, &text[inner.0..inner.1]) {
+        match classify_bracket(rules, text, token.span, inner) {
             BracketClass::ProviderTag { provider, id } => {
                 let values = claims.entry(provider).or_default();
                 if !values.contains(&id) {
                     values.push(id);
                 }
             }
-            BracketClass::BareImdbId(id) if valid_provider_id("imdb", &id).is_some() => {
-                bare_imdb.get_or_insert(id);
+            BracketClass::BareProviderId { provider, id }
+                if rules.valid_provider_id(&provider, &id).is_some() =>
+            {
+                bare_ids.entry(provider).or_insert(id);
             }
             _ => {}
         }
     }
-    // A bare IMDb ID ending the last path component, as in `Movie (2021) tt8049994`.
+    // A bare ID ending the last path component, as in `Movie (2021) tt8049994`.
     let last_component = text.rsplit('/').next().unwrap_or(text);
     if let Some(last_word) = last_component.split(' ').next_back()
-        && accept_final_bare_imdb_id
+        && accept_final_bare_id
         && last_component.contains(' ')
-        && valid_provider_id("imdb", last_word).is_some()
+        && let Some(provider) = bare_id_provider(rules, last_word)
+        && rules.valid_provider_id(&provider, last_word).is_some()
     {
-        bare_imdb.get_or_insert(last_word.to_owned());
+        bare_ids
+            .entry(provider)
+            .or_insert_with(|| last_word.to_owned());
     }
-    if let Some(id) = bare_imdb {
-        claims.entry("imdb".to_owned()).or_insert_with(|| vec![id]);
+    for (provider, id) in bare_ids {
+        claims.entry(provider).or_insert_with(|| vec![id]);
     }
     claims
         .into_iter()
@@ -453,6 +483,42 @@ pub(crate) fn provider_ids(
         .collect()
 }
 
+/// Reads the `{key-value}` tags of `text` whose keys state no typed fact (X29).
+/// Returns an ambiguous finding for a key that is stated with different values.
+pub(crate) fn custom_tags(rules: &Rules, text: &str) -> BTreeMap<String, Finding<String>> {
+    let mut claims: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for token in tokenize(rules, text) {
+        let TokenKind::Bracket { inner } = token.kind else {
+            continue;
+        };
+        if let BracketClass::CustomTag { key, value } =
+            classify_bracket(rules, text, token.span, inner)
+        {
+            let values = claims.entry(key).or_default();
+            if !values.contains(&value) {
+                values.push(value);
+            }
+        }
+    }
+    claims
+        .into_iter()
+        .map(|(key, mut values)| {
+            let finding = if values.len() == 1 {
+                Finding::Resolved {
+                    value: values.remove(0),
+                    evidence: None,
+                }
+            } else {
+                Finding::Ambiguous {
+                    candidates: values,
+                    reason: crate::model::CONFLICTING_TAG,
+                }
+            };
+            (key, finding)
+        })
+        .collect()
+}
+
 static ACRONYM_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\b(?:[A-Z]\.){2,}(?:[A-Z]\b)?").expect("valid acronym pattern"));
 
@@ -467,21 +533,22 @@ pub(crate) fn ends_with_dotted_acronym(text: &str) -> bool {
 
 /// Returns the display title of `raw`. If the text has no spaces, dots and underscores become
 /// spaces, except inside dotted acronyms. Letter case is kept.
-pub(crate) fn display_title(raw: &str) -> String {
-    display_title_among(raw, raw.contains(' '))
+pub(crate) fn display_title(rules: &Rules, raw: &str) -> String {
+    display_title_among(rules, raw, raw.contains(' '))
 }
 
 /// Returns the [`display_title`] of a name that is read with its siblings.
 /// Keeps dots and underscores if `spaced` is `true`, which means that the name, or a name
 /// that is read the same way, has spaces (M6).
-pub(crate) fn display_title_among(raw: &str, spaced: bool) -> String {
+pub(crate) fn display_title_among(rules: &Rules, raw: &str, spaced: bool) -> String {
     if spaced {
         return raw.to_owned();
     }
+    let separators: Vec<char> = rules.separators.iter().copied().collect();
     let mut result = String::with_capacity(raw.len());
     let mut position = 0;
     for acronym in ACRONYM_PATTERN.find_iter(raw) {
-        result.push_str(&raw[position..acronym.start()].replace(['.', '_'], " "));
+        result.push_str(&raw[position..acronym.start()].replace(separators.as_slice(), " "));
         // A dotted acronym is written with its final dot (`A.I.`, `S.W.A.T.`), whether or not
         // the name's next separator dot was read as part of it.
         result.push_str(acronym.as_str().trim_end_matches('.'));
@@ -489,7 +556,7 @@ pub(crate) fn display_title_among(raw: &str, spaced: bool) -> String {
         position = acronym.end();
         result.push(' ');
     }
-    result.push_str(&raw[position..].replace(['.', '_'], " "));
+    result.push_str(&raw[position..].replace(separators.as_slice(), " "));
     result
         .split(' ')
         .filter(|part| !part.is_empty())
@@ -751,7 +818,7 @@ static YEAR_LAST_DATE_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
 /// above 12.
 /// Returns `None` if `text` contains no date.
 pub(crate) fn find_date(rules: &Rules, text: &str) -> Option<DateMatch> {
-    let is_plausible = |year: &str| year_up_to(year, rules.presets.latest_plausible_year).is_some();
+    let is_plausible = |year: &str| parse_year(rules, year).is_some();
     let is_digit_boundary = |position: usize| {
         let before = text[..position].chars().next_back();
         let after = text[position..].chars().next();
@@ -877,7 +944,7 @@ pub(crate) fn without_leading_alias(title: &str) -> Option<&str> {
 
 /// Returns `true` if `stem` contains an episode token such as `S01E02` or `e05`.
 pub(crate) fn has_episode_marker(rules: &Rules, stem: &str) -> bool {
-    tokenize(stem).iter().any(|token| {
+    tokenize(rules, stem).iter().any(|token| {
         token.kind == TokenKind::Word
             && classify_word(rules, &stem[token.span.0..token.span.1]) == WordClass::EpisodeMarker
     })

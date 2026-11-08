@@ -18,6 +18,8 @@ pub struct MovieName {
     pub year: Finding<u16>,
     /// Provider IDs from the bracketed tags, keyed by provider (M7).
     pub provider_ids: BTreeMap<String, Finding<String>>,
+    /// The `{key-value}` tags whose keys state no typed fact, keyed by tag key (X29).
+    pub tags: BTreeMap<String, Finding<String>>,
     /// The raw text of an `{edition-X}` or `[edition-X]` tag.
     pub edition: Finding<String>,
     /// Edition words after the title, such as `Extended`. They are a hint, never an edition.
@@ -56,7 +58,7 @@ impl Rules {
     pub fn parse_movie_name(&self, name: &str, kind: EntryKind) -> MovieName {
         let rules = self;
         let stem = lexical::stem(name, kind);
-        let all_tokens: Vec<(Token, Part)> = lexical::tokenize(stem)
+        let all_tokens: Vec<(Token, Part)> = lexical::tokenize(rules, stem)
             .into_iter()
             .map(|token| (token, lexical::classify_title_token(rules, stem, token)))
             .collect();
@@ -73,7 +75,15 @@ impl Rules {
         let (year_index, year) = choose_year(&tokens, start, cut);
         let title_end = year_index.map_or(cut, |index| index.min(cut));
 
-        let title = title_finding(stem, &tokens, start, title_end, year_index.is_some(), cut);
+        let title = title_finding(
+            rules,
+            stem,
+            &tokens,
+            start,
+            title_end,
+            year_index.is_some(),
+            cut,
+        );
         let (title, alternate_titles) = split_alternate_titles(rules, stem, title);
         let has_bracketed_year = matches!(
             year_index.map(|index| &tokens[index].1),
@@ -88,8 +98,9 @@ impl Rules {
             title,
             year,
             provider_ids,
+            tags: lexical::custom_tags(rules, stem),
             edition,
-            edition_hint: edition_hint(stem, &tokens, title_end),
+            edition_hint: edition_hint(rules, stem, &tokens, title_end),
             format_3d: format_3d(rules, stem, &tokens, title_end),
             container: lexical::extension(name, kind),
             trusted,
@@ -264,6 +275,7 @@ static DISC_RIP_TRACK_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 fn title_finding(
+    rules: &Rules,
     stem: &str,
     tokens: &[(Token, Part)],
     start: usize,
@@ -277,7 +289,7 @@ fn title_finding(
     let raw_span = Span(tokens[start].0.span.0, tokens[end - 1].0.span.1);
     let raw = stem[raw_span.0..raw_span.1].trim_end_matches([' ', '.', '_', '-']);
     let span = Span(raw_span.0, raw_span.0 + raw.len());
-    let value = lexical::display_title(raw);
+    let value = lexical::display_title(rules, raw);
     if value.is_empty() || DISC_RIP_TRACK_PATTERN.is_match(raw) {
         return Finding::Unknown;
     }
@@ -336,7 +348,12 @@ fn mark_edition_phrases(rules: &Rules, stem: &str, tokens: &mut [(Token, Part)])
 
 /// Returns the first run of edition words after the title.
 /// Returns `Unknown` if no edition word follows the title.
-fn edition_hint(stem: &str, tokens: &[(Token, Part)], title_end: usize) -> Finding<String> {
+fn edition_hint(
+    rules: &Rules,
+    stem: &str,
+    tokens: &[(Token, Part)],
+    title_end: usize,
+) -> Finding<String> {
     let is_edition_word = |index: &usize| tokens[*index].1 == Part::Word(WordClass::Edition);
     let Some(first) = (title_end..tokens.len()).find(is_edition_word) else {
         return Finding::Unknown;
@@ -347,7 +364,7 @@ fn edition_hint(stem: &str, tokens: &[(Token, Part)], title_end: usize) -> Findi
         .unwrap_or(first);
     let span = Span(tokens[first].0.span.0, tokens[last].0.span.1);
     Finding::Resolved {
-        value: lexical::display_title(&stem[span.0..span.1]),
+        value: lexical::display_title(rules, &stem[span.0..span.1]),
         evidence: Some(Evidence {
             rule: Rule::EditionWords,
             span,
@@ -369,7 +386,7 @@ fn format_3d(
         match token.kind {
             TokenKind::Word => words.push(token.span),
             TokenKind::Bracket { inner } => words.extend(
-                lexical::tokenize(&stem[inner.0..inner.1])
+                lexical::tokenize(rules, &stem[inner.0..inner.1])
                     .into_iter()
                     .filter(|word| word.kind == TokenKind::Word)
                     .map(|word| Span(inner.0 + word.span.0, inner.0 + word.span.1)),
@@ -435,13 +452,13 @@ fn split_alternate_titles(
         let text = text.trim_matches([' ', '.', '_', '-']);
         (
             Span(from + trimmed_start, from + trimmed_start + text.len()),
-            lexical::display_title(text),
+            lexical::display_title(rules, text),
         )
     };
     loop {
         let raw = &stem[start..end];
         // A trailing parenthesised group of words after the title.
-        let last = lexical::tokenize(raw).into_iter().last();
+        let last = lexical::tokenize(rules, raw).into_iter().last();
         if let Some(Token {
             kind: TokenKind::Bracket { inner },
             span,

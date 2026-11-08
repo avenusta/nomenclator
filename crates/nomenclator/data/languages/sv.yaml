@@ -5,3 +5,5 @@ season_words:
   add: ["säsong"]
 languages:
   add: { sv: ["svenska"] }
+episode_words:
+  add: ["avsnitt"]

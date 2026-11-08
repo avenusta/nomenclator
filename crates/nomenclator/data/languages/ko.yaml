@@ -5,3 +5,5 @@ season_words:
   add: ["시즌"]
 languages:
   add: { ko: ["한국어"] }
+episode_words:
+  add: ["에피소드"]

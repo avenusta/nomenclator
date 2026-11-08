@@ -12,10 +12,12 @@ use serde_json::Value;
 use crate::data;
 use crate::lexical::{self, fold_case_text};
 use crate::model::{ArtworkRole, ExtraKind, Format3d, NfoRole, SidecarFlag};
+use crate::parsers::episode_name::SpecialKind;
 use crate::parsers::extras::folded_vocabulary_form;
 use crate::parsers::release::{ReleaseFact, release_spelling_form};
-use crate::rendering::OutputProfile;
-use crate::rules::{PresetError, Rules, RulesIdentity};
+use crate::rendering::template::Template;
+use crate::rendering::{OutputProfile, TemplateSlot, literal_words};
+use crate::rules::{IdShape, PresetError, Rules, RulesIdentity, TagFact};
 
 /// One overlay, read from a YAML or JSON document:
 ///
@@ -28,12 +30,13 @@ use crate::rules::{PresetError, Rules, RulesIdentity};
 ///   add: { Making Of: behind_the_scenes }
 /// ```
 ///
-/// Every vocabulary takes `add` and `remove`. Word lists add a list; `extras_folders`,
+/// Every vocabulary takes `add` and `remove`, or `replace`, which has the shape of `add` and
+/// drops every other entry of the vocabulary except its canonical names. Word lists add a list; `extras_folders`,
 /// `extras_suffixes`, `extras_video_names` and `extras_audio_names` add a map from word to
 /// extra kind, `artwork_roles` from word to artwork role, `nfo_names` from name to NFO role,
 /// `languages` from BCP 47 tag to its spellings, `release_words` from release fact to
 /// value to spellings, `audio_channel_words` from word to channel layout,
-/// `format_3d_words` from word to 3D layout, `letter_folds` from one letter to its spelling,
+/// `tags` from key to its fact, `bracket_pairs` from opening to closing character, `format_3d_words` from word to 3D layout, `letter_folds` from one letter to its spelling,
 /// and `hearing_impaired_or_language_words` from word to BCP 47 tag. `remove` is always a
 /// list of entries.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -141,7 +144,13 @@ enum Vocabulary {
     HearingImpairedFlagWords,
     ArtworkRoles,
     NfoNames,
-    ProviderKeys,
+    Tags,
+    EpisodeTokens,
+    Separators,
+    BracketPairs,
+    EpisodeWords,
+    SpecialPrefixes,
+    AnimationSpecialWords,
     VideoExtensions,
     AudioExtensions,
     SubtitleExtensions,
@@ -209,7 +218,13 @@ const VOCABULARIES: &[(&str, Vocabulary)] = &[
     ),
     ("artwork_roles", Vocabulary::ArtworkRoles),
     ("nfo_names", Vocabulary::NfoNames),
-    ("provider_keys", Vocabulary::ProviderKeys),
+    ("tags", Vocabulary::Tags),
+    ("episode_tokens", Vocabulary::EpisodeTokens),
+    ("separators", Vocabulary::Separators),
+    ("bracket_pairs", Vocabulary::BracketPairs),
+    ("episode_words", Vocabulary::EpisodeWords),
+    ("special_prefixes", Vocabulary::SpecialPrefixes),
+    ("animation_special_words", Vocabulary::AnimationSpecialWords),
     ("video_extensions", Vocabulary::VideoExtensions),
     ("audio_extensions", Vocabulary::AudioExtensions),
     ("subtitle_extensions", Vocabulary::SubtitleExtensions),
@@ -290,6 +305,8 @@ impl Vocabulary {
                 | Vocabulary::Languages
                 | Vocabulary::LeadingArticles
                 | Vocabulary::NumberWords
+                | Vocabulary::EpisodeWords
+                | Vocabulary::AnimationSpecialWords
                 | Vocabulary::PartWords
                 | Vocabulary::DiscFolderWords
                 | Vocabulary::Format3dWords
@@ -330,6 +347,9 @@ impl Vocabulary {
     fn normalize(self, raw: &str) -> String {
         let lower = lexical::vocabulary_form(raw.trim());
         match self {
+            // A separator can be a space, which trimming would drop.
+            Vocabulary::Separators => raw.to_owned(),
+            Vocabulary::BracketPairs | Vocabulary::EpisodeTokens => raw.trim().to_owned(),
             Vocabulary::ExtrasFolders
             | Vocabulary::ExtrasSuffixes
             | Vocabulary::ExtrasVideoNames
@@ -382,6 +402,8 @@ struct Change {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Action {
+    /// Removes every entry of the vocabulary, before the additions of a `replace`.
+    Clear,
     Remove,
     Add(Meaning),
 }
@@ -400,11 +422,15 @@ enum Meaning {
     ChannelLayout(String),
     Format3d(Format3d),
     SpelledLetter(String),
+    Tag(TagFact),
+    Special(SpecialKind),
+    ClosingBracket(char),
 }
 
 impl Action {
     fn describe(&self) -> String {
         match self {
+            Action::Clear => "replace".to_owned(),
             Action::Remove => "remove".to_owned(),
             Action::Add(Meaning::Word) => "add".to_owned(),
             Action::Add(Meaning::Extra(kind)) => format!("add {kind:?}"),
@@ -417,6 +443,9 @@ impl Action {
             Action::Add(Meaning::ChannelLayout(layout)) => format!("add {layout}"),
             Action::Add(Meaning::Format3d(format)) => format!("add {format:?}"),
             Action::Add(Meaning::SpelledLetter(spelled)) => format!("add {spelled}"),
+            Action::Add(Meaning::Tag(fact)) => format!("add {fact:?}"),
+            Action::Add(Meaning::Special(kind)) => format!("add {kind:?}"),
+            Action::Add(Meaning::ClosingBracket(close)) => format!("add {close}"),
         }
     }
 }
@@ -495,7 +524,9 @@ impl Overlay {
                             entry: Some(change.entry.clone()).filter(|entry| !entry.is_empty()),
                             ..at(reason)
                         };
-                        if change.entry.is_empty() {
+                        if change.action == Action::Clear {
+                            changes.push(change);
+                        } else if change.entry.is_empty() {
                             diagnostics.push(at_entry(OverlayDiagnosticReason::EmptyEntry));
                         } else if vocabulary == Vocabulary::BuiltInIgnoreGroups
                             && !data::BUILT_IN_IGNORE_GROUPS.contains(&change.entry.as_str())
@@ -700,11 +731,35 @@ fn read_presets(
 /// Fails if `value` does not have the shape of the vocabulary.
 fn read_changes(vocabulary: Vocabulary, value: &Value) -> Result<Vec<(String, Change)>, String> {
     let Value::Object(fields) = value else {
-        return Err("expected a mapping with `add` and `remove`".to_owned());
+        return Err("expected a mapping with `add`, `remove` or `replace`".to_owned());
     };
     let mut changes = Vec::new();
+    if fields.contains_key("replace") && fields.len() > 1 {
+        return Err("expected `replace` without `add` and `remove`".to_owned());
+    }
     for (key, value) in fields {
         match key.as_str() {
+            "replace" => {
+                changes.push((
+                    String::new(),
+                    Change {
+                        vocabulary,
+                        entry: String::new(),
+                        action: Action::Clear,
+                    },
+                ));
+                for (raw, meaning) in read_additions(vocabulary, value)? {
+                    let entry = vocabulary.normalize(&raw);
+                    changes.push((
+                        raw,
+                        Change {
+                            vocabulary,
+                            entry,
+                            action: Action::Add(meaning),
+                        },
+                    ));
+                }
+            }
             "add" => {
                 for (raw, meaning) in read_additions(vocabulary, value)? {
                     let entry = vocabulary.normalize(&raw);
@@ -731,7 +786,7 @@ fn read_changes(vocabulary: Vocabulary, value: &Value) -> Result<Vec<(String, Ch
                     ));
                 }
             }
-            _ => return Err("expected only `add` and `remove`".to_owned()),
+            _ => return Err("expected only `add`, `remove` or `replace`".to_owned()),
         }
     }
     Ok(changes)
@@ -806,6 +861,78 @@ fn read_additions(vocabulary: Vocabulary, value: &Value) -> Result<Vec<(String, 
             }
             additions
         }
+        Vocabulary::Tags => {
+            let mut additions = Vec::new();
+            for (key, fact) in read::<BTreeMap<String, TagFact>>(value)? {
+                let is_key = key.starts_with(|c: char| c.is_ascii_alphabetic())
+                    && key.chars().all(|c| c.is_ascii_alphanumeric() || c == '_');
+                if !is_key {
+                    return Err(format!("tag key `{key}` is not letters, digits and `_`"));
+                }
+                if let TagFact::ProviderId {
+                    id:
+                        IdShape::Prefixed {
+                            prefix,
+                            min_digits,
+                            max_digits,
+                        },
+                } = &fact
+                    && (prefix.is_empty() || *min_digits == 0 || min_digits > max_digits)
+                {
+                    return Err(format!("tag `{key}` has an invalid ID shape"));
+                }
+                additions.push((key, Meaning::Tag(fact)));
+            }
+            additions
+        }
+        Vocabulary::EpisodeTokens => {
+            let tokens = read::<Vec<String>>(value)?;
+            for token in &tokens {
+                check_episode_token(token)?;
+            }
+            tokens
+                .into_iter()
+                .map(|token| (token, Meaning::Word))
+                .collect()
+        }
+        Vocabulary::Separators => {
+            let separators = read::<Vec<String>>(value)?;
+            if let Some(separator) = separators.iter().find(|separator| {
+                let mut characters = separator.chars();
+                !matches!(
+                    (characters.next(), characters.next()),
+                    (Some(character), None)
+                        if !character.is_alphanumeric() && !matches!(character, '-' | '/')
+                )
+            }) {
+                return Err(format!(
+                    "separator `{separator}` is not one character other than a letter, a digit, `-` or `/`"
+                ));
+            }
+            separators
+                .into_iter()
+                .map(|separator| (separator, Meaning::Word))
+                .collect()
+        }
+        Vocabulary::BracketPairs => {
+            let mut additions = Vec::new();
+            for (open, close) in read::<BTreeMap<String, String>>(value)? {
+                let mut closes = close.trim().chars();
+                let (Some(closing), None, 1) =
+                    (closes.next(), closes.next(), open.trim().chars().count())
+                else {
+                    return Err(format!(
+                        "bracket pair `{open}` `{close}` is not one character each"
+                    ));
+                };
+                additions.push((open, Meaning::ClosingBracket(closing)));
+            }
+            additions
+        }
+        Vocabulary::AnimationSpecialWords => read::<BTreeMap<String, SpecialKind>>(value)?
+            .into_iter()
+            .map(|(word, kind)| (word, Meaning::Special(kind)))
+            .collect(),
         Vocabulary::Format3dWords => read::<BTreeMap<String, Format3d>>(value)?
             .into_iter()
             .map(|(word, format)| (word, Meaning::Format3d(format)))
@@ -860,6 +987,26 @@ fn is_channel_layout(layout: &str) -> bool {
         && (b'0'..=b'2').contains(&bytes[2])
 }
 
+/// Checks that `text` is an episode token template: it uses `episode` once, may use `season`
+/// once, and has no optional section (X34).
+/// Fails with a description of the fault.
+fn check_episode_token(text: &str) -> Result<(), String> {
+    let template = Template::parse(text)
+        .map_err(|error| format!("episode token `{text}`: {:?}", error.reason))?;
+    let fields = template.fields();
+    if !fields.contains("episode")
+        || fields
+            .iter()
+            .any(|field| !matches!(*field, "episode" | "season"))
+        || template.has_optional_or_repeated_field()
+    {
+        return Err(format!(
+            "episode token `{text}` must use `episode` once, may use `season` once, and has no optional section"
+        ));
+    }
+    Ok(())
+}
+
 fn read<T: DeserializeOwned>(value: &Value) -> Result<T, String> {
     serde_json::from_value(value.clone()).map_err(|error| error.to_string())
 }
@@ -894,6 +1041,28 @@ fn canonical_changes() -> Vec<Change> {
     changes.push(add(
         Vocabulary::SeasonWords,
         data::SEASON_FOLDER_WORD,
+        Meaning::Word,
+    ));
+    changes.push(add(
+        Vocabulary::Tags,
+        data::EDITION_TAG_KEY,
+        Meaning::Tag(TagFact::Edition),
+    ));
+    changes.push(Change {
+        vocabulary: Vocabulary::Separators,
+        entry: data::SPACE_SEPARATOR.to_string(),
+        action: Action::Add(Meaning::Word),
+    });
+    changes.extend(data::CANONICAL_BRACKET_PAIRS.iter().map(|(open, close)| {
+        add(
+            Vocabulary::BracketPairs,
+            &open.to_string(),
+            Meaning::ClosingBracket(*close),
+        )
+    }));
+    changes.push(add(
+        Vocabulary::EpisodeWords,
+        data::EPISODE_OUTPUT_LETTER,
         Meaning::Word,
     ));
     changes.push(add(
@@ -1065,9 +1234,12 @@ impl Rules {
                 }
             }
         }
-        // Every overlay's action on each entry, in declared order.
+        // Language packs are the first layer and user overlays the second (X32), so an
+        // overlay can change a word of a pack. Only overlays of one layer can conflict.
+        let (packs, users) = overlays.split_at(overlays.len() - user_overlays.len());
+        // Every user overlay's action on each entry, in declared order.
         let mut actions: BTreeMap<(Vocabulary, &str), Vec<(&str, &Action)>> = BTreeMap::new();
-        for overlay in overlays {
+        for overlay in users {
             for change in &overlay.changes {
                 actions
                     .entry((change.vocabulary, change.entry.as_str()))
@@ -1077,7 +1249,8 @@ impl Rules {
         }
         for ((vocabulary, entry), entry_actions) in &actions {
             let (_, first) = entry_actions[0];
-            if entry_actions.iter().any(|(_, action)| *action != first) {
+            let replaced_twice = *first == Action::Clear && entry_actions.len() > 1;
+            if replaced_twice || entry_actions.iter().any(|(_, action)| *action != first) {
                 let mut names: Vec<String> = Vec::new();
                 for (name, _) in entry_actions {
                     if !names.iter().any(|known| known == name) {
@@ -1086,7 +1259,7 @@ impl Rules {
                 }
                 diagnostics.push(OverlayDiagnostic {
                     vocabulary: Some(vocabulary.name().to_owned()),
-                    entry: Some((*entry).to_owned()),
+                    entry: Some((*entry).to_owned()).filter(|entry| !entry.is_empty()),
                     overlays: names,
                     ..diagnostic(OverlayDiagnosticReason::ConflictingChange)
                 });
@@ -1096,7 +1269,10 @@ impl Rules {
             for change in &overlay.changes {
                 let is_added = actions[&(change.vocabulary, change.entry.as_str())]
                     .iter()
-                    .any(|(_, action)| matches!(action, Action::Add(_)));
+                    .any(|(_, action)| matches!(action, Action::Add(_)))
+                    || packs.iter().flat_map(|pack| &pack.changes).any(|added| {
+                        added.vocabulary == change.vocabulary && added.entry == change.entry
+                    });
                 if change.action == Action::Remove
                     && !is_added
                     && !Rules::builtin().contains(change.vocabulary, &change.entry)
@@ -1118,10 +1294,13 @@ impl Rules {
             return Err(diagnostics);
         }
         let mut rules = base;
+        for change in packs.iter().flat_map(|pack| &pack.changes) {
+            rules.apply(change.vocabulary, &change.entry, &change.action);
+        }
         for ((vocabulary, entry), entry_actions) in &actions {
             rules.apply(*vocabulary, entry, entry_actions[0].1);
         }
-        let collisions = rules.collisions(overlays);
+        let collisions = rules.collisions(users);
         if !collisions.is_empty() {
             return Err(collisions);
         }
@@ -1158,6 +1337,27 @@ impl Rules {
             vocabulary: Vocabulary::SpecialsFolders,
             entry: Vocabulary::SpecialsFolders.normalize(&profile.clean_fact(folder)),
             action: Action::Add(Meaning::Word),
+        }));
+        let word_changes = [
+            (TemplateSlot::SeasonFolder, Vocabulary::SeasonWords),
+            (TemplateSlot::Part, Vocabulary::PartWords),
+        ];
+        for (slot, vocabulary) in word_changes {
+            let words = profile.templates.get(&slot).map(literal_words);
+            changes.extend(words.into_iter().flatten().map(|word| Change {
+                vocabulary,
+                entry: vocabulary.normalize(&word),
+                action: Action::Add(Meaning::Word),
+            }));
+        }
+        let edition_keys = profile
+            .templates
+            .get(&TemplateSlot::EditionTag)
+            .map(literal_words);
+        changes.extend(edition_keys.into_iter().flatten().map(|key| Change {
+            vocabulary: Vocabulary::Tags,
+            entry: Vocabulary::Tags.normalize(&key),
+            action: Action::Add(Meaning::Tag(TagFact::Edition)),
         }));
         changes.retain(|change| !change.entry.is_empty());
         if changes.is_empty() {
@@ -1236,94 +1436,108 @@ impl Rules {
         })
     }
 
-    /// Returns `true` if `vocabulary` contains `entry`, in the form that the vocabulary
-    /// compares.
-    fn contains(&self, vocabulary: Vocabulary, entry: &str) -> bool {
+    /// Returns the entries of `vocabulary`, in the form that the vocabulary compares.
+    fn entries(&self, vocabulary: Vocabulary) -> Vec<String> {
+        fn keys<V>(map: &BTreeMap<String, V>) -> Vec<String> {
+            map.keys().cloned().collect()
+        }
+        fn words(set: &BTreeSet<String>) -> Vec<String> {
+            set.iter().cloned().collect()
+        }
         let exclusions = &self.built_in_exclusions;
         match vocabulary {
-            Vocabulary::TechnicalWords
-            | Vocabulary::TitleLikeReleaseWords
-            | Vocabulary::EditionWords
-            | Vocabulary::SeasonWords
-            | Vocabulary::SeriesSeasonWords
-            | Vocabulary::DefaultFlagWords
-            | Vocabulary::ForcedFlagWords
-            | Vocabulary::HearingImpairedFlagWords => self
-                .word_set(vocabulary)
-                .is_some_and(|words| words.contains(entry)),
-            Vocabulary::SpecialsFolders => self.specials_folder_names.contains(entry),
-            Vocabulary::ProviderKeys => self.provider_keys.contains(entry),
-            Vocabulary::Presets => false,
-            Vocabulary::LeadingArticles => self.leading_articles.contains(entry),
-            Vocabulary::OrdinalSuffixes => self.ordinal_suffixes.contains(entry),
-            Vocabulary::NumberWords => self.number_words.contains_key(entry),
-            Vocabulary::VideoExtensions => self.video_extensions.contains(entry),
-            Vocabulary::AudioExtensions => self.audio_extensions.contains(entry),
-            Vocabulary::SubtitleExtensions => self.subtitle_extensions.contains(entry),
-            Vocabulary::ImageExtensions => self.image_extensions.contains(entry),
-            Vocabulary::SystemJunkNames => exclusions.system_junk_names.contains(entry),
-            Vocabulary::BuiltInIgnoreGroups => exclusions.groups.contains(entry),
-            Vocabulary::NoMediaMarkers => exclusions.no_media_markers.contains(entry),
-            Vocabulary::ReleaseJunkNames => self.release_junk_names.contains(entry),
-            Vocabulary::ReleaseJunkPrefixes => self.release_junk_prefixes.contains(entry),
-            Vocabulary::ReleaseJunkExtensions => self.release_junk_extensions.contains(entry),
-            Vocabulary::ReleaseJunkImages => self.release_junk_images.contains(entry),
-            Vocabulary::GeneratedMetadataFolders => exclusions
-                .generated_metadata_directory_names
-                .contains(entry),
-            Vocabulary::SystemJunkFileSuffixes => {
-                list_contains(&exclusions.system_junk_file_suffixes, entry)
+            Vocabulary::SpecialsFolders => words(&self.specials_folder_names),
+            Vocabulary::LeadingArticles => words(&self.leading_articles),
+            Vocabulary::OrdinalSuffixes => words(&self.ordinal_suffixes),
+            Vocabulary::VideoExtensions => words(&self.video_extensions),
+            Vocabulary::AudioExtensions => words(&self.audio_extensions),
+            Vocabulary::SubtitleExtensions => words(&self.subtitle_extensions),
+            Vocabulary::ImageExtensions => words(&self.image_extensions),
+            Vocabulary::ReleaseJunkNames => words(&self.release_junk_names),
+            Vocabulary::ReleaseJunkPrefixes => words(&self.release_junk_prefixes),
+            Vocabulary::ReleaseJunkExtensions => words(&self.release_junk_extensions),
+            Vocabulary::ReleaseJunkImages => words(&self.release_junk_images),
+            Vocabulary::ReleaseSiteTags => words(&self.release_site_tags),
+            Vocabulary::EpisodeWords => words(&self.episode_words),
+            Vocabulary::SpecialPrefixes => words(&self.special_prefixes),
+            Vocabulary::PartWords => words(&self.part_words),
+            Vocabulary::DiscFolderWords => words(&self.disc_folder_words),
+            Vocabulary::VideoHeights => words(&self.video_heights),
+            Vocabulary::DiscImageExtensions => words(&self.disc_image_extensions),
+            Vocabulary::UnsupportedVideoExtensions => words(&self.unsupported_video_extensions),
+            Vocabulary::DiscStructureFolders => words(&self.disc_structure_folders),
+            Vocabulary::NfoExtensions => words(&self.nfo_extensions),
+            Vocabulary::StillImageSuffixes => words(&self.still_image_suffixes),
+            Vocabulary::SubtitleFolders => words(&self.subtitle_folder_names),
+            Vocabulary::AspectRatios => words(&self.aspect_ratios),
+            Vocabulary::AudioCodecWords => words(&self.audio_codec_words),
+            Vocabulary::FinalEpisodeWords => words(&self.final_episode_words),
+            Vocabulary::AlternateTitleWords => words(&self.alternate_title_words),
+            Vocabulary::RemuxMarkers => words(&self.remux_markers),
+            Vocabulary::ScreenerMarkers => words(&self.screener_markers),
+            Vocabulary::TechnicalWords => words(&self.technical_words),
+            Vocabulary::TitleLikeReleaseWords => words(&self.title_like_release_words),
+            Vocabulary::EditionWords => words(&self.edition_words),
+            Vocabulary::SeasonWords => words(&self.season_words),
+            Vocabulary::SeriesSeasonWords => words(&self.series_season_words),
+            Vocabulary::DefaultFlagWords => words(&self.default_flag_words),
+            Vocabulary::ForcedFlagWords => words(&self.forced_flag_words),
+            Vocabulary::HearingImpairedFlagWords => words(&self.hearing_impaired_flag_words),
+            Vocabulary::NumberWords => keys(&self.number_words),
+            Vocabulary::ExtrasFolders => keys(&self.extras_folders),
+            Vocabulary::ExtrasSuffixes => keys(&self.extras_suffixes),
+            Vocabulary::ExtrasVideoNames => keys(&self.extras_video_names),
+            Vocabulary::ExtrasAudioNames => keys(&self.extras_audio_names),
+            Vocabulary::ArtworkRoles => keys(&self.artwork_roles),
+            Vocabulary::NfoNames => keys(&self.nfo_generic_names),
+            Vocabulary::Languages => keys(&self.language_spellings),
+            Vocabulary::ReleaseWords => keys(&self.release_words),
+            Vocabulary::AudioChannelWords => keys(&self.audio_channel_words),
+            Vocabulary::Tags => keys(&self.tags),
+            Vocabulary::AnimationSpecialWords => keys(&self.animation_special_words),
+            Vocabulary::Format3dWords => keys(&self.format_3d_words),
+            Vocabulary::HearingImpairedOrLanguageWords => {
+                keys(&self.hearing_impaired_or_language_words)
             }
+            Vocabulary::Presets => Vec::new(),
+            Vocabulary::EpisodeTokens => words(&self.episode_tokens),
+            Vocabulary::Separators => self.separators.iter().map(char::to_string).collect(),
+            Vocabulary::BracketPairs => self.bracket_pairs.keys().map(char::to_string).collect(),
+            Vocabulary::SystemJunkNames => words(&exclusions.system_junk_names),
+            Vocabulary::BuiltInIgnoreGroups => words(&exclusions.groups),
+            Vocabulary::NoMediaMarkers => words(&exclusions.no_media_markers),
+            Vocabulary::GeneratedMetadataFolders => {
+                words(&exclusions.generated_metadata_directory_names)
+            }
+            Vocabulary::SystemJunkFileSuffixes => exclusions.system_junk_file_suffixes.clone(),
             Vocabulary::PartialDownloadSuffixes => {
-                list_contains(&exclusions.partial_download_file_suffixes, entry)
+                exclusions.partial_download_file_suffixes.clone()
             }
             Vocabulary::GeneratedMetadataFolderSuffixes => {
-                list_contains(&exclusions.generated_metadata_directory_suffixes, entry)
+                exclusions.generated_metadata_directory_suffixes.clone()
             }
+            Vocabulary::ReleaseGroupEndings => self.release_group_endings.clone(),
             Vocabulary::EditionPhrases => self
                 .edition_phrases
                 .iter()
-                .any(|phrase| phrase.join(" ") == entry),
-            Vocabulary::ExtrasFolders => self.extras_folders.contains_key(entry),
-            Vocabulary::ExtrasSuffixes => self.extras_suffixes.contains_key(entry),
-            Vocabulary::ExtrasVideoNames => self.extras_video_names.contains_key(entry),
-            Vocabulary::ExtrasAudioNames => self.extras_audio_names.contains_key(entry),
-            Vocabulary::ArtworkRoles => self.artwork_roles.contains_key(entry),
-            Vocabulary::NfoNames => self.nfo_generic_names.contains_key(entry),
-            Vocabulary::Languages => self.language_spellings.contains_key(entry),
-            Vocabulary::ReleaseWords => self.release_words.contains_key(entry),
-            Vocabulary::AudioChannelWords => self.audio_channel_words.contains_key(entry),
-            Vocabulary::ReleaseSiteTags => self.release_site_tags.contains(entry),
-            Vocabulary::PartWords => self.part_words.contains(entry),
-            Vocabulary::DiscFolderWords => self.disc_folder_words.contains(entry),
-            Vocabulary::Format3dWords => self.format_3d_words.contains_key(entry),
-            Vocabulary::ReleaseGroupEndings => list_contains(&self.release_group_endings, entry),
-            Vocabulary::VideoHeights => self.video_heights.contains(entry),
-            Vocabulary::LetterFolds => entry
-                .chars()
-                .next()
-                .is_some_and(|letter| self.letter_folds.contains_key(&letter)),
-            Vocabulary::DiscImageExtensions => self.disc_image_extensions.contains(entry),
-            Vocabulary::UnsupportedVideoExtensions => {
-                self.unsupported_video_extensions.contains(entry)
-            }
-            Vocabulary::DiscStructureFolders => self.disc_structure_folders.contains(entry),
-            Vocabulary::NfoExtensions => self.nfo_extensions.contains(entry),
-            Vocabulary::StillImageSuffixes => self.still_image_suffixes.contains(entry),
-            Vocabulary::HearingImpairedOrLanguageWords => {
-                self.hearing_impaired_or_language_words.contains_key(entry)
-            }
-            Vocabulary::SubtitleFolders => self.subtitle_folder_names.contains(entry),
-            Vocabulary::AspectRatios => self.aspect_ratios.contains(entry),
-            Vocabulary::AudioCodecWords => self.audio_codec_words.contains(entry),
-            Vocabulary::FinalEpisodeWords => self.final_episode_words.contains(entry),
-            Vocabulary::AlternateTitleWords => self.alternate_title_words.contains(entry),
-            Vocabulary::RemuxMarkers => self.remux_markers.contains(entry),
-            Vocabulary::ScreenerMarkers => self.screener_markers.contains(entry),
+                .map(|phrase| phrase.join(" "))
+                .collect(),
+            Vocabulary::LetterFolds => self.letter_folds.keys().map(char::to_string).collect(),
         }
     }
 
+    /// Returns `true` if `vocabulary` contains `entry`.
+    fn contains(&self, vocabulary: Vocabulary, entry: &str) -> bool {
+        self.entries(vocabulary).iter().any(|known| known == entry)
+    }
+
     fn apply(&mut self, vocabulary: Vocabulary, entry: &str, action: &Action) {
+        if *action == Action::Clear {
+            for known in self.entries(vocabulary) {
+                self.apply(vocabulary, &known, &Action::Remove);
+            }
+            return;
+        }
         let entry = entry.to_owned();
         let exclusions = &mut self.built_in_exclusions;
         let words =
@@ -1337,7 +1551,54 @@ impl Rules {
                 Vocabulary::DefaultFlagWords => &mut self.default_flag_words,
                 Vocabulary::ForcedFlagWords => &mut self.forced_flag_words,
                 Vocabulary::HearingImpairedFlagWords => &mut self.hearing_impaired_flag_words,
-                Vocabulary::ProviderKeys => &mut self.provider_keys,
+                Vocabulary::EpisodeWords => &mut self.episode_words,
+                Vocabulary::SpecialPrefixes => &mut self.special_prefixes,
+                Vocabulary::AnimationSpecialWords => {
+                    return apply_to_map(
+                        &mut self.animation_special_words,
+                        entry,
+                        action,
+                        |meaning| match meaning {
+                            Meaning::Special(kind) => Some(*kind),
+                            _ => None,
+                        },
+                    );
+                }
+                Vocabulary::EpisodeTokens => &mut self.episode_tokens,
+                Vocabulary::Separators => {
+                    if let Some(separator) = entry.chars().next() {
+                        match action {
+                            Action::Add(_) => {
+                                self.separators.insert(separator);
+                            }
+                            Action::Remove | Action::Clear => {
+                                self.separators.remove(&separator);
+                            }
+                        }
+                    }
+                    return;
+                }
+                Vocabulary::BracketPairs => {
+                    let Some(open) = entry.chars().next() else {
+                        return;
+                    };
+                    match action {
+                        Action::Add(Meaning::ClosingBracket(close)) => {
+                            self.bracket_pairs.insert(open, *close);
+                        }
+                        Action::Remove => {
+                            self.bracket_pairs.remove(&open);
+                        }
+                        Action::Add(_) | Action::Clear => {}
+                    }
+                    return;
+                }
+                Vocabulary::Tags => {
+                    return apply_to_map(&mut self.tags, entry, action, |meaning| match meaning {
+                        Meaning::Tag(fact) => Some(fact.clone()),
+                        _ => None,
+                    });
+                }
                 Vocabulary::Presets => {
                     if let Action::Add(Meaning::Preset(value)) = action {
                         // Checked when the overlay was read.
@@ -1468,7 +1729,7 @@ impl Rules {
                         Action::Remove => {
                             self.letter_folds.remove(&letter);
                         }
-                        Action::Add(_) => {}
+                        Action::Add(_) | Action::Clear => {}
                     }
                     return;
                 }
@@ -1500,7 +1761,7 @@ impl Rules {
             Action::Add(_) => {
                 words.insert(entry);
             }
-            Action::Remove => {
+            Action::Remove | Action::Clear => {
                 words.remove(&entry);
             }
         }
@@ -1525,10 +1786,6 @@ fn extra_kind(meaning: &Meaning) -> Option<ExtraKind> {
     }
 }
 
-fn list_contains(list: &[String], entry: &str) -> bool {
-    list.iter().any(|existing| existing == entry)
-}
-
 fn apply_to_list<T: PartialEq>(list: &mut Vec<T>, entry: T, action: &Action) {
     list.retain(|existing| *existing != entry);
     if matches!(action, Action::Add(_)) {
@@ -1548,7 +1805,7 @@ fn apply_to_map<V>(
                 map.insert(entry, value);
             }
         }
-        Action::Remove => {
+        Action::Remove | Action::Clear => {
             map.remove(&entry);
         }
     }
@@ -1574,6 +1831,11 @@ mod tests {
         let shared_base: Vec<String> = canonical_changes()
             .into_iter()
             .map(|change| change.entry)
+            .chain(
+                data::EPISODE_BASE_WORDS
+                    .iter()
+                    .map(|word| (*word).to_owned()),
+            )
             .collect();
         let builtin = Rules::builtin();
         let language_words = [
@@ -1584,6 +1846,10 @@ mod tests {
             (
                 Vocabulary::SeriesSeasonWords,
                 builtin.series_season_words.iter().collect(),
+            ),
+            (
+                Vocabulary::EpisodeWords,
+                builtin.episode_words.iter().collect(),
             ),
             (
                 Vocabulary::LeadingArticles,
@@ -1634,6 +1900,7 @@ mod tests {
                 .series_season_words
                 .is_subset(&rules.series_season_words)
         );
+        assert!(builtin.episode_words.is_subset(&rules.episode_words));
         assert!(builtin.leading_articles.is_subset(&rules.leading_articles));
         assert!(builtin.ordinal_suffixes.is_subset(&rules.ordinal_suffixes));
     }

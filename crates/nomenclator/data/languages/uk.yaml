@@ -5,3 +5,5 @@ season_words:
   add: ["сезон"]
 languages:
   add: { uk: ["українська"] }
+episode_words:
+  add: ["серія", "епізод"]

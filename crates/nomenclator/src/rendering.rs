@@ -9,6 +9,7 @@
 mod import;
 mod planning;
 mod profile;
+mod slots;
 pub(crate) mod targets;
 pub(crate) mod template;
 
@@ -17,7 +18,6 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use crate::data;
-use crate::lexical;
 use crate::model::{ExtraKind, NfoRole, SidecarFlag};
 use crate::parsers::extras::LibraryType;
 use crate::rules::Rules;
@@ -30,6 +30,8 @@ pub use profile::{
     AssetItemKind, AssetRole, ExtensionCase, MovieLayout, OutputProfile, ProviderTagStyle,
     SeasonFolderStyle, Suppression, TargetFilesystem, VersionLabelStyle, WantedSubtitle,
 };
+pub(crate) use slots::literal_words;
+pub use slots::{ProfileDiagnostic, ProfileDiagnosticReason, TemplateSlot};
 pub use template::{RenderedTemplate, Template, TemplateError, TemplateErrorReason, TemplateFacts};
 
 /// The structured facts that one name is rendered from. The renderer leaves out a
@@ -342,6 +344,29 @@ impl Writer<'_> {
             .filter(|text| !text.is_empty())
     }
 
+    /// Returns the text that the profile's template of `slot` writes for `fields`.
+    /// Returns `None` if the profile has no template for the slot or a required field has no
+    /// value. The target filesystem's rules apply to the text. Spaces at its ends are kept,
+    /// because a slot can write its own separator.
+    fn slot(&self, slot: TemplateSlot, fields: &[(&str, Option<String>)]) -> Option<String> {
+        let template = self.profile.templates.get(&slot)?;
+        let facts: TemplateFacts = fields
+            .iter()
+            .filter_map(|(name, value)| Some(((*name).to_owned(), value.clone()?)))
+            .collect();
+        let text = template.render(&facts).path?;
+        let cleaned = self.profile.target_filesystem.clean_text(&text);
+        let start = text.len() - text.trim_start().len();
+        let end = text.trim_end().len();
+        Some(format!("{}{cleaned}{}", &text[..start], &text[end..]))
+    }
+
+    /// Returns the text that states a part at the end of a stem (R1, R15).
+    fn part_suffix(&self, part: u32) -> String {
+        self.slot(TemplateSlot::Part, &[("part", Some(part.to_string()))])
+            .unwrap_or_else(|| format!(" - {}{part}", data::PART_OUTPUT_WORD))
+    }
+
     /// Returns `true` if the movie's files go without a movie folder (R15).
     fn is_flat_movie(&self) -> bool {
         self.facts.library == LibraryType::Movies
@@ -356,6 +381,12 @@ impl Writer<'_> {
         if season == 0
             && let Some(name) = self.optional_text(self.profile.specials_folder.as_ref())
         {
+            return name;
+        }
+        if let Some(name) = self.slot(
+            TemplateSlot::SeasonFolder,
+            &[("season", Some(season.to_string()))],
+        ) {
             return name;
         }
         match self.profile.season_folder_style {
@@ -374,6 +405,15 @@ impl Writer<'_> {
     /// precedes the episode tokens. Returns `None` if the title is missing.
     fn work_name(&self) -> Option<String> {
         let title = self.optional_text(self.facts.title.as_ref())?;
+        if let Some(name) = self.slot(
+            TemplateSlot::WorkName,
+            &[
+                ("title", Some(title.clone())),
+                ("year", self.facts.year.map(|year| year.to_string())),
+            ],
+        ) {
+            return Some(name);
+        }
         Some(match self.facts.year {
             Some(year) => format!("{title} ({year})"),
             None => title,
@@ -390,10 +430,16 @@ impl Writer<'_> {
         };
         let tag = order.iter().find_map(|provider| {
             let id = self.optional_text(self.facts.provider_ids.get(provider))?;
-            if !self.rules.provider_keys.contains(provider) {
-                return None;
+            let id = self.rules.valid_provider_id(provider, &id)?;
+            if let Some(tag) = self.slot(
+                TemplateSlot::ProviderTag,
+                &[
+                    ("provider", Some(provider.clone())),
+                    ("id", Some(id.clone())),
+                ],
+            ) {
+                return Some(tag);
             }
-            let id = lexical::valid_provider_id(provider, &id)?;
             match self.profile.provider_tag_style {
                 ProviderTagStyle::Braces => Some(format!("{{{provider}-{id}}}")),
                 ProviderTagStyle::BracketsId => Some(format!("[{provider}id-{id}]")),
@@ -411,13 +457,20 @@ impl Writer<'_> {
     fn version_and_part(&self) -> String {
         let mut suffix = String::new();
         if let Some(label) = self.optional_text(self.facts.version_label.as_ref()) {
-            match self.profile.version_label_style {
-                VersionLabelStyle::Dash => suffix.push_str(&format!(" - {label}")),
-                VersionLabelStyle::Brackets => suffix.push_str(&format!(" [{label}]")),
+            match (
+                self.slot(
+                    TemplateSlot::VersionLabel,
+                    &[("label", Some(label.clone()))],
+                ),
+                self.profile.version_label_style,
+            ) {
+                (Some(text), _) => suffix.push_str(&text),
+                (None, VersionLabelStyle::Dash) => suffix.push_str(&format!(" - {label}")),
+                (None, VersionLabelStyle::Brackets) => suffix.push_str(&format!(" [{label}]")),
             }
         }
         if let Some(part) = self.facts.part {
-            suffix.push_str(&format!(" - {}{part}", data::PART_OUTPUT_WORD));
+            suffix.push_str(&self.part_suffix(part));
         }
         suffix
     }
@@ -433,7 +486,13 @@ impl Writer<'_> {
                     .optional_text(facts.edition.as_ref())
                     .map(|edition| {
                         let edition = edition.replace(['{', '}'], "");
-                        format!(" {{{}-{edition}}}", data::EDITION_TAG_KEY)
+                        let tag = self
+                            .slot(
+                                TemplateSlot::EditionTag,
+                                &[("edition", Some(edition.clone()))],
+                            )
+                            .unwrap_or_else(|| format!("{{{}-{edition}}}", data::EDITION_TAG_KEY));
+                        format!(" {tag}")
                     })
                     .unwrap_or_default();
                 let stem = format!("{movie_folder}{edition}{}", self.version_and_part());
@@ -450,14 +509,23 @@ impl Writer<'_> {
                 } else {
                     return Err(BlockReason::MissingEpisodeReference);
                 };
-                let title = self
-                    .optional_text(facts.episode_title.as_ref())
-                    .map(|title| format!(" - {title}"))
-                    .unwrap_or_default();
-                let stem = format!(
-                    "{work_name} - {reference}{title}{}",
-                    self.version_and_part()
-                );
+                let episode_title = self.optional_text(facts.episode_title.as_ref());
+                let identity = self
+                    .slot(
+                        TemplateSlot::EpisodeFile,
+                        &[
+                            ("work_name", Some(work_name.to_owned())),
+                            ("reference", Some(reference.clone())),
+                            ("episode_title", episode_title.clone()),
+                        ],
+                    )
+                    .unwrap_or_else(|| {
+                        let title = episode_title
+                            .map(|title| format!(" - {title}"))
+                            .unwrap_or_default();
+                        format!("{work_name} - {reference}{title}")
+                    });
+                let stem = format!("{identity}{}", self.version_and_part());
                 let folders = facts.season.map(|season| self.season_folder(season));
                 Ok((folders.into_iter().collect(), stem))
             }
@@ -485,7 +553,7 @@ impl Writer<'_> {
         folders.push(self.extras_folder(extra.kind));
         folders.extend(self.optional_text(extra.group.as_ref()));
         if let Some(part) = self.facts.part {
-            stem.push_str(&format!(" - {}{part}", data::PART_OUTPUT_WORD));
+            stem.push_str(&self.part_suffix(part));
         }
         Ok((folders, stem))
     }

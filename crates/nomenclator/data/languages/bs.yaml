@@ -5,3 +5,5 @@ season_words:
   add: ["sezona"]
 languages:
   add: { bs: ["bosanski"] }
+episode_words:
+  add: ["epizoda"]

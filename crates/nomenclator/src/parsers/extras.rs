@@ -86,7 +86,7 @@ pub(crate) fn classify_extra_in(
             let title = (kind == EntryKind::File).then(|| {
                 let stem = lexical::stem(file_name(path), kind);
                 let title = extras_suffix(rules, stem).map_or(stem, |suffix| suffix.title);
-                lexical::display_title_among(title, context.has_spaced_sibling(path))
+                lexical::display_title_among(rules, title, context.has_spaced_sibling(path))
             });
             (
                 resolved(found.kind, Rule::ExtrasFolder, found.evidence_span),
@@ -229,7 +229,7 @@ fn name_extra(
         kind: suffix.kind,
         rule: Rule::ExtrasSuffix,
         evidence_span: Span(name_start + suffix.separator_index, name_start + stem.len()),
-        title: Some(lexical::display_title(suffix.title)),
+        title: Some(lexical::display_title(rules, suffix.title)),
     })
 }
 

@@ -1,0 +1,107 @@
+# Bracket tags (decision X29). A tag key states a typed fact. Other `{key-value}` tags are
+# reported in `tags` and never reach a title.
+
+- name: a curly tag with an unknown key is reported and stays out of the title
+  operation: parse_movie_name
+  input: { name: "Northern Passage {foo-bar} (2021).mkv", kind: file }
+  expect:
+    title: Northern Passage
+    year: 2021
+    tags: { foo: bar }
+
+- name: a curly tag with an unknown key after the year is reported
+  operation: parse_movie_name
+  input: { name: "Northern Passage (2021) {source=Director Master}.mkv", kind: file }
+  expect:
+    title: Northern Passage
+    tags: { source: Director Master }
+
+- name: one unknown key with two values is ambiguous
+  operation: parse_movie_name
+  input: { name: "Northern Passage (2021) {cut-A} {cut-B}.mkv", kind: file }
+  expect:
+    tags:
+      cut: { status: ambiguous, candidates: [A, B], reason: conflicting_tag }
+
+- name: a square bracket with a dash stays part of the title
+  operation: parse_movie_name
+  input: { name: "[Spider-Verse] Story.mkv", kind: file }
+  expect:
+    title: "[Spider-Verse] Story"
+    tags: {}
+
+- name: a tag that an overlay maps to the edition is the edition
+  overlays: ["name: cut\ntags:\n  add: { cut: { fact: edition } }\n"]
+  operation: parse_movie_name
+  input: { name: "Northern Passage (2021) {cut-Redux}.mkv", kind: file }
+  expect:
+    edition: Redux
+    tags: {}
+
+- name: a slug provider tag gives its ID
+  overlays: ["name: trakt\ntags:\n  add: { trakt: { fact: provider_id, id: slug } }\n"]
+  operation: parse_movie_name
+  input: { name: "Northern Passage (2021) {trakt-northern-passage}.mkv", kind: file }
+  expect:
+    provider_ids: { trakt: northern-passage }
+
+- name: a prefixed provider ID is also read alone in brackets
+  overlays: ["name: bango\ntags:\n  add: { bango: { fact: provider_id, id: { prefixed: { prefix: bg, min_digits: 3, max_digits: 5 } } } }\n"]
+  operation: parse_provider_ids
+  input: { text: "Movie (2001) [bg1234]" }
+  expect:
+    provider_ids: { bango: bg1234 }
+
+- name: a provider ID that does not have the shape of its tag gives no ID
+  overlays: ["name: mal\ntags:\n  add: { mal: { fact: provider_id, id: integer } }\n"]
+  operation: parse_provider_ids
+  input: { text: "Movie (2001) {mal-abc}" }
+  expect:
+    provider_ids: {}
+
+- name: an overlay that removes a provider tag no longer reads it as an ID
+  overlays: ["name: no-tvmaze\ntags:\n  remove: [tvmaze]\n"]
+  operation: parse_provider_ids
+  input: { text: "Movie (2001) {tvmaze-12}" }
+  expect:
+    provider_ids: {}
+
+- name: an overlay cannot remove the edition tag that the writer writes
+  operation: build_rules
+  input:
+    overlays: ["name: no-edition\ntags:\n  remove: [edition]\n"]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: canonical_entry, overlay: no-edition, vocabulary: tags, entry: edition }
+
+- name: a tag with an unknown fact is malformed
+  operation: build_rules
+  input:
+    overlays: ["name: bad\ntags:\n  add: { foo: { fact: frame_rate } }\n"]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: malformed_vocabulary, overlay: bad, vocabulary: tags }
+
+- name: an interpreted movie reports the tags of its names
+  operation: interpret
+  input:
+    library: movies
+    paths: ["Northern Passage (2021) {note-restored}/Northern Passage (2021) {note-restored}.mkv"]
+  expect:
+    items:
+      - kind: movie
+        title: Northern Passage
+        tags: { note: restored }
+
+- name: an interpreted episode reports the tags of its file
+  operation: interpret
+  input:
+    library: tv
+    paths: ["Show (2019)/Season 01/Show (2019) - S01E01 {note-restored}.mkv"]
+  expect:
+    items:
+      - { kind: series, title: Show }
+      - { kind: season, season: 1 }
+      - { kind: episode, tags: { note: restored } }

@@ -225,12 +225,12 @@
     excluded: true
     exclusion: { path: Movies/@SynoResource, reason: system_junk }
 
-- name: an overlay that adds a provider key reads tags with it
+- name: an overlay that adds a provider tag reads tags with it
   overlays:
     - |
       name: trakt
-      provider_keys:
-        add: [trakt]
+      tags:
+        add: { trakt: { fact: provider_id, id: integer } }
   operation: parse_provider_ids
   input: { text: "Movie (2001) [trakt-12345]" }
   expect:

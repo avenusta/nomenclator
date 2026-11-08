@@ -35,3 +35,5 @@ languages:
   add: { es: ["español", "espanol", "castellano"] }
 artwork_roles:
   add: { "cartel": poster, "portada": poster, "caratula": poster, "fondo": backdrop }
+episode_words:
+  add: ["episodio", "capitulo", "capítulo"]

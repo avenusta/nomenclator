@@ -7,13 +7,15 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{LazyLock, OnceLock};
 
 use regex::Regex;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use unicode_normalization::UnicodeNormalization;
 
 use crate::data;
 use crate::lexical;
 use crate::model::{ArtworkRole, ExtraKind, Format3d, NfoRole};
+use crate::parsers::episode_name::SpecialKind;
 use crate::parsers::release::{ReleaseFact, ReleasePatterns, release_spelling_form};
+use crate::rendering::template::Template;
 
 mod overlay;
 
@@ -41,7 +43,8 @@ pub struct Rules {
     pub(crate) edition_words: BTreeSet<String>,
     pub(crate) edition_phrases: Vec<Vec<String>>,
     pub(crate) format_3d_words: BTreeMap<String, Format3d>,
-    pub(crate) provider_keys: BTreeSet<String>,
+    /// Bracket tag keys and the typed fact that each states (X29).
+    pub(crate) tags: BTreeMap<String, TagFact>,
     pub(crate) release_group_endings: Vec<String>,
     pub(crate) video_extensions: BTreeSet<String>,
     pub(crate) unsupported_video_extensions: BTreeSet<String>,
@@ -72,6 +75,18 @@ pub struct Rules {
     pub(crate) series_season_words: BTreeSet<String>,
     pub(crate) specials_folder_names: BTreeSet<String>,
     pub(crate) video_heights: BTreeSet<String>,
+    /// Templates of episode tokens that a caller adds (X34).
+    pub(crate) episode_tokens: BTreeSet<String>,
+    /// Characters between words, other than the dash (M6).
+    pub(crate) separators: BTreeSet<char>,
+    /// The closing character of each bracket pair (M5).
+    pub(crate) bracket_pairs: BTreeMap<char, char>,
+    /// Words before an episode number (X30).
+    pub(crate) episode_words: BTreeSet<String>,
+    /// Prefixes joined to a number that state an episode of season 0 (T12).
+    pub(crate) special_prefixes: BTreeSet<String>,
+    /// Animation special markers and the kind of each (X20).
+    pub(crate) animation_special_words: BTreeMap<String, SpecialKind>,
     /// Words that name a part before its number or letter (M11).
     pub(crate) part_words: BTreeSet<String>,
     /// Words that name a folder of episodes before its number (T18).
@@ -115,10 +130,73 @@ pub struct Rules {
     release_patterns: OnceLock<ReleasePatterns>,
 }
 
+/// The typed fact that a bracket tag key states (X29).
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+#[serde(tag = "fact", rename_all = "snake_case", deny_unknown_fields)]
+pub(crate) enum TagFact {
+    Edition,
+    ProviderId { id: IdShape },
+}
+
+/// The shape of a provider ID.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
+pub(crate) enum IdShape {
+    /// A positive integer.
+    Integer,
+    /// Letters, digits, `-`, `_` and `.`, starting with a letter or digit.
+    Slug,
+    /// A prefix, then a digit count within the range.
+    Prefixed {
+        prefix: String,
+        min_digits: u8,
+        max_digits: u8,
+    },
+}
+
+impl IdShape {
+    pub(crate) fn is_prefixed(&self) -> bool {
+        matches!(self, IdShape::Prefixed { .. })
+    }
+
+    /// Returns `true` if `value` has the form of this shape. A prefixed ID of only zeros has
+    /// the form and is not valid.
+    pub(crate) fn has_form(&self, value: &str) -> bool {
+        match self {
+            IdShape::Integer => {
+                !value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit())
+            }
+            IdShape::Slug => {
+                value.starts_with(|c: char| c.is_alphanumeric())
+                    && value
+                        .chars()
+                        .all(|c| c.is_alphanumeric() || matches!(c, '-' | '_' | '.'))
+            }
+            IdShape::Prefixed {
+                prefix,
+                min_digits,
+                max_digits,
+            } => value.strip_prefix(prefix.as_str()).is_some_and(|digits| {
+                (usize::from(*min_digits)..=usize::from(*max_digits)).contains(&digits.len())
+                    && digits.bytes().all(|byte| byte.is_ascii_digit())
+            }),
+        }
+    }
+
+    /// Returns `true` if `value` is an ID of this shape.
+    pub(crate) fn is_valid(&self, value: &str) -> bool {
+        self.has_form(value)
+            && (matches!(self, IdShape::Slug)
+                || value.bytes().any(|byte| (b'1'..=b'9').contains(&byte)))
+    }
+}
+
 /// Choices between alternatives that the decision catalogue records as contested (X12). The
 /// defaults are the recorded decisions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Presets {
+    /// The first year a name's number can be (X5).
+    pub earliest_plausible_year: u16,
     /// The last year a name's number can be (X5).
     pub latest_plausible_year: u16,
     /// How a day- or month-first date with both parts at most 12 is read (T13).
@@ -134,6 +212,7 @@ pub(crate) struct Presets {
 impl Default for Presets {
     fn default() -> Self {
         Presets {
+            earliest_plausible_year: data::EARLIEST_PLAUSIBLE_YEAR,
             latest_plausible_year: data::LATEST_PLAUSIBLE_YEAR,
             date_order: DateOrder::Ambiguous,
             bare_numbers: BareNumbers::Anywhere,
@@ -182,6 +261,15 @@ impl Presets {
                         .contains(&year) =>
                 {
                     self.latest_plausible_year = year;
+                }
+                _ => return invalid,
+            },
+            "earliest_plausible_year" => match value.parse::<u16>() {
+                Ok(year)
+                    if (data::LOWEST_EARLIEST_YEAR..=data::LATEST_PLAUSIBLE_YEAR)
+                        .contains(&year) =>
+                {
+                    self.earliest_plausible_year = year;
                 }
                 _ => return invalid,
             },
@@ -262,8 +350,26 @@ pub(crate) struct Patterns {
     pub disc_folder: Regex,
     /// An alternate title word between separators (` AKA `).
     pub alternate_title_separator: Regex,
+    /// A season word, its number, an episode word and its number (`Staffel 2 Folge 3`).
+    pub season_episode_words: Regex,
+    /// An episode word, then its number (`Ep 12`).
+    pub episode_word: Regex,
+    /// A special prefix joined to its number (`SP02`).
+    pub special_prefix: Regex,
+    /// An animation special marker with an optional number and release version.
+    pub animation_special: Regex,
+    /// The episode tokens that a caller adds, longest template first (X34).
+    pub episode_tokens: Vec<EpisodeTokenPattern>,
     /// The suffix after an episode number: an optional `v2` and an optional final word.
     pub episode_suffix: Regex,
+}
+
+/// An episode token template, compiled. The pattern captures `episode` and may capture
+/// `season`.
+#[derive(Debug, Clone)]
+pub(crate) struct EpisodeTokenPattern {
+    pub pattern: Regex,
+    pub states_season: bool,
 }
 
 /// The vocabularies that [`Patterns`] are compiled from.
@@ -277,6 +383,11 @@ struct PatternWords<'a> {
     disc_folder_words: Vec<&'a str>,
     alternate_title_words: Vec<&'a str>,
     final_episode_words: Vec<&'a str>,
+    plain_season_words: Vec<&'a str>,
+    episode_words: Vec<&'a str>,
+    special_prefixes: Vec<&'a str>,
+    animation_special_words: Vec<&'a str>,
+    episode_tokens: Vec<&'a str>,
 }
 
 static BUILTIN: LazyLock<Rules> = LazyLock::new(Rules::from_builtin_tables);
@@ -308,6 +419,29 @@ impl Rules {
             .contains(&lexical::fold_case_text(name))
     }
 
+    /// Returns the tag key that `key` names, with its fact: `key` itself, or a provider key
+    /// that `key` follows with `id` (M7).
+    /// Returns `None` if no tag has that key.
+    pub(crate) fn tag(&self, key: &str) -> Option<(String, &TagFact)> {
+        if let Some(fact) = self.tags.get(key) {
+            return Some((key.to_owned(), fact));
+        }
+        let provider = key.strip_suffix("id")?;
+        match self.tags.get(provider)? {
+            fact @ TagFact::ProviderId { .. } => Some((provider.to_owned(), fact)),
+            TagFact::Edition => None,
+        }
+    }
+
+    /// Returns `value` if it is a valid ID of `provider`.
+    /// Returns `None` if `provider` is not a provider tag or `value` does not have its shape.
+    pub(crate) fn valid_provider_id(&self, provider: &str, value: &str) -> Option<String> {
+        match self.tags.get(provider)? {
+            TagFact::ProviderId { id: shape } if shape.is_valid(value) => Some(value.to_owned()),
+            _ => None,
+        }
+    }
+
     /// Returns the compiled release word and audio channel patterns. Compiles them on the
     /// first call.
     pub(crate) fn release_patterns(&self) -> &ReleasePatterns {
@@ -332,6 +466,15 @@ impl Rules {
             disc_folder_words: as_strs(&self.disc_folder_words),
             alternate_title_words: as_strs(&self.alternate_title_words),
             final_episode_words: as_strs(&self.final_episode_words),
+            plain_season_words: as_strs(&self.season_words),
+            episode_words: as_strs(&self.episode_words),
+            special_prefixes: as_strs(&self.special_prefixes),
+            episode_tokens: as_strs(&self.episode_tokens),
+            animation_special_words: self
+                .animation_special_words
+                .keys()
+                .map(String::as_str)
+                .collect(),
         });
         self.release_patterns = OnceLock::new();
     }
@@ -387,7 +530,19 @@ impl Rules {
                 .iter()
                 .map(|(word, format)| ((*word).to_owned(), *format))
                 .collect(),
-            provider_keys: owned(data::PROVIDER_KEYS),
+            tags: data::PROVIDER_TAGS
+                .iter()
+                .map(|(key, prefix)| {
+                    let id = prefix.map_or(IdShape::Integer, |(prefix, min_digits, max_digits)| {
+                        IdShape::Prefixed {
+                            prefix: prefix.to_owned(),
+                            min_digits,
+                            max_digits,
+                        }
+                    });
+                    ((*key).to_owned(), TagFact::ProviderId { id })
+                })
+                .collect(),
             release_group_endings: owned(data::RELEASE_GROUP_ENDINGS),
             video_extensions: owned(data::VIDEO_EXTENSIONS),
             unsupported_video_extensions: owned(data::UNSUPPORTED_VIDEO_EXTENSIONS),
@@ -434,6 +589,20 @@ impl Rules {
             series_season_words,
             specials_folder_names: owned(data::SPECIALS_FOLDER_NAMES),
             video_heights: owned(data::VIDEO_HEIGHTS),
+            episode_tokens: BTreeSet::new(),
+            // The canonical names add the space and the written bracket pairs (X25).
+            separators: data::SEPARATORS.iter().copied().collect(),
+            bracket_pairs: data::BRACKET_PAIRS.iter().copied().collect(),
+            episode_words: data::EPISODE_BASE_WORDS
+                .iter()
+                .chain(data::EPISODE_WORDS)
+                .map(|word| lexical::vocabulary_form(word))
+                .collect(),
+            special_prefixes: owned(data::SPECIAL_PREFIXES),
+            animation_special_words: data::ANIMATION_SPECIAL_WORDS
+                .iter()
+                .map(|(word, kind)| ((*word).to_owned(), *kind))
+                .collect(),
             part_words: data::DISC_WORDS
                 .iter()
                 .chain(data::OTHER_PART_WORDS)
@@ -471,6 +640,23 @@ impl Rules {
     }
 }
 
+/// Compiles the templates of episode tokens, longest first.
+fn compile_episode_tokens(templates: &[&str]) -> Vec<EpisodeTokenPattern> {
+    let mut sorted = templates.to_vec();
+    sorted.sort_by(|a, b| b.len().cmp(&a.len()).then_with(|| a.cmp(b)));
+    sorted
+        .into_iter()
+        .map(|text| {
+            let template = Template::parse(text).expect("an overlay checks its token templates");
+            EpisodeTokenPattern {
+                pattern: Regex::new(&format!("(?i){}", template.token_pattern()))
+                    .expect("valid episode token pattern"),
+                states_season: template.fields().contains("season"),
+            }
+        })
+        .collect()
+}
+
 fn as_strs(words: &BTreeSet<String>) -> Vec<&str> {
     words.iter().map(String::as_str).collect()
 }
@@ -498,14 +684,22 @@ impl Patterns {
         };
         let ratios = alternation(&mut words.aspect_ratios.iter().map(|ratio| (*ratio).to_owned()));
         let codecs = alternation(&mut words.audio_codecs.iter().map(|codec| (*codec).to_owned()));
-        // Season words in both composed and decomposed Unicode forms (X3), so `Série`
-        // matches however its accent is encoded.
-        let seasons = alternation(&mut words.season_words.iter().flat_map(|word| {
-            [
-                word.nfc().collect::<String>(),
-                word.nfd().collect::<String>(),
-            ]
-        }));
+        // Words in both composed and decomposed Unicode forms (X3), so `Série` matches
+        // however its accent is encoded.
+        let unicode_alternation = |list: &[&str]| {
+            alternation(&mut list.iter().flat_map(|word| {
+                [
+                    word.nfc().collect::<String>(),
+                    word.nfd().collect::<String>(),
+                ]
+            }))
+        };
+        let seasons = unicode_alternation(&words.season_words);
+        let plain_seasons = unicode_alternation(&words.plain_season_words);
+        let episodes = unicode_alternation(&words.episode_words);
+        let specials = unicode_alternation(&words.special_prefixes);
+        let animation = unicode_alternation(&words.animation_special_words);
+        let dashes: String = lexical::DASHES.iter().collect();
         let ordinals = alternation(
             &mut words
                 .ordinal_suffixes
@@ -548,8 +742,23 @@ impl Patterns {
             .expect("valid part marker pattern"),
             disc_folder: Regex::new(&format!(r"(?i)^(?:{discs})[ ._-]*\d{{1,2}}$"))
                 .expect("valid disc folder pattern"),
+            episode_tokens: compile_episode_tokens(&words.episode_tokens),
             alternate_title_separator: Regex::new(&format!(r"(?i)[ ._](?:{alternates})[ ._]"))
                 .expect("valid alternate title pattern"),
+            season_episode_words: Regex::new(&format!(
+                r"(?i)(?:{plain_seasons})[ ._-]?(\d{{1,4}})[ ._-]*(?:{episodes})[ ._-]?(\d{{1,6}})"
+            ))
+            .expect("valid season episode words pattern"),
+            episode_word: Regex::new(&format!(
+                r"(?i)({episodes})(?:[ ._]*[{dashes}][ ._]*|[ ._]?)(\d{{1,6}})"
+            ))
+            .expect("valid episode pattern"),
+            special_prefix: Regex::new(&format!(r"(?i)(?:{specials})(\d{{1,3}})"))
+                .expect("valid special pattern"),
+            animation_special: Regex::new(&format!(
+                r"(?i)({animation})(?:[ ._-]*(\d{{1,3}}))?(?:v\d{{1,2}})?"
+            ))
+            .expect("valid animation special pattern"),
             episode_suffix: Regex::new(&format!(r"(?i)^(?:v\d{{1,2}})?(?:{finals})?"))
                 .expect("valid episode suffix pattern"),
         }

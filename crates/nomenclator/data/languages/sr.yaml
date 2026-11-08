@@ -5,3 +5,5 @@ season_words:
   add: ["sezona"]
 languages:
   add: { sr: ["srpski"] }
+episode_words:
+  add: ["epizoda"]

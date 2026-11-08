@@ -33,3 +33,5 @@ languages:
   add: { de: ["deutsch"] }
 artwork_roles:
   add: { "plakat": poster, "cover": poster, "hintergrund": backdrop }
+episode_words:
+  add: ["folge"]

@@ -35,3 +35,5 @@ languages:
   add: { pt: ["português", "portugues"] }
 artwork_roles:
   add: { "cartaz": poster, "capa": poster, "fundo": backdrop }
+episode_words:
+  add: ["episodio", "episódio", "capitulo", "capítulo"]

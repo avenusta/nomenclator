@@ -2,8 +2,9 @@ use std::collections::BTreeMap;
 use std::sync::LazyLock;
 
 use regex::Regex;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
+use crate::data;
 use crate::lexical::{self, BracketClass, DateMatch, TokenKind, WordClass};
 use crate::model::{EntryKind, Evidence, Finding, Rule, Span};
 use crate::parsers::extras::extras_folder_kind;
@@ -39,6 +40,8 @@ pub struct EpisodeName {
     pub episode_title: Option<String>,
     /// Provider IDs from the bracketed tags, keyed by provider.
     pub provider_ids: BTreeMap<String, Finding<String>>,
+    /// The `{key-value}` tags whose keys state no typed fact, keyed by tag key (X29).
+    pub tags: BTreeMap<String, Finding<String>>,
     /// How the name refers to its episode. `None` if it does not refer to an episode.
     pub presentation_kind: Option<PresentationKind>,
     /// The special the name states instead of an episode number (X20): `OVA 2`, `12.5`.
@@ -74,8 +77,9 @@ pub struct Special {
 }
 
 /// A kind of special.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum SpecialKind {
     /// An original video animation (`OVA`).
     Ova,
@@ -440,6 +444,7 @@ impl ContextReading<'_> {
             date,
             episode_title,
             provider_ids: lexical::provider_ids(rules, stem, false),
+            tags: lexical::custom_tags(rules, stem),
             special: reference.special.clone(),
             release_version,
             is_final,
@@ -466,6 +471,7 @@ impl EpisodeName {
             date: Finding::Unknown,
             episode_title: None,
             provider_ids: BTreeMap::new(),
+            tags: BTreeMap::new(),
             presentation_kind: None,
             special: None,
             release_version: None,
@@ -501,12 +507,12 @@ fn text_before_reference<'a>(text: &'a str, reference: &Reference) -> &'a str {
 /// Returns `None` if release material follows the reference.
 fn episode_title(rules: &Rules, stem: &str, reference_end: usize) -> Option<(String, usize)> {
     let text = &stem[reference_end..];
-    let starts_with_release_material = lexical::tokenize(text)
+    let starts_with_release_material = lexical::tokenize(rules, text)
         .into_iter()
         .find(|token| token.kind != TokenKind::Dash)
         .is_some_and(|token| match token.kind {
             TokenKind::Bracket { inner } => !matches!(
-                lexical::classify_bracket(rules, &text[inner.0..inner.1]),
+                lexical::classify_bracket(rules, text, token.span, inner),
                 BracketClass::Other | BracketClass::Year(_)
             ),
             _ => matches!(
@@ -900,10 +906,6 @@ impl Reference {
     }
 }
 
-static ANIMATION_SPECIAL_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)(ova|oad|ona)(?:[ ._-]*(\d{1,3}))?(?:v\d{1,2})?")
-        .expect("valid special pattern")
-});
 static DECIMAL_EPISODE_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"[ ._]-[ ._]*(\d{1,4}\.\d)(?:v\d{1,2})?").expect("valid decimal episode pattern")
 });
@@ -917,14 +919,16 @@ static RELEASE_VERSION_PATTERN: LazyLock<Regex> =
 /// Returns the special a name states after its first word (X20): an `OVA`, `OAD` or `ONA`
 /// marker with an optional number, or a decimal episode number after a dash (`- 12.5`).
 /// Returns `None` if the name states none.
-fn special_reference(text: &str) -> Option<Reference> {
+fn special_reference(rules: &Rules, text: &str) -> Option<Reference> {
     let first_word_end = text.find([' ', '.', '_']).unwrap_or(text.len());
     let bounded = |start: usize, end: usize| {
         start >= first_word_end
             && lexical::is_boundary_before(text, start)
             && lexical::is_boundary_after(text, end)
     };
-    let found = ANIMATION_SPECIAL_PATTERN
+    let found = rules
+        .patterns
+        .animation_special
         .captures_iter(text)
         .find(|captures| {
             let whole = captures.get(0).expect("match");
@@ -932,11 +936,11 @@ fn special_reference(text: &str) -> Option<Reference> {
         })
         .map(|captures| {
             let whole = captures.get(0).expect("match");
-            let kind = match lexical::vocabulary_form(&captures[1]).as_str() {
-                "oad" => SpecialKind::Oad,
-                "ona" => SpecialKind::Ona,
-                _ => SpecialKind::Ova,
-            };
+            let kind = rules
+                .animation_special_words
+                .get(&lexical::vocabulary_form(&captures[1]))
+                .copied()
+                .unwrap_or(SpecialKind::Ova);
             let number = captures
                 .get(2)
                 .map(|number| number.as_str().trim_start_matches('0').to_owned())
@@ -1007,6 +1011,9 @@ enum Tier {
     SeasonAndEpisode,
     EpisodeOnly,
     Cross,
+    /// An episode word of a language pack or an overlay, which can also be a title word
+    /// (`3x08 Episodio 2`).
+    LocalizedEpisodeWord,
     StrongDashNumber,
     BracketNumber,
     LeadingNumber,
@@ -1035,7 +1042,7 @@ fn read_reference(rules: &Rules, stem: &str, context: &ReadingContext) -> Refere
     let (mut candidates, blocked) = explicit_candidates(rules, text);
     if candidates.is_empty()
         && date.is_none()
-        && let Some(special) = special_reference(text)
+        && let Some(special) = special_reference(rules, text)
     {
         return special;
     }
@@ -1111,6 +1118,10 @@ fn choose(
 /// more is season-coded (`301` → S03E01) only if the known season matches its leading
 /// digits. Otherwise it is absolute (T6). A leading `1-05` outside a season folder is S01E05.
 fn reference_from(text: &str, candidate: Candidate, context: &ReadingContext) -> Reference {
+    let states_episode_only = matches!(
+        candidate.tier,
+        Tier::EpisodeOnly | Tier::LocalizedEpisodeWord
+    );
     let span = widen_to_enclosing_bracket(text, candidate.span);
     let mut reference = Reference {
         span,
@@ -1118,11 +1129,11 @@ fn reference_from(text: &str, candidate: Candidate, context: &ReadingContext) ->
     };
     if let Some(season) = candidate.season {
         reference.season = Some((season, Rule::EpisodeToken, candidate.span));
-        reference.season_is_stated = candidate.tier != Tier::EpisodeOnly;
+        reference.season_is_stated = !states_episode_only;
         reference.episodes = expand(&candidate.numbers);
         return reference;
     }
-    if candidate.tier == Tier::EpisodeOnly {
+    if states_episode_only {
         reference.episodes = expand(&candidate.numbers);
         return reference;
     }
@@ -1206,19 +1217,6 @@ static SEASON_EPISODE_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)s ?(\d{1,4})(?:[ ._]?(?:x[ ._]?)?e ?|x)(\d{1,6})")
         .expect("valid season episode pattern")
 });
-static SEASON_EPISODE_WORDS_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)season[ ._-]?(\d{1,4})[ ._-]*(?:episode|ep|e)[ ._-]?(\d{1,6})")
-        .expect("valid season episode words pattern")
-});
-static SPECIAL_PATTERN: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?i)sp(\d{1,3})").expect("valid special pattern"));
-static EPISODE_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
-    let dashes: String = lexical::DASHES.iter().collect();
-    Regex::new(&format!(
-        r"(?i)(episode|ep|e)(?:[ ._]*[{dashes}][ ._]*|[ ._]?)(\d{{1,6}})"
-    ))
-    .expect("valid episode pattern")
-});
 static CROSS_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?i)(\d{1,4})x(\d{1,6})").expect("valid cross pattern"));
 
@@ -1233,7 +1231,44 @@ fn explicit_candidates(rules: &Rules, text: &str) -> (Vec<Candidate>, Vec<Span>)
             .iter()
             .any(|candidate| start < candidate.span.1 && candidate.span.0 < end)
     };
-    for pattern in [&*SEASON_EPISODE_WORDS_PATTERN, &*SEASON_EPISODE_PATTERN] {
+    for token in &rules.patterns.episode_tokens {
+        for captures in token.pattern.captures_iter(text) {
+            let whole = captures.get(0).expect("match");
+            if !lexical::is_boundary_before(text, whole.start())
+                || !lexical::is_boundary_after(text, whole.end())
+                || overlaps(&candidates, whole.start(), whole.end())
+            {
+                continue;
+            }
+            let season = if token.states_season {
+                match valid_season(rules, &captures["season"]) {
+                    Some(season) => Some(season),
+                    None => continue,
+                }
+            } else {
+                None
+            };
+            let tier = if token.states_season {
+                Tier::SeasonAndEpisode
+            } else {
+                Tier::EpisodeOnly
+            };
+            let episode = captures.name("episode").expect("episode group");
+            candidates.extend(run_candidate(
+                rules,
+                text,
+                tier,
+                whole.start(),
+                episode,
+                Style::Episode,
+                season,
+            ));
+        }
+    }
+    for pattern in [
+        &rules.patterns.season_episode_words,
+        &*SEASON_EPISODE_PATTERN,
+    ] {
         for captures in pattern.captures_iter(text) {
             let whole = captures.get(0).expect("match");
             if !lexical::is_boundary_before(text, whole.start())
@@ -1259,7 +1294,7 @@ fn explicit_candidates(rules: &Rules, text: &str) -> (Vec<Candidate>, Vec<Span>)
             }
         }
     }
-    for captures in SPECIAL_PATTERN.captures_iter(text) {
+    for captures in rules.patterns.special_prefix.captures_iter(text) {
         let whole = captures.get(0).expect("match");
         if lexical::is_boundary_before(text, whole.start())
             && lexical::is_boundary_after(text, whole.end())
@@ -1277,7 +1312,7 @@ fn explicit_candidates(rules: &Rules, text: &str) -> (Vec<Candidate>, Vec<Span>)
             ));
         }
     }
-    for captures in EPISODE_PATTERN.captures_iter(text) {
+    for captures in rules.patterns.episode_word.captures_iter(text) {
         let whole = captures.get(0).expect("match");
         let word = &captures[1];
         let separated = whole.len() > word.len() + captures[2].len();
@@ -1289,17 +1324,25 @@ fn explicit_candidates(rules: &Rules, text: &str) -> (Vec<Candidate>, Vec<Span>)
             continue;
         }
         let number = captures.get(2).expect("number");
+        let folded_word = lexical::vocabulary_form(word);
+        let tier = if folded_word == data::EPISODE_OUTPUT_LETTER
+            || data::EPISODE_BASE_WORDS.contains(&folded_word.as_str())
+        {
+            Tier::EpisodeOnly
+        } else {
+            Tier::LocalizedEpisodeWord
+        };
         candidates.extend(run_candidate(
             rules,
             text,
-            Tier::EpisodeOnly,
+            tier,
             whole.start(),
             number,
             Style::Episode,
             None,
         ));
     }
-    let brackets = bracket_spans(text);
+    let brackets = bracket_spans(rules, text);
     for captures in CROSS_PATTERN.captures_iter(text) {
         let whole = captures.get(0).expect("match");
         if !lexical::is_boundary_before(text, whole.start())
@@ -1507,8 +1550,8 @@ fn run_candidate(
     })
 }
 
-fn bracket_spans(text: &str) -> Vec<Span> {
-    lexical::tokenize(text)
+fn bracket_spans(rules: &Rules, text: &str) -> Vec<Span> {
+    lexical::tokenize(rules, text)
         .into_iter()
         .filter(|token| matches!(token.kind, TokenKind::Bracket { .. }))
         .map(|token| token.span)
@@ -1530,9 +1573,9 @@ fn bare_number_candidates(rules: &Rules, text: &str, context: &ReadingContext) -
     {
         return Vec::new();
     }
-    let brackets = bracket_spans(text);
+    let brackets = bracket_spans(rules, text);
     let title_start = text.len()
-        - lexical::tokenize(text)
+        - lexical::tokenize(rules, text)
             .into_iter()
             .find(|token| !matches!(token.kind, TokenKind::Bracket { .. }))
             .map_or(0, |token| text.len() - token.span.0);

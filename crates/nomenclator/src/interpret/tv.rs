@@ -105,8 +105,8 @@ impl Unit {
             .release_remainder_start_in_stem
             .unwrap_or(0);
         let rest = without_provider_and_edition_tags(rules, self.name.get(start..)?);
-        let rest = unwrap_single_bracket(rest.trim_matches([' ', '-', '_', '.']));
-        (!rest.is_empty()).then(|| lexical::display_title(rest))
+        let rest = unwrap_single_bracket(rules, rest.trim_matches([' ', '-', '_', '.']));
+        (!rest.is_empty()).then(|| lexical::display_title(rules, rest))
     }
 }
 
@@ -816,9 +816,12 @@ impl Assembly {
                 .clone()
                 .unwrap_or_else(|| units[0].paths[0].clone()),
         };
-        let provider_ids = match (&key.file_title_key, &key.folder) {
-            (None, Some(folder)) => rules.parse_series_name(file_name(folder)).provider_ids,
-            _ => BTreeMap::new(),
+        let (provider_ids, tags) = match (&key.file_title_key, &key.folder) {
+            (None, Some(folder)) => {
+                let name = rules.parse_series_name(file_name(folder));
+                (name.provider_ids, name.tags)
+            }
+            _ => (BTreeMap::new(), BTreeMap::new()),
         };
         self.push_owner(
             TvOwner::Series(self.series.len()),
@@ -842,6 +845,7 @@ impl Assembly {
             year: facts.year,
             path: facts.path.clone(),
             provider_ids,
+            tags,
             alternate_identity: shared_alternate_identity(rules, units),
             extras: Vec::new(),
             artwork: Vec::new(),
@@ -944,8 +948,10 @@ impl Assembly {
             [Some(folder)] => Some((*folder).clone()),
             _ => None,
         };
-        let provider_ids =
-            merge_provider_claims(units.iter().map(|unit| &unit.reading.name.provider_ids));
+        let provider_ids = merge_provider_claims(
+            units.iter().map(|unit| &unit.reading.name.provider_ids),
+            crate::model::CONFLICTING_PROVIDER_ID,
+        );
         let mut ambiguity_reasons: Vec<&'static str> = Vec::new();
         if let Finding::Ambiguous { reason, .. } = first.reading.name.date {
             ambiguity_reasons.push(reason);
@@ -1020,6 +1026,10 @@ impl Assembly {
                 .clone(),
             path,
             provider_ids,
+            tags: merge_provider_claims(
+                units.iter().map(|unit| &unit.reading.name.tags),
+                crate::model::CONFLICTING_TAG,
+            ),
             versions,
             extras: Vec::new(),
             subtitles: Vec::new(),

@@ -19,6 +19,17 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 #[derive(Deserialize)]
+struct ProfileInput {
+    profile: Value,
+}
+
+#[derive(serde::Serialize)]
+struct CheckedProfile {
+    invalid: bool,
+    diagnostics: Vec<nomenclator::ProfileDiagnostic>,
+}
+
+#[derive(Deserialize)]
 struct Overlays {
     #[serde(default)]
     overlays: Vec<String>,
@@ -336,6 +347,19 @@ fn run_case(rules: &Rules, case: &CorpusCase) -> Result<(), String> {
         "parse_movie_name" => {
             let input: NameAndKind = parse_input(&case.input)?;
             to_value(rules.parse_movie_name(&input.name, input.kind))
+        }
+        "check_profile" => {
+            let input: ProfileInput = parse_input(&case.input)?;
+            match serde_json::from_value::<OutputProfile>(input.profile) {
+                Ok(profile) => to_value(CheckedProfile {
+                    invalid: false,
+                    diagnostics: rules.check_profile(&profile),
+                }),
+                Err(_) => to_value(CheckedProfile {
+                    invalid: true,
+                    diagnostics: Vec::new(),
+                }),
+            }
         }
         "render_template" => {
             let input: TemplateInput = parse_input(&case.input)?;

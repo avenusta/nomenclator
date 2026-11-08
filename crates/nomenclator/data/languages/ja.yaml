@@ -5,3 +5,5 @@ season_words:
   add: ["シーズン"]
 languages:
   add: { ja: ["日本語"] }
+episode_words:
+  add: ["エピソード"]

@@ -254,6 +254,8 @@ enum ExtraKind {
   EXTRA_KIND_THEME_VIDEO = 12;
   EXTRA_KIND_OTHER = 13;
   EXTRA_KIND_EXTRA = 14;
+  EXTRA_KIND_OPENING = 15;
+  EXTRA_KIND_ENDING = 16;
 }
 
 enum NfoRole {
@@ -274,6 +276,8 @@ enum ArtworkRole {
   ARTWORK_ROLE_THUMB = 5;
   ARTWORK_ROLE_EPISODE_STILL = 6;
   ARTWORK_ROLE_OTHER = 7;
+  ARTWORK_ROLE_CLEAR_ART = 8;
+  ARTWORK_ROLE_DISC_ART = 9;
 }
 
 // A rule file that the caller found in the library. A `.nomedia` marker excludes its
@@ -481,6 +485,8 @@ message MovieName {
   // The other titles that the name states: after `AKA`, after ` / `, or in a trailing
   // parenthesised group.
   repeated AlternateTitle alternate_titles = 9;
+  // The `{key-value}` tags whose keys state no typed fact.
+  map<string, TextFinding> tags = 10;
 }
 
 // A title that a name states beside its main title.
@@ -495,6 +501,8 @@ message SeriesName {
   // A season that the name also carries, as in a release pack.
   NumberFinding season = 3;
   map<string, TextFinding> provider_ids = 4;
+  // The `{key-value}` tags whose keys state no typed fact.
+  map<string, TextFinding> tags = 5;
 }
 
 message SeasonFolder {
@@ -531,6 +539,8 @@ message EpisodeName {
   optional uint32 release_version = 17;
   // `true` if `END` follows the episode number.
   bool is_final = 18;
+  // The `{key-value}` tags whose keys state no typed fact.
+  map<string, TextFinding> tags = 19;
 }
 
 message AlternateIdentity {
@@ -983,6 +993,8 @@ message Movie {
   optional string collection = 17;
   // The other titles that the name giving the title states.
   repeated string alternate_titles = 18;
+  // The `{key-value}` tags whose keys state no typed fact.
+  map<string, TextFinding> tags = 19;
 }
 
 message Series {
@@ -997,6 +1009,8 @@ message Series {
   // the series (T2).
   AlternateIdentity alternate_identity = 8;
   repeated AppliedHint hints = 9;
+  // The `{key-value}` tags whose keys state no typed fact.
+  map<string, TextFinding> tags = 10;
 }
 
 message Season {
@@ -1040,6 +1054,8 @@ message Episode {
   MappedNumbering mapped_from = 22;
   // The special that the episode is, if its name states one instead of a number.
   Special special = 23;
+  // The `{key-value}` tags whose keys state no typed fact.
+  map<string, TextFinding> tags = 24;
 }
 
 // A special that a name states instead of an episode number.
@@ -1175,6 +1191,8 @@ message OutputProfile {
   // Names that no path component may use before its first dot, in addition to the device
   // names that the target filesystem reserves.
   repeated string reserved_names = 17;
+  // The templates that spell parts of a name, keyed by snake_case slot name.
+  map<string, string> templates = 18;
 }
 
 enum MovieLayout {
@@ -1243,6 +1261,8 @@ enum AssetRole {
   ASSET_ROLE_NFO = 7;
   ASSET_ROLE_THEME_SONG = 8;
   ASSET_ROLE_THEME_VIDEO = 9;
+  ASSET_ROLE_CLEAR_ART = 10;
+  ASSET_ROLE_DISC_ART = 11;
 }
 
 // A subtitle that a feature video needs.

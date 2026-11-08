@@ -5,3 +5,5 @@ season_words:
   add: ["sezonul", "sezon"]
 languages:
   add: { ro: ["română", "romana"] }
+episode_words:
+  add: ["episodul", "episod"]

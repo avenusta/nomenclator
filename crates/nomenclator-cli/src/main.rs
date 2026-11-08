@@ -249,6 +249,7 @@ fn run(arguments: Arguments) -> Result<bool, String> {
     };
     let inputs: CallerInputs = read_document(arguments.inputs.as_deref())?;
     let base_profile: OutputProfile = read_document(arguments.profile.as_deref())?;
+    check_profile(&rules, &base_profile)?;
     match arguments.command {
         Command::Suggest { directory } => {
             let scanned = scan_library(&directory, &rule_files)?;
@@ -424,6 +425,7 @@ fn run(arguments: Arguments) -> Result<bool, String> {
             undo_script,
         } => {
             let from_profile: OutputProfile = read_document(from_profile.as_deref())?;
+            check_profile(&rules, &from_profile)?;
             let scanned = scan_library(&directory, &rule_files)?;
             let profile = profile(base_profile, target_filesystem);
             let plan = rules
@@ -528,6 +530,27 @@ fn run(arguments: Arguments) -> Result<bool, String> {
             }
             Ok(diff.paths.is_empty())
         }
+    }
+}
+
+/// Fails if the reader does not read back a name that `profile` writes.
+fn check_profile(rules: &Rules, profile: &OutputProfile) -> Result<(), String> {
+    let problems: Vec<String> = rules
+        .check_profile(profile)
+        .iter()
+        .map(|diagnostic| {
+            format!(
+                "output profile: {:?}: fact {} slot {:?}. Change the template of the slot",
+                diagnostic.reason,
+                diagnostic.fact.as_deref().unwrap_or("-"),
+                diagnostic.slot,
+            )
+        })
+        .collect();
+    if problems.is_empty() {
+        Ok(())
+    } else {
+        Err(problems.join("\n"))
     }
 }
 

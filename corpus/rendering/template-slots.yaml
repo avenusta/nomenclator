@@ -1,0 +1,108 @@
+# Profile template slots (decision X33). A slot that the profile does not set keeps its
+# default spelling.
+
+- name: a season folder template changes only the season folder
+  operation: render_names
+  input:
+    facts: { library: tv, title: Show, season: 1, episodes: [2], container: mkv }
+    profile: { templates: { season_folder: "Staffel {season:00}" } }
+  expect:
+    path: Show/Staffel 01/Show - S01E02.mkv
+
+- name: a work name template changes the folder and the file of a movie
+  operation: render_names
+  input:
+    facts: { library: movies, title: Heat, year: 1995, container: mkv }
+    profile: { templates: { work_name: "{title} [[{year}]]" } }
+  expect:
+    path: Heat [1995]/Heat [1995].mkv
+
+- name: an optional section of a template is left out if its fact is missing
+  operation: render_names
+  input:
+    facts: { library: movies, title: Heat, container: mkv }
+    profile: { templates: { work_name: "{title}[ [[{year}]]]" } }
+  expect:
+    path: Heat/Heat.mkv
+
+- name: a provider tag template writes the chosen provider
+  operation: render_names
+  input:
+    facts: { library: movies, title: Heat, year: 1995, provider_ids: { tmdb: "949" }, container: mkv }
+    profile: { templates: { provider_tag: "[[{provider}={id}]]" } }
+  expect:
+    path: Heat (1995) [tmdb=949]/Heat (1995) [tmdb=949].mkv
+
+- name: an edition tag template writes the edition
+  operation: render_names
+  input:
+    facts: { library: movies, title: Heat, year: 1995, edition: Final, container: mkv }
+    profile: { templates: { edition_tag: "{{cut-{edition}}}" } }
+  expect:
+    path: Heat (1995)/Heat (1995) {cut-Final}.mkv
+
+- name: version label and part templates write their own separators
+  operation: render_names
+  input:
+    facts: { library: movies, title: Heat, year: 1995, version_label: 2160p, part: 2, container: mkv }
+    profile: { templates: { version_label: " ({label})", part: " Teil{part}" } }
+  expect:
+    path: Heat (1995)/Heat (1995) (2160p) Teil2.mkv
+
+- name: an episode file template arranges the reference and the title
+  operation: render_names
+  input:
+    facts: { library: tv, title: Show, season: 1, episodes: [2, 3], episode_title: Pilot, container: mkv }
+    profile: { templates: { episode_file: "{work_name} {reference}[ {episode_title}]" } }
+  expect:
+    path: Show/Season 01/Show S01E02-E03 Pilot.mkv
+
+- name: template literals follow the target filesystem
+  operation: render_names
+  input:
+    facts: { library: tv, title: Show, season: 1, episodes: [2], container: mkv }
+    profile: { templates: { season_folder: "Season: {season}" } }
+  expect:
+    path: Show/Season - 1/Show - S01E02.mkv
+
+- name: a profile with templates that read back has no diagnostics
+  operation: check_profile
+  input:
+    profile:
+      templates:
+        season_folder: "Sezonas {season:00}"
+        part: " Teil{part}"
+        edition_tag: "{{cut-{edition}}}"
+        provider_tag: "[[{provider}={id}]]"
+  expect:
+    diagnostics: []
+
+- name: a work name template that the reader cannot read back is reported
+  operation: check_profile
+  input:
+    profile: { templates: { work_name: "{title}~{year}" } }
+  expect:
+    diagnostics:
+      - { reason: does_not_read_back, slot: work_name, fact: title }
+      - { reason: does_not_read_back, slot: work_name, fact: year }
+
+- name: a template with a field that its slot does not have is invalid
+  operation: check_profile
+  input:
+    profile: { templates: { season_folder: "Season {episode}" } }
+  expect:
+    invalid: true
+
+- name: a template without the required field of its slot is invalid
+  operation: check_profile
+  input:
+    profile: { templates: { season_folder: "Season" } }
+  expect:
+    invalid: true
+
+- name: an unknown slot is invalid
+  operation: check_profile
+  input:
+    profile: { templates: { movie_poster: "{title}" } }
+  expect:
+    invalid: true

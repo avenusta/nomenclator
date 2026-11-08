@@ -31,3 +31,5 @@ languages:
   add: { fr: ["français", "francais"] }
 artwork_roles:
   add: { "affiche": poster, "jaquette": poster, "fond": backdrop }
+episode_words:
+  add: ["épisode"]

@@ -749,6 +749,7 @@ fn assemble_movie(rules: &Rules, work: &Work) -> Movie {
         year_source: work.year.as_ref().map(|(_, source)| source.clone()),
         path: work.owner.map(|owner| owner.path.clone()),
         provider_ids,
+        tags: merged_tags(work),
         versions,
         extras: Vec::new(),
         subtitles: Vec::new(),
@@ -913,8 +914,8 @@ fn version_label(rules: &Rules, unit: &Unit, owner: Option<&Owner>) -> Option<St
         .and_then(|owner| owner.name_end_in(stem))
         .unwrap_or(after_identity);
     let rest = without_provider_and_edition_tags(rules, stem.get(start..)?);
-    let rest = unwrap_single_bracket(rest.trim_matches([' ', '-', '_', '.']));
-    (!rest.is_empty()).then(|| lexical::display_title(rest))
+    let rest = unwrap_single_bracket(rules, rest.trim_matches([' ', '-', '_', '.']));
+    (!rest.is_empty()).then(|| lexical::display_title(rules, rest))
 }
 
 fn resolved_span_end<T>(finding: &Finding<T>) -> Option<usize> {
@@ -933,7 +934,20 @@ fn resolved_span_end<T>(finding: &Finding<T>) -> Option<usize> {
 fn merged_provider_ids(work: &Work) -> BTreeMap<String, Finding<String>> {
     let folder_ids = work.owner.map(|owner| &owner.parsed.provider_ids);
     let unit_ids = work.units.iter().map(|unit| &unit.parsed.provider_ids);
-    merge_provider_claims(folder_ids.into_iter().chain(unit_ids))
+    merge_provider_claims(
+        folder_ids.into_iter().chain(unit_ids),
+        crate::model::CONFLICTING_PROVIDER_ID,
+    )
+}
+
+/// Merges the `{key-value}` tags of a work: the owning folder's, then the videos'.
+fn merged_tags(work: &Work) -> BTreeMap<String, Finding<String>> {
+    let folder_tags = work.owner.map(|owner| &owner.parsed.tags);
+    let unit_tags = work.units.iter().map(|unit| &unit.parsed.tags);
+    merge_provider_claims(
+        folder_tags.into_iter().chain(unit_tags),
+        crate::model::CONFLICTING_TAG,
+    )
 }
 
 fn owner_candidate(work: &Work) -> OwnerCandidate {

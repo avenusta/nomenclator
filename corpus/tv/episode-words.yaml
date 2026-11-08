@@ -1,0 +1,111 @@
+# Episode words (decision X30): the words of a season and episode token are vocabulary.
+
+- name: a season word and an episode word of one language state a season and an episode
+  operation: parse_episode_name
+  input: { path: Show Staffel 2 Folge 3.mkv }
+  expect:
+    series_name: Show
+    season: 2
+    episodes: [3]
+    episode_title: null
+
+- name: dotted season and episode words are read before release words
+  operation: parse_episode_name
+  input: { path: Show.Temporada.2.Capitulo.3.1080p.mkv }
+  expect:
+    series_name: Show
+    season: 2
+    episodes: [3]
+
+- name: an episode word alone states an episode
+  operation: parse_episode_name
+  input: { path: Show Aflevering 12.mkv }
+  expect:
+    series_name: Show
+    episodes: [12]
+    episode_title: null
+
+- name: an episode word of a language with a combining accent is read in both Unicode forms
+  operation: parse_episode_name
+  input: { path: "Show E\u0301pisode 4.mkv" }
+  expect:
+    episodes: [4]
+
+- name: an English-only library does not read another language's episode word
+  languages: [en]
+  operation: parse_episode_name
+  input: { path: Show Folge 3.mkv }
+  expect:
+    series_name: Show Folge
+
+- name: a German library reads its episode word
+  languages: [de]
+  operation: parse_episode_name
+  input: { path: Show Staffel 2 Folge 3.mkv }
+  expect:
+    season: 2
+    episodes: [3]
+
+- name: an overlay that adds an episode word reads it
+  overlays: ["name: odc\nepisode_words:\n  add: [Odc]\n"]
+  operation: parse_episode_name
+  input: { path: Show Odc 5 The Start.mkv }
+  expect:
+    series_name: Show
+    episodes: [5]
+    episode_title: The Start
+
+- name: an overlay that removes an episode word no longer reads it
+  overlays: ["name: no-ep\nepisode_words:\n  remove: [ep]\n"]
+  operation: parse_episode_name
+  input: { path: Show Ep5.mkv }
+  expect:
+    episodes: null
+
+- name: an overlay cannot remove the episode letter that the writer writes
+  operation: build_rules
+  input:
+    overlays: ["name: no-e\nepisode_words:\n  remove: [e]\n"]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: canonical_entry, overlay: no-e, vocabulary: episode_words, entry: e }
+
+- name: an overlay that adds a special prefix reads season 0
+  overlays: ["name: xtra\nspecial_prefixes:\n  add: [xtra]\n"]
+  operation: parse_episode_name
+  input: { path: Show XTRA02.mkv }
+  expect:
+    season: 0
+    episodes: [2]
+
+- name: an overlay that adds an animation special word reads it as its kind
+  overlays: ["name: ovax\nanimation_special_words:\n  add: { OAV: ova }\n"]
+  operation: parse_episode_name
+  input: { path: "[Grp] Show OAV 2 [1080p].mkv" }
+  expect:
+    season: 0
+    special: { kind: ova, number: "2" }
+
+- name: an overlay that removes an animation special word no longer reads a special
+  overlays: ["name: no-ona\nanimation_special_words:\n  remove: [ona]\n"]
+  operation: parse_episode_name
+  input: { path: "[Grp] Show ONA 2 [1080p].mkv" }
+  expect:
+    special: null
+
+- name: an animation special word with an unknown kind is malformed
+  operation: build_rules
+  input:
+    overlays: ["name: bad\nanimation_special_words:\n  add: { oav: film }\n"]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: malformed_vocabulary, overlay: bad, vocabulary: animation_special_words }
+
+- name: a number after an episode word stays one episode in a season folder
+  operation: parse_episode_name
+  input: { path: Show/Season 03/Show Folge 301.mkv }
+  expect:
+    season: 3
+    episodes: [301]

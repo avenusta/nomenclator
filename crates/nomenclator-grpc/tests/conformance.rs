@@ -75,6 +75,7 @@ async fn corpus_cases_match_expected_facts_over_the_wire() {
             !case.pending
                 && ![
                     "build_rules",
+                    "check_profile",
                     "diff_rules",
                     "render_template",
                     "read_template",

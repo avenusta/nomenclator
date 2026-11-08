@@ -7,3 +7,5 @@ ordinal_suffixes:
   add: ["."]
 languages:
   add: { fi: ["suomi"] }
+episode_words:
+  add: ["jakso"]

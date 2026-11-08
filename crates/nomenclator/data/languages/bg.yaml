@@ -5,3 +5,5 @@ season_words:
   add: ["сезон"]
 languages:
   add: { bg: ["български"] }
+episode_words:
+  add: ["епизод", "серия"]

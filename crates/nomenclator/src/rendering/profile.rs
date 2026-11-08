@@ -9,6 +9,8 @@ use unicode_normalization::UnicodeNormalization;
 use crate::data;
 use crate::lexical;
 use crate::model::{ArtworkRole, ExtraKind, SidecarFlag};
+use crate::rendering::slots::{TemplateSlot, read_templates};
+use crate::rendering::template::Template;
 use crate::validation::{DiagnosticRule, SeverityOverride};
 
 /// The settings that control how structured facts are written. Every field has a
@@ -62,6 +64,11 @@ pub struct OutputProfile {
     pub version_label_style: VersionLabelStyle,
     /// The case of a written extension (R15). Defaults to `lower`.
     pub extension_case: ExtensionCase,
+    /// The templates that spell parts of a name (X33). A slot that is not listed keeps its
+    /// default spelling. A slot's template takes precedence over the style option of that
+    /// part.
+    #[serde(deserialize_with = "read_templates")]
+    pub templates: BTreeMap<TemplateSlot, Template>,
 }
 
 /// The place of a movie's files.
@@ -151,6 +158,7 @@ pub enum AssetItemKind {
 /// An asset role that an item can need.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum AssetRole {
     /// A poster image.
     Poster,
@@ -162,6 +170,10 @@ pub enum AssetRole {
     Logo,
     /// A thumb image.
     Thumb,
+    /// A clear art image.
+    ClearArt,
+    /// A disc art image.
+    DiscArt,
     /// An episode's still image.
     EpisodeStill,
     /// An NFO file.
@@ -179,6 +191,8 @@ const ARTWORK_ASSET_ROLES: &[(ArtworkRole, AssetRole)] = &[
     (ArtworkRole::Banner, AssetRole::Banner),
     (ArtworkRole::Logo, AssetRole::Logo),
     (ArtworkRole::Thumb, AssetRole::Thumb),
+    (ArtworkRole::ClearArt, AssetRole::ClearArt),
+    (ArtworkRole::DiscArt, AssetRole::DiscArt),
     (ArtworkRole::EpisodeStill, AssetRole::EpisodeStill),
 ];
 
@@ -233,6 +247,7 @@ impl Default for OutputProfile {
             character_replacements: BTreeMap::new(),
             version_label_style: VersionLabelStyle::default(),
             extension_case: ExtensionCase::default(),
+            templates: BTreeMap::new(),
         }
     }
 }

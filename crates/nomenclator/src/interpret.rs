@@ -104,6 +104,8 @@ pub struct Movie {
     pub collection: Option<String>,
     /// Provider IDs stated in the names, keyed by provider.
     pub provider_ids: BTreeMap<String, Finding<String>>,
+    /// The `{key-value}` tags stated in the names whose keys state no typed fact (X29).
+    pub tags: BTreeMap<String, Finding<String>>,
     /// Alternative representations, primary first.
     pub versions: Vec<Version>,
     /// Extras the movie owns.
@@ -139,6 +141,8 @@ pub struct Series {
     pub path: Option<String>,
     /// The series folder's provider IDs.
     pub provider_ids: BTreeMap<String, Finding<String>>,
+    /// The series folder's `{key-value}` tags whose keys state no typed fact (X29).
+    pub tags: BTreeMap<String, Finding<String>>,
     /// The text that precedes the episode code in every episode file of the series' season
     /// folders, as another title for the same series (T2). `None` if there is no such text or
     /// the files contain different texts.
@@ -201,6 +205,8 @@ pub struct Episode {
     pub path: Option<String>,
     /// The episode files' own provider IDs.
     pub provider_ids: BTreeMap<String, Finding<String>>,
+    /// The episode files' `{key-value}` tags whose keys state no typed fact (X29).
+    pub tags: BTreeMap<String, Finding<String>>,
     /// Videos with the same coverage, primary first (T17).
     pub versions: Vec<Version>,
     /// Extras the episode owns.
@@ -604,7 +610,7 @@ impl EntryIndex {
                     let stem = lexical::stem(file_name(&extra.path), EntryKind::File);
                     *role = FileRole::Extra {
                         kind,
-                        title: Some(lexical::display_title(stem)),
+                        title: Some(lexical::display_title(rules, stem)),
                         owner_folder: extra.owner.clone().or(parent),
                         owner_is_forced: extra.owner.is_some(),
                     };
@@ -732,8 +738,8 @@ fn classify_file(rules: &Rules, path: &str, context: &ClassificationContext) -> 
 
 /// Returns the inside of a text that is one bracketed token: `[test]` → `test`. Returns any
 /// other text unchanged, such as `[a] [b]`.
-pub(crate) fn unwrap_single_bracket(text: &str) -> &str {
-    let tokens = lexical::tokenize(text);
+pub(crate) fn unwrap_single_bracket<'a>(rules: &Rules, text: &'a str) -> &'a str {
+    let tokens = lexical::tokenize(rules, text);
     match tokens.as_slice() {
         [token] if matches!(token.kind, lexical::TokenKind::Bracket { .. }) => {
             let lexical::TokenKind::Bracket { inner } = token.kind else {
@@ -749,14 +755,15 @@ pub(crate) fn unwrap_single_bracket(text: &str) -> &str {
 pub(crate) fn without_provider_and_edition_tags(rules: &Rules, text: &str) -> String {
     let mut kept = String::new();
     let mut position = 0;
-    for token in lexical::tokenize(text) {
+    for token in lexical::tokenize(rules, text) {
         let TokenKind::Bracket { inner } = token.kind else {
             continue;
         };
         let is_tag = matches!(
-            lexical::classify_bracket(rules, &text[inner.0..inner.1]),
+            lexical::classify_bracket(rules, text, token.span, inner),
             BracketClass::ProviderTag { .. }
-                | BracketClass::BareImdbId(_)
+                | BracketClass::BareProviderId { .. }
+                | BracketClass::CustomTag { .. }
                 | BracketClass::EditionTag(_)
         );
         if is_tag {
@@ -786,6 +793,7 @@ pub(crate) fn resolution_of(label: &str) -> u32 {
 /// different values (M8).
 pub(crate) fn merge_provider_claims<'a>(
     claim_sets: impl Iterator<Item = &'a BTreeMap<String, Finding<String>>>,
+    reason: &'static str,
 ) -> BTreeMap<String, Finding<String>> {
     let mut claims: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for ids in claim_sets {
@@ -814,7 +822,7 @@ pub(crate) fn merge_provider_claims<'a>(
             } else {
                 Finding::Ambiguous {
                     candidates: values,
-                    reason: crate::model::CONFLICTING_PROVIDER_ID,
+                    reason,
                 }
             };
             (provider, finding)

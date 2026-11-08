@@ -25,6 +25,8 @@ const EXTRA_KINDS: &[ExtraKind] = &[
     ExtraKind::ThemeVideo,
     ExtraKind::Other,
     ExtraKind::Extra,
+    ExtraKind::Opening,
+    ExtraKind::Ending,
 ];
 
 const ARTWORK: &[AssetRole] = &[
@@ -33,6 +35,8 @@ const ARTWORK: &[AssetRole] = &[
     AssetRole::Banner,
     AssetRole::Logo,
     AssetRole::Thumb,
+    AssetRole::ClearArt,
+    AssetRole::DiscArt,
 ];
 
 fn facts(library: LibraryType) -> NamingFacts {
@@ -241,6 +245,8 @@ fn written_movie_names_read_back_under_every_rules() {
                 ArtworkRole::Banner,
                 ArtworkRole::Logo,
                 ArtworkRole::Thumb,
+                ArtworkRole::ClearArt,
+                ArtworkRole::DiscArt,
             ]
             .into();
             assert_eq!(roles, expected, "{context}");

@@ -5,3 +5,5 @@ season_words:
   add: ["sezon"]
 languages:
   add: { tr: ["türkçe", "turkce"] }
+episode_words:
+  add: ["bölüm"]

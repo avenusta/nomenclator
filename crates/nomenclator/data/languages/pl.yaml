@@ -7,3 +7,5 @@ series_season_words:
   add: ["seria"]
 languages:
   add: { pl: ["polski"] }
+episode_words:
+  add: ["odcinek"]

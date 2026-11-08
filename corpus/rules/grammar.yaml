@@ -1,0 +1,118 @@
+# Overlay data for the name grammar (decisions X34 and X12): episode tokens, bracket pairs,
+# separators and the earliest year.
+
+- name: an episode token template reads a season and an episode
+  overlays: ["name: dotted\nepisode_tokens:\n  add: ['{season}.{episode}']\n"]
+  operation: parse_episode_name
+  input: { path: Show 2.05 The Start.mkv }
+  expect:
+    series_name: Show
+    season: 2
+    episodes: [5]
+    episode_title: The Start
+
+- name: an episode token template reads an episode alone
+  overlays: ["name: kapitel\nepisode_tokens:\n  add: ['Kap {episode}']\n"]
+  operation: parse_episode_name
+  input: { path: Show KAP-07.mkv }
+  expect:
+    series_name: Show
+    episodes: [7]
+
+- name: an episode token template with a field other than season and episode is malformed
+  operation: build_rules
+  input:
+    overlays: ["name: bad\nepisode_tokens:\n  add: ['{title} {episode}']\n"]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: malformed_vocabulary, overlay: bad, vocabulary: episode_tokens }
+
+- name: an episode token template without an episode is malformed
+  operation: build_rules
+  input:
+    overlays: ["name: bad\nepisode_tokens:\n  add: ['Staffel {season}']\n"]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: malformed_vocabulary, overlay: bad, vocabulary: episode_tokens }
+
+- name: a corner bracket group at the start of a name is a release group
+  operation: parse_episode_name
+  input: { path: "【Grp】 Show - 12 [1080p].mkv" }
+  expect:
+    series_name: Show
+    episodes: [12]
+
+- name: an overlay that adds a bracket pair reads the group as a bracket
+  overlays: ["name: quotes\nbracket_pairs:\n  add: { 「: 」 }\n"]
+  operation: parse_episode_name
+  input: { path: "「Grp」 Show - 12 [1080p].mkv" }
+  expect:
+    series_name: Show
+
+- name: an overlay cannot remove a bracket pair that the writer writes
+  operation: build_rules
+  input:
+    overlays: ["name: no-braces\nbracket_pairs:\n  remove: ['{']\n"]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: canonical_entry, overlay: no-braces, vocabulary: bracket_pairs, entry: "{" }
+
+- name: a bracket pair of more than one character is malformed
+  operation: build_rules
+  input:
+    overlays: ["name: bad\nbracket_pairs:\n  add: { '<<': '>>' }\n"]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: malformed_vocabulary, overlay: bad, vocabulary: bracket_pairs }
+
+- name: an overlay that adds a separator splits words and cleans the title
+  overlays: ["name: plus\nseparators:\n  add: ['+']\n"]
+  operation: parse_movie_name
+  input: { name: Northern+Passage+2021+1080p.mkv, kind: file }
+  expect:
+    title: Northern Passage
+    year: 2021
+
+- name: an overlay that removes a separator keeps it inside words
+  overlays: ["name: no-underscore\nseparators:\n  remove: [_]\n"]
+  operation: parse_movie_name
+  input: { name: Northern_Passage (2021).mkv, kind: file }
+  expect:
+    title: Northern_Passage
+    year: 2021
+
+- name: an overlay cannot remove the space separator that the writer writes
+  operation: build_rules
+  input:
+    overlays: ["name: no-space\nseparators:\n  remove: [' ']\n"]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: canonical_entry, overlay: no-space, vocabulary: separators }
+
+- name: a year before the earliest plausible year is not a year
+  operation: parse_movie_name
+  input: { name: Roundhay Garden Scene (1888).mkv, kind: file }
+  expect:
+    year: null
+
+- name: the earliest plausible year preset reads an older year
+  overlays: ["name: early\npresets:\n  earliest_plausible_year: 1880\n"]
+  operation: parse_movie_name
+  input: { name: Roundhay Garden Scene (1888).mkv, kind: file }
+  expect:
+    title: Roundhay Garden Scene
+    year: 1888
+
+- name: an earliest plausible year outside its range is invalid
+  operation: build_rules
+  input:
+    overlays: ["name: bad\npresets:\n  earliest_plausible_year: 1700\n"]
+  expect:
+    identity: null
+    diagnostics:
+      - { reason: invalid_preset_value, overlay: bad, vocabulary: presets, entry: earliest_plausible_year }

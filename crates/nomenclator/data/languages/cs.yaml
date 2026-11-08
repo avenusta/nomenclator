@@ -5,3 +5,5 @@ season_words:
   add: ["sezóna"]
 languages:
   add: { cs: ["čeština", "cestina", "česky", "cesky"] }
+episode_words:
+  add: ["díl", "epizoda"]
