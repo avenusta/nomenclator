@@ -169,26 +169,11 @@ fn read_segments(rules: &Rules, segments: &[Segment]) -> Sidecar {
 }
 
 fn language_finding(languages: Vec<(String, Span)>) -> Finding<String> {
-    let mut candidates: Vec<String> = Vec::new();
-    for (tag, _) in &languages {
-        if !candidates.contains(tag) {
-            candidates.push(tag.clone());
-        }
-    }
-    match (candidates.len(), languages.into_iter().next()) {
-        (1, Some((value, span))) => Finding::Resolved {
-            value,
-            evidence: Some(Evidence {
-                rule: Rule::LanguageToken,
-                span,
-            }),
-        },
-        (0, _) | (_, None) => Finding::Unknown,
-        _ => Finding::Ambiguous {
-            candidates,
-            reason: AmbiguityReason::SeveralLanguages,
-        },
-    }
+    Finding::from_spans(
+        &languages,
+        Rule::LanguageToken,
+        AmbiguityReason::SeveralLanguages,
+    )
 }
 
 /// Returns the title words joined by `.`. The evidence has a span only if the words are

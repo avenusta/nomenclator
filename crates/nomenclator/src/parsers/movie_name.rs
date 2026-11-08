@@ -399,26 +399,11 @@ fn format_3d(
     {
         found.retain(|(format, _)| *format != Format3d::Unspecified);
     }
-    let mut layouts: Vec<Format3d> = Vec::new();
-    for (format, _) in &found {
-        if !layouts.contains(format) {
-            layouts.push(*format);
-        }
-    }
-    match (layouts.as_slice(), found.first()) {
-        ([], _) | (_, None) => Finding::Unknown,
-        ([format], Some((_, span))) => Finding::Resolved {
-            value: *format,
-            evidence: Some(Evidence {
-                rule: Rule::Format3dWord,
-                span: *span,
-            }),
-        },
-        _ => Finding::Ambiguous {
-            candidates: layouts,
-            reason: AmbiguityReason::Conflicting3dLayouts,
-        },
-    }
+    Finding::from_spans(
+        &found,
+        Rule::Format3dWord,
+        AmbiguityReason::Conflicting3dLayouts,
+    )
 }
 
 /// Splits the other titles from a resolved title (M16): the text after `AKA` or after

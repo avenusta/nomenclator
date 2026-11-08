@@ -783,20 +783,7 @@ pub(crate) fn merge_provider_claims<'a>(
     }
     claims
         .into_iter()
-        .map(|(provider, mut values)| {
-            let finding = if values.len() == 1 {
-                Finding::Resolved {
-                    value: values.remove(0),
-                    evidence: None,
-                }
-            } else {
-                Finding::Ambiguous {
-                    candidates: values,
-                    reason,
-                }
-            };
-            (provider, finding)
-        })
+        .map(|(provider, values)| (provider, Finding::from_values(values, reason)))
         .collect()
 }
 

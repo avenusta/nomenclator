@@ -592,26 +592,7 @@ impl Facts {
 /// Returns one value as resolved with the span that first stated it, several different
 /// values as ambiguous, and none as unknown.
 fn scalar(found: Vec<(String, Span)>) -> Finding<String> {
-    let mut candidates: Vec<String> = Vec::new();
-    for (value, _) in &found {
-        if !candidates.contains(value) {
-            candidates.push(value.clone());
-        }
-    }
-    match (candidates.len(), found.first()) {
-        (0, _) | (_, None) => Finding::Unknown,
-        (1, Some((value, span))) => Finding::Resolved {
-            value: value.clone(),
-            evidence: Some(Evidence {
-                rule: Rule::ReleaseWord,
-                span: *span,
-            }),
-        },
-        _ => Finding::Ambiguous {
-            candidates,
-            reason: AmbiguityReason::SeveralValues,
-        },
-    }
+    Finding::from_spans(&found, Rule::ReleaseWord, AmbiguityReason::SeveralValues)
 }
 
 /// Returns the markers in name order, each value once with the span that first stated it.

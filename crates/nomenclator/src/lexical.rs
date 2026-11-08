@@ -469,19 +469,11 @@ pub(crate) fn provider_ids(
     }
     claims
         .into_iter()
-        .map(|(provider, mut values)| {
-            let finding = if values.len() == 1 {
-                Finding::Resolved {
-                    value: values.remove(0),
-                    evidence: None,
-                }
-            } else {
-                Finding::Ambiguous {
-                    candidates: values,
-                    reason: AmbiguityReason::ConflictingProviderId,
-                }
-            };
-            (provider, finding)
+        .map(|(provider, values)| {
+            (
+                provider,
+                Finding::from_values(values, AmbiguityReason::ConflictingProviderId),
+            )
         })
         .collect()
 }
@@ -505,19 +497,11 @@ pub(crate) fn custom_tags(rules: &Rules, text: &str) -> BTreeMap<String, Finding
     }
     claims
         .into_iter()
-        .map(|(key, mut values)| {
-            let finding = if values.len() == 1 {
-                Finding::Resolved {
-                    value: values.remove(0),
-                    evidence: None,
-                }
-            } else {
-                Finding::Ambiguous {
-                    candidates: values,
-                    reason: AmbiguityReason::ConflictingTag,
-                }
-            };
-            (key, finding)
+        .map(|(key, values)| {
+            (
+                key,
+                Finding::from_values(values, AmbiguityReason::ConflictingTag),
+            )
         })
         .collect()
 }

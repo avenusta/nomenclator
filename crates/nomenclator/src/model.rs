@@ -285,6 +285,43 @@ pub fn resolved_values<K: Clone + Ord, T: Clone>(
         .collect()
 }
 
+impl<T: Clone + PartialEq> Finding<T> {
+    /// Returns the finding of a fact that each `(value, span)` states: one value as
+    /// resolved, with the span that first stated it as the evidence of `rule`, several
+    /// different values as ambiguous with `reason`, and none as unknown.
+    pub(crate) fn from_spans(found: &[(T, Span)], rule: Rule, reason: AmbiguityReason) -> Self {
+        let mut finding =
+            Finding::from_values(found.iter().map(|(value, _)| value.clone()), reason);
+        if let (Finding::Resolved { evidence, .. }, Some((_, span))) = (&mut finding, found.first())
+        {
+            *evidence = Some(Evidence { rule, span: *span });
+        }
+        finding
+    }
+
+    /// Returns one value of `values` as resolved without evidence, several different values
+    /// as ambiguous with `reason`, and none as unknown.
+    pub(crate) fn from_values(
+        values: impl IntoIterator<Item = T>,
+        reason: AmbiguityReason,
+    ) -> Self {
+        let mut candidates: Vec<T> = Vec::new();
+        for value in values {
+            if !candidates.contains(&value) {
+                candidates.push(value);
+            }
+        }
+        match candidates.len() {
+            0 => Finding::Unknown,
+            1 => Finding::Resolved {
+                value: candidates.remove(0),
+                evidence: None,
+            },
+            _ => Finding::Ambiguous { candidates, reason },
+        }
+    }
+}
+
 impl<T> Finding<T> {
     /// Returns `true` if the fact has one value.
     pub fn is_resolved(&self) -> bool {
