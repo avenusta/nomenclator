@@ -2402,3 +2402,18 @@
     unclaimed_files:
     - Animated/tvshow.nfo
 
+
+- name: an episode's disc image and disc folder are versions of their episodes
+  operation: interpret
+  input:
+    library: tv
+    paths:
+      - Show/Season 01/Show S01E01.iso
+      - Show/Season 01/Show S01E02/VIDEO_TS/VTS_01_1.VOB
+  expect:
+    items:
+      - { kind: series, title: Show }
+      - { kind: season, season: 1 }
+      - { kind: episode, season: 1, episodes: [1], versions: [{ paths: [Show/Season 01/Show S01E01.iso] }] }
+      - { kind: episode, season: 1, episodes: [2], versions: [{ paths: [Show/Season 01/Show S01E02/] }] }
+    unclaimed_files: []

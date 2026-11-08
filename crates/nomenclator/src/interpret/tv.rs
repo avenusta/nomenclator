@@ -595,12 +595,13 @@ fn apply_unit_hints(rules: &Rules, hints: &Hints, unit: &mut Unit) {
     }
 }
 
-/// Collects the units: feature videos and part stacks (T17).
+/// Collects the units: feature videos, disc images, part stacks and disc folders (T17,
+/// T18, M13). A disc folder is one version, read from the folder's path.
 fn collect_units(known: &KnownSeasons, rules: &Rules, index: &EntryIndex) -> Vec<Unit> {
     let feature_files: Vec<String> = index
         .files
         .iter()
-        .filter(|(_, role)| matches!(role, FileRole::FeatureVideo))
+        .filter(|(_, role)| matches!(role, FileRole::FeatureVideo | FileRole::DiscImage))
         .map(|(path, _)| path.clone())
         .collect();
     let mut units = Vec::new();
@@ -634,6 +635,21 @@ fn collect_units(known: &KnownSeasons, rules: &Rules, index: &EntryIndex) -> Vec
             paths: vec![path.clone()],
             name: lexical::stem(file_name(path), EntryKind::File).to_owned(),
             reading: read_episode(known, rules, path, EntryKind::File, None),
+            part_ambiguity: None,
+            hints: Vec::new(),
+            is_split: false,
+            order_hint: None,
+            order: None,
+            mapped_from: None,
+            numbering_contradicts_season: false,
+        });
+    }
+    for folder in &index.disc_folders {
+        let disc = format!("{folder}/");
+        units.push(Unit {
+            name: file_name(folder).to_owned(),
+            reading: read_episode(known, rules, &disc, EntryKind::Directory, None),
+            paths: vec![disc],
             part_ambiguity: None,
             hints: Vec::new(),
             is_split: false,

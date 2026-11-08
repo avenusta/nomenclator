@@ -136,3 +136,16 @@
   expect:
     path: null
     blocked_reasons: [missing_title]
+
+- name: an episode's disc image is renamed, and its disc folder is not
+  operation: plan_renames
+  input:
+    library: tv
+    paths:
+      - Show/Season 01/Show S01E01.iso
+      - Show/Season 01/Show S01E02/VIDEO_TS/VTS_01_1.VOB
+  expect:
+    proposals:
+      - { from: Show/Season 01/Show S01E01.iso, to: Show/Season 01/Show - S01E01.iso }
+    blocked:
+      - { from: Show/Season 01/Show S01E02/, reasons: [disc_structure] }
