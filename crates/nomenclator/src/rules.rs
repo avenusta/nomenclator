@@ -299,9 +299,8 @@ impl Rules {
         })
     }
 
-    /// Returns rules with empty vocabularies.
-    fn empty() -> Rules {
-        let vocab = Vocabularies::default();
+    /// Returns rules with `vocab`, and their patterns compiled.
+    fn with_vocabularies(vocab: Vocabularies) -> Rules {
         Rules {
             identity: RulesIdentity {
                 version: crate::RULES_VERSION.to_owned(),
@@ -351,8 +350,9 @@ impl Patterns {
             escaped.sort_by(|a, b| b.len().cmp(&a.len()).then_with(|| a.cmp(b)));
             escaped.dedup();
             if escaped.is_empty() {
-                // An empty vocabulary must match nothing.
-                "[^\\s\\S]".to_owned()
+                // An empty vocabulary must match nothing. A boundary that is also not a
+                // boundary never matches, and compiles fast.
+                r"\b\B".to_owned()
             } else {
                 escaped.join("|")
             }

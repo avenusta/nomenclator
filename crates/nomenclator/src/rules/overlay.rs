@@ -618,17 +618,16 @@ impl Rules {
             .languages
             .iter()
             .filter(|(tag, _)| languages.is_none_or(|wanted| wanted.iter().any(|w| w == tag)));
-        let mut rules = Rules::empty();
+        let mut vocab = Vocabularies::default();
         let changes = builtins
             .base
             .iter()
-            .chain(selected.flat_map(|(_, changes)| changes));
+            .chain(selected.flat_map(|(_, changes)| changes))
+            .chain(&builtins.canonical);
         for change in changes {
-            rules.vocab.apply(change);
+            vocab.apply(change);
         }
-        rules.add_canonical_names();
-        rules.recompile();
-        rules
+        Rules::with_vocabularies(vocab)
     }
 
     /// Adds the canonical names (X25) to the input vocabularies. Called whenever the
@@ -944,6 +943,8 @@ impl Rules {
 /// The built-in vocabularies: the shared base, and the words of each language (X11).
 struct Builtins {
     base: Vec<Change>,
+    /// The canonical names (X25), applied last.
+    canonical: Vec<Change>,
     /// Each language's tag and its words.
     languages: Vec<(&'static str, Vec<Change>)>,
 }
@@ -956,6 +957,7 @@ static BUILTINS: LazyLock<Builtins> = LazyLock::new(|| {
     };
     Builtins {
         base: read(data::BUILTIN),
+        canonical: canonical_changes(),
         languages: data::LANGUAGE_PACKS
             .iter()
             .map(|(tag, text)| (*tag, read(text)))
