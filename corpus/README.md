@@ -59,7 +59,6 @@ Each meaning has one field name across all operations. If a case needs a field t
 | `end_to_end` | `library`, `paths`, `ignore_files`, `profile` | `interpretation` (the `interpret` result), `plan` (the `plan_renames` result), `validation` (the `validate` result): one library folder through every stage; these cases are in `corpus/end-to-end/` |
 | `diff_rules` | `library`, `paths`, `ignore_files`, `a` and `b` (each `{ overlays, languages }`, `{}` for the built-in rules) | `paths` (`[{ path, facts: [{ fact, a, b }] }]`, only facts that differ, X15) |
 | `render_template` | `template`, `facts` (field → value) | `path`, `missing_fields`, or `error` (`{ reason, offset }`) (R14) |
-| `read_template` | `template`, `name` | `facts` (a finding of field → value) (R14) |
 | `check_profile` | `profile` | `invalid` (`true` if the profile is not valid), `diagnostics` (`[{ reason, slot, fact, message }]`, X33) |
 | `build_rules` | `overlays` (overlay documents, YAML or JSON strings), `languages` (optional) | `identity` (`{ version, languages, overlays: [{ name, version, digest }] }`, `null` when no rules are built), `diagnostics` (`[{ reason, overlay, line, vocabulary, entry, overlays, message }]`) |
 | `rank_candidates` | `facts` (`{ kind, title, alternate_titles, year, date, provider_ids, season, episodes }`), `candidates` (`[{ handle, kind, title, alternate_titles, year, date, provider_ids, season, episode }]`) | `outcome`, `selected`, `reason`, `tied`, `candidates` (`[{ handle, score, components, contradictions }]`) |

@@ -96,8 +96,6 @@ pub enum Finding<T> {
 pub enum AmbiguityReason {
     /// A release fact is stated with two different values (X19).
     SeveralValues,
-    /// A name has several readings under a template.
-    SeveralReadings,
     /// A sidecar name states two different languages (S4).
     SeveralLanguages,
     /// Between 10% and 90% of the videos have an episode signal (X21).

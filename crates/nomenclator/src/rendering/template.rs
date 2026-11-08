@@ -1,26 +1,12 @@
-//! Provides two-way name templates (6.1, R14): a template renders facts into a name and
-//! reads a name back into facts.
+//! Provides name templates (R14): a template renders facts into a name.
 //!
 //! Syntax: `{field}` is a field, `{field:00}` a number padded with zeros to the number
 //! of zeros, and `[...]` an optional section that is left out if any field in it has no
 //! value. `{{`, `}}`, `[[` and `]]` are the literal characters. A `/` separates folders.
 
-use crate::model::AmbiguityReason;
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Serialize;
-
-use crate::model::Finding;
-
-/// The fields whose values are numbers: they read as digits and render with padding.
-const NUMBER_FIELDS: &[&str] = &[
-    "year",
-    "series_year",
-    "season",
-    "episode",
-    "last_episode",
-    "part",
-];
 
 /// A compiled name template.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -184,107 +170,6 @@ impl Template {
             missing_fields: missing,
         }
     }
-
-    /// Reads a name into the facts that the template encodes. Of the readings that match
-    /// the whole name, the ones that fill the most fields are kept, so an optional section is
-    /// read if its text is present, and of those the ones whose fields hold the least text.
-    /// Returns ambiguous if several readings remain, and unknown if none matches. A field
-    /// that the template uses twice must have one value.
-    pub fn read(&self, name: &str) -> Finding<TemplateFacts> {
-        let mut readings: Vec<TemplateFacts> =
-            match_pieces(&self.pieces, name, 0, TemplateFacts::new())
-                .into_iter()
-                .filter(|(end, _)| *end == name.len())
-                .map(|(_, facts)| facts)
-                .collect();
-        readings.sort();
-        readings.dedup();
-        let most = readings.iter().map(BTreeMap::len).max().unwrap_or_default();
-        readings.retain(|facts| facts.len() == most);
-        // Of those, the readings whose fields hold the least text match the most of the
-        // template's own text, as in `- part2` read as a part, not as a version label.
-        let text = |facts: &TemplateFacts| facts.values().map(String::len).sum::<usize>();
-        let least = readings.iter().map(text).min().unwrap_or_default();
-        readings.retain(|facts| text(facts) == least);
-        match readings.len() {
-            0 => Finding::Unknown,
-            1 => Finding::Resolved {
-                value: readings.remove(0),
-                evidence: None,
-            },
-            _ => Finding::Ambiguous {
-                candidates: readings,
-                reason: AmbiguityReason::SeveralReadings,
-            },
-        }
-    }
-}
-
-/// The most partial readings that one call keeps, which bounds the work on long names.
-const MAX_READINGS: usize = 256;
-
-/// Returns every way that `pieces` match `name` from byte `start`: the end of each match
-/// and the facts it reads.
-fn match_pieces(
-    pieces: &[Piece],
-    name: &str,
-    start: usize,
-    facts: TemplateFacts,
-) -> Vec<(usize, TemplateFacts)> {
-    let Some((piece, rest)) = pieces.split_first() else {
-        return vec![(start, facts)];
-    };
-    let mut results = Vec::new();
-    let continue_from =
-        |end: usize, facts: TemplateFacts, results: &mut Vec<(usize, TemplateFacts)>| {
-            if results.len() < MAX_READINGS {
-                results.extend(match_pieces(rest, name, end, facts));
-            }
-        };
-    match piece {
-        Piece::Literal(literal) => {
-            if name[start..].starts_with(literal.as_str()) {
-                continue_from(start + literal.len(), facts, &mut results);
-            }
-        }
-        Piece::Field { name: field, .. } => {
-            let is_number = NUMBER_FIELDS.contains(&field.as_str());
-            let text = &name[start..];
-            let limit = text.find('/').unwrap_or(text.len());
-            let mut ends: Vec<usize> = text[..limit]
-                .char_indices()
-                .map(|(index, character)| index + character.len_utf8())
-                .collect();
-            if is_number {
-                let digits = text.bytes().take_while(u8::is_ascii_digit).count();
-                ends.retain(|&end| end <= digits);
-            }
-            for end in ends {
-                let raw = &text[..end];
-                let value = if is_number {
-                    match raw.parse::<u64>() {
-                        Ok(number) => number.to_string(),
-                        Err(_) => continue,
-                    }
-                } else {
-                    raw.to_owned()
-                };
-                if facts.get(field).is_some_and(|existing| *existing != value) {
-                    continue;
-                }
-                let mut next = facts.clone();
-                next.insert(field.clone(), value);
-                continue_from(start + end, next, &mut results);
-            }
-        }
-        Piece::Optional(inner) => {
-            for (end, inner_facts) in match_pieces(inner, name, start, facts.clone()) {
-                continue_from(end, inner_facts, &mut results);
-            }
-            continue_from(start, facts, &mut results);
-        }
-    }
-    results
 }
 
 fn parse_pieces(
@@ -388,8 +273,8 @@ fn parse_pieces(
     Ok((pieces, index))
 }
 
-/// Fails if two fields meet without literal text between them, in the order the
-/// template reads, because no reading could tell where one ends.
+/// Fails if two fields meet without literal text between them, in the order of the
+/// template, because a reader could not tell where one ends.
 fn check_adjacent(
     pieces: &[Piece],
     previous_was_field: &mut Option<bool>,

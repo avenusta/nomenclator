@@ -181,23 +181,7 @@ const OPERATIONS: &[(&str, Handler)] = &[
         let input: TemplateInput = read(input)?;
         Ok(match Template::parse(&input.template) {
             Ok(template) => json(template.render(&input.facts)),
-            Err(error) => json(TemplateOutcome {
-                error: Some(error),
-                facts: None,
-            }),
-        })
-    }),
-    ("read_template", |_, input| {
-        let input: TemplateInput = read(input)?;
-        Ok(match Template::parse(&input.template) {
-            Ok(template) => json(TemplateOutcome {
-                error: None,
-                facts: Some(template.read(input.name.as_deref().unwrap_or_default())),
-            }),
-            Err(error) => json(TemplateOutcome {
-                error: Some(error),
-                facts: None,
-            }),
+            Err(error) => json(TemplateOutcome { error }),
         })
     }),
     ("check_profile", |rules, input| {
@@ -522,13 +506,11 @@ struct TemplateInput {
     template: String,
     #[serde(default)]
     facts: TemplateFacts,
-    name: Option<String>,
 }
 
 #[derive(Serialize)]
 struct TemplateOutcome {
-    error: Option<TemplateError>,
-    facts: Option<crate::model::Finding<TemplateFacts>>,
+    error: TemplateError,
 }
 
 #[derive(serde::Deserialize)]

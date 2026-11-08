@@ -47,7 +47,7 @@ First release. It implements the conventions in `docs/decisions.md`, and the cor
 
 - Every operation is a method on `Rules`, and `Rules::builtin()` returns the built-in rules. Parsers: `parse_movie_name`, `parse_series_name`, `parse_season_folder`, `parse_episode_name`, `parse_provider_ids`, `parse_sidecar`, `classify_extra`, `classify_artwork`, `classify_nfo`. Whole libraries: `evaluate_ignore`, `group_parts`, `interpret`, `rank_candidates`, `render_names`, `plan_renames`, `validate`.
 - The parser modules are private. The crate root exports their types. `model` contains the shared fact types.
-- Templates (R14): `Template` renders facts into names and reads names into facts, with ambiguous readings reported.
+- Templates (R14): `Template` renders facts into names.
 - Reporting (R13): `Diagnostic.code` and `Diagnostic.message`, `Validation.summary` (`ValidationSummary`, `RuleCount`), `OutputProfile.suppressions` (`Suppression`) and `RenamePlan.removals` (`ProposedRemoval`) for release junk.
 - Coverage (R12): `OutputProfile.required_assets` (`AssetItemKind`, `AssetRole`) and `OutputProfile.wanted_subtitles` (`WantedSubtitle`); the `missing_asset` and `missing_subtitle` rules.
 - Duplicates (R11): the `duplicate_work` and `duplicate_episode` rules. `episode_not_in_reference` is renamed `unexpected_episode`.
