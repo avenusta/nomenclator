@@ -585,7 +585,8 @@ fn canonical_changes() -> Vec<Change> {
 }
 
 impl Rules {
-    /// Returns the built-in rules: the built-in document, then the canonical names.
+    /// Returns the shared base: the built-in document and the canonical names, without the
+    /// words of any language pack.
     pub(crate) fn from_builtin_document() -> Rules {
         let builtin =
             Overlay::parse(data::BUILTIN).expect("the built-in document is a valid overlay");
@@ -596,6 +597,11 @@ impl Rules {
         rules.add_canonical_names();
         rules.recompile();
         rules
+    }
+
+    /// Returns the built-in rules: the shared base with every language pack (X11).
+    pub(crate) fn with_every_language() -> Rules {
+        Rules::build(None, &[]).expect("the language packs agree with each other")
     }
 
     /// Adds the canonical names (X25) to the input vocabularies. Called whenever the
@@ -661,51 +667,40 @@ impl Rules {
         languages: Option<&[String]>,
         user_overlays: &[Overlay],
     ) -> Result<Rules, Vec<OverlayDiagnostic>> {
-        let mut base = Rules::builtin().clone();
-        let mut declared: Option<Vec<String>> = None;
         let mut overlays: Vec<Overlay> = Vec::new();
-        if let Some(languages) = languages {
-            let mut tags: Vec<String> = languages
-                .iter()
-                .map(|tag| lexical::vocabulary_form(tag.trim()))
-                .collect();
-            tags.sort();
-            tags.dedup();
-            let unknown: Vec<OverlayDiagnostic> = tags
-                .iter()
-                .filter(|tag| !Rules::language_packs().any(|known| known == tag.as_str()))
-                .map(|tag| OverlayDiagnostic {
-                    entry: Some(tag.clone()),
-                    ..diagnostic(OverlayDiagnosticReason::UnknownLanguage)
-                })
-                .collect();
-            if !unknown.is_empty() {
-                return Err(unknown);
-            }
-            let (chosen, others): (Vec<_>, Vec<_>) = language_packs()
-                .into_iter()
-                .partition(|(tag, _)| tags.iter().any(|wanted| wanted == tag));
-            overlays.extend(chosen.into_iter().map(|(_, pack)| pack));
-            overlays.extend(user_overlays.iter().cloned());
-            let kept: BTreeSet<(Vocabulary, &str)> = overlays
-                .iter()
-                .flat_map(|overlay| &overlay.changes)
-                .filter(|change| change.is_add())
-                .map(|change| (change.vocabulary, change.entry.as_str()))
-                .collect();
-            for (_, pack) in &others {
-                for change in &pack.changes {
-                    if !kept.contains(&(change.vocabulary, change.entry.as_str())) {
-                        base.vocab
-                            .table_mut(change.vocabulary)
-                            .remove(&change.entry);
-                    }
+        let declared = match languages {
+            Some(languages) => {
+                let mut tags: Vec<String> = languages
+                    .iter()
+                    .map(|tag| lexical::vocabulary_form(tag.trim()))
+                    .collect();
+                tags.sort();
+                tags.dedup();
+                let unknown: Vec<OverlayDiagnostic> = tags
+                    .iter()
+                    .filter(|tag| !Rules::language_packs().any(|known| known == tag.as_str()))
+                    .map(|tag| OverlayDiagnostic {
+                        entry: Some(tag.clone()),
+                        ..diagnostic(OverlayDiagnosticReason::UnknownLanguage)
+                    })
+                    .collect();
+                if !unknown.is_empty() {
+                    return Err(unknown);
                 }
+                overlays.extend(
+                    language_packs()
+                        .into_iter()
+                        .filter(|(tag, _)| tags.iter().any(|wanted| wanted == tag))
+                        .map(|(_, pack)| pack),
+                );
+                Some(tags)
             }
-            declared = Some(tags);
-        } else {
-            overlays.extend(user_overlays.iter().cloned());
-        }
+            None => {
+                overlays.extend(language_packs().into_iter().map(|(_, pack)| pack));
+                None
+            }
+        };
+        overlays.extend(user_overlays.iter().cloned());
         let overlays = overlays.as_slice();
         let mut diagnostics = Vec::new();
         for (index, overlay) in overlays.iter().enumerate() {
@@ -806,7 +801,7 @@ impl Rules {
         if !diagnostics.is_empty() {
             return Err(diagnostics);
         }
-        let mut rules = base;
+        let mut rules = Rules::base().clone();
         for change in packs.iter().flat_map(|pack| &pack.changes) {
             rules.vocab.apply(change);
         }
@@ -824,8 +819,7 @@ impl Rules {
         if !collisions.is_empty() {
             return Err(collisions);
         }
-        // A language pack that is not declared, or a replace, may have removed a canonical
-        // name.
+        // A replace may have removed a canonical name.
         rules.add_canonical_names();
         rules.recompile();
         rules.identity = RulesIdentity {
@@ -960,47 +954,6 @@ fn language_packs() -> Vec<(&'static str, Overlay)> {
 mod tests {
     use super::*;
 
-    /// Checks that every built-in word that belongs to a language is in a pack. Narrowing
-    /// drops the words of a language only if its pack lists them. The shared base is the
-    /// rest.
-    #[test]
-    fn every_language_specific_built_in_word_is_in_a_pack() {
-        let packs = language_packs();
-        let in_packs = |vocabulary: Vocabulary, entry: &str| {
-            packs.iter().any(|(_, pack)| {
-                pack.changes
-                    .iter()
-                    .any(|change| change.vocabulary == vocabulary && change.entry == entry)
-            })
-        };
-        let shared_base: Vec<String> = canonical_changes()
-            .into_iter()
-            .map(|change| change.entry)
-            .chain(
-                data::EPISODE_BASE_WORDS
-                    .iter()
-                    .map(|word| (*word).to_owned()),
-            )
-            .collect();
-        let builtin = &Rules::builtin().vocab;
-        let language_vocabularies = [
-            Vocabulary::season_words,
-            Vocabulary::series_season_words,
-            Vocabulary::episode_words,
-            Vocabulary::leading_articles,
-            Vocabulary::ordinal_suffixes,
-        ];
-        for vocabulary in language_vocabularies {
-            for word in builtin.table(vocabulary).entries() {
-                assert!(
-                    shared_base.contains(&word) || in_packs(vocabulary, &word),
-                    "{} `{word}` is in no language pack",
-                    vocabulary.name()
-                );
-            }
-        }
-    }
-
     #[test]
     fn every_language_pack_is_named_after_its_tag_and_adds_only() {
         for (tag, pack) in language_packs() {
@@ -1010,13 +963,39 @@ mod tests {
     }
 
     #[test]
-    fn declaring_every_language_keeps_every_built_in_word() {
+    fn declaring_every_language_gives_the_built_in_rules() {
         let all: Vec<String> = Rules::language_packs().map(str::to_owned).collect();
         let rules = Rules::for_languages(&all, &[]).expect("the packs agree with each other");
         for vocabulary in Vocabulary::ALL {
-            let declared = rules.vocab.table(*vocabulary);
-            for word in Rules::builtin().vocab.table(*vocabulary).entries() {
-                assert!(declared.contains(&word), "{} `{word}`", vocabulary.name());
+            assert_eq!(
+                rules.vocab.table(*vocabulary).entries(),
+                Rules::builtin().vocab.table(*vocabulary).entries(),
+                "{}",
+                vocabulary.name()
+            );
+        }
+    }
+
+    /// Checks that the base holds no word of a language pack. A language tag is a spelling of
+    /// itself in both.
+    #[test]
+    fn base_holds_no_word_of_a_language_pack() {
+        let base = Overlay::parse(data::BUILTIN).expect("the built-in document is valid");
+        for (tag, pack) in language_packs() {
+            for change in &pack.changes {
+                if change.vocabulary == Vocabulary::languages && change.entry == tag {
+                    continue;
+                }
+                assert!(
+                    !base
+                        .changes
+                        .iter()
+                        .any(|other| other.vocabulary == change.vocabulary
+                            && other.entry == change.entry),
+                    "{} `{}` is in the base and in `{tag}`",
+                    change.vocabulary.name(),
+                    change.entry
+                );
             }
         }
     }

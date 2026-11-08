@@ -267,7 +267,8 @@ pub(crate) struct EpisodeTokenPattern {
     pub states_season: bool,
 }
 
-static BUILTIN: LazyLock<Rules> = LazyLock::new(Rules::from_builtin_document);
+static BASE: LazyLock<Rules> = LazyLock::new(Rules::from_builtin_document);
+static BUILTIN: LazyLock<Rules> = LazyLock::new(Rules::with_every_language);
 
 impl Default for Rules {
     fn default() -> Self {
@@ -280,6 +281,11 @@ impl Rules {
     #[must_use]
     pub fn builtin() -> &'static Rules {
         &BUILTIN
+    }
+
+    /// Returns the shared base: the built-in rules without the words of any language pack.
+    fn base() -> &'static Rules {
+        &BASE
     }
 
     /// Returns the identity of these rules.

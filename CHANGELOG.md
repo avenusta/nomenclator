@@ -38,6 +38,7 @@ First release. It implements the conventions in `docs/decisions.md`, and the cor
 - The built-in rules read episode words of every language pack, such as `Folge` and `Capitulo`, and a season word before an episode word (X30).
 - `clearart` and `discart` images have their own artwork roles, and `Openings` and `Endings` folders hold extras of their own kinds (X31).
 - `【】` is a bracket pair (X34).
+- Without declared languages, the rules contain every word of every language pack (X11): localized artwork words such as `locandina`, spelled numbers, articles, ordinal suffixes and language names that only the packs held before, such as `sesong` and `deutsch`.
 
 ### Library API
 

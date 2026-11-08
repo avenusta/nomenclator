@@ -20,7 +20,6 @@ artwork_roles:
   add:
     backdrop: backdrop
     background: backdrop
-    cover: poster
     default: poster
     disc: disc_art
     folder: poster
@@ -73,9 +72,9 @@ disc_structure_folders:
 # Edition phrases of several words, compared without apostrophes. Their words count as
 # edition words where the phrase appears.
 edition_phrases:
-  add: ["directors cut", "final cut", "extended cut", "theatrical cut", "fan edit",
-    "special edition", "collectors edition", "ultimate edition", "extended edition",
-    "anniversary edition", "super sized", "r rated version"]
+  add: ["anniversary edition", "collectors edition", "directors cut", "extended cut",
+    "extended edition", "fan edit", "final cut", "r rated version", "special edition",
+    "super sized", "theatrical cut", "ultimate edition"]
 
 # Edition words after a title. They are hints, never editions (M9). They cut a title the
 # same way as title-like release words.
@@ -85,9 +84,7 @@ edition_words:
 
 # Words before an episode number (X30). The canonical section holds `e`.
 episode_words:
-  add: [aflevering, afsnit, avsnitt, "bölüm", capitulo, "capítulo", diel, "díl", ep, episod,
-    episode, episodio, episodul, "episódio", epizoda, "epizóda", folge, jakso, odcinek,
-    puntata, "épisode", "епизод", "епізод", "серия", "серія", "эпизод", "エピソード", "에피소드"]
+  add: [ep, episode]
 
 # Extras folder names, compared without case or spacing, and the kind of extra that each
 # holds (E1). The canonical section holds the written folder of each kind.
@@ -219,12 +216,6 @@ languages:
     yue: [cantonese]
     zh: [chi, chinese, zho]
 
-# Articles that a title's comparison key drops when they lead it (P4, M1), compared
-# case-folded and without accents. Never applied to displayed titles.
-leading_articles:
-  add: [a, an, das, der, die, ein, eine, el, gli, il, l, la, las, le, les, lo, los, the, un,
-    una, une]
-
 # Letters compared as their spelled-out forms (`Æon` matches `Aeon`, P4).
 letter_folds:
   add:
@@ -240,31 +231,11 @@ no_media_markers:
 # Roman numerals and spelled numbers that a comparison key reads as their number (P4).
 number_words:
   add:
-    eight: 8
-    eighteen: 18
-    eleven: 11
-    fifteen: 15
-    five: 5
-    four: 4
-    fourteen: 14
     i: 1
     ii: 2
     iii: 3
     iv: 4
     ix: 9
-    nine: 9
-    nineteen: 19
-    one: 1
-    seven: 7
-    seventeen: 17
-    six: 6
-    sixteen: 16
-    ten: 10
-    thirteen: 13
-    three: 3
-    twelve: 12
-    twenty: 20
-    two: 2
     v: 5
     vi: 6
     vii: 7
@@ -281,10 +252,6 @@ number_words:
     xviii: 18
     xx: 20
 
-# Endings that make a number an ordinal before a season word (`2nd Season`, `3. Staffel`).
-ordinal_suffixes:
-  add: [".", nd, rd, st, th]
-
 # Words that name a part before its number or letter (M11). The canonical section holds
 # `part`.
 part_words:
@@ -292,11 +259,11 @@ part_words:
 
 # File endings of downloads still in progress (I9).
 partial_download_suffixes:
-  add: [".part", ".!qb", ".crdownload"]
+  add: [".!qb", ".crdownload", ".part"]
 
 # Endings that mark a leading bracket as a release group (M5).
 release_group_endings:
-  add: [subs, raws, encodes, encode, rips, ".com", ".net", ".org"]
+  add: [".com", ".net", ".org", encode, encodes, raws, rips, subs]
 
 # Extensions of shortcuts and executables that releases carry (X22).
 release_junk_extensions:
@@ -423,21 +390,10 @@ remux_markers:
 screener_markers:
   add: [scr]
 
-# Words that name a season folder, before or after its number (`Season 2`, `3. Staffel`,
-# T9). The canonical section holds `season`.
-season_words:
-  add: [kausi, saison, seasong, seizoen, sezon, sezona, sezonul, "sezóna", staffel, stagione,
-    "säsong", "sæson", temporada, "сезон", "シーズン", "시즌"]
-
 # Characters between words, other than the dash (M6, X34). The canonical section holds the
 # space.
 separators:
   add: [".", "_"]
-
-# Words that mean a season only directly under a series folder (T9). Elsewhere they are
-# ordinary title words (`Series 7 - The Contenders`).
-series_season_words:
-  add: [seria, serie, series, "séria", "série"]
 
 # Prefixes joined to a number that state an episode of season 0 (T12).
 special_prefixes:
