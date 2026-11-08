@@ -1287,7 +1287,7 @@ fn diagnose_unclaimed_files(
         let rule =
             if rules.is_subtitle_file(path, unclaimed).result || rules.is_audio_file(path).result {
                 DiagnosticRule::OrphanSidecar
-            } else if rules.is_release_junk(path).result {
+            } else if interpretation.release_junk.contains(path) {
                 DiagnosticRule::ReleaseJunk
             } else if rules.is_image_file(path).result {
                 DiagnosticRule::OrphanArtwork
