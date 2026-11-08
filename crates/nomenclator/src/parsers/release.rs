@@ -60,9 +60,8 @@ pub struct ReleaseMarker {
     pub span: Span,
 }
 
-/// A kind of release fact, as the vocabulary in `data.rs` lists it and an overlay's
-/// `release_words` names it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+/// A kind of release fact, as the `release_words` vocabulary names it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(crate) enum ReleaseFact {
     Source,
@@ -238,9 +237,9 @@ impl Rules {
             let contains_any = |markers: &BTreeSet<String>| {
                 markers.iter().any(|marker| text.contains(marker.as_str()))
             };
-            facts.remux |= contains_any(&self.remux_markers);
+            facts.remux |= contains_any(&self.vocab.remux_markers);
             facts.screener |= found.fact == ReleaseFact::Source
-                && (contains_any(&self.screener_markers)
+                && (contains_any(&self.vocab.screener_markers)
                     || found.value == data::SCREENER_SOURCE_VALUE);
             if let Some(span) = found.channels {
                 facts.channels.push((stem[span.0..span.1].to_owned(), span));
@@ -354,7 +353,7 @@ fn release_region_start(
             .chars()
             .filter(|c| !matches!(c, ' ' | '.' | '_'))
             .collect();
-        text.contains(|c: char| c.is_ascii_digit()) || rules.technical_words.contains(&text)
+        text.contains(|c: char| c.is_ascii_digit()) || rules.vocab.technical_words.contains(&text)
     });
     let years = YEAR_PATTERN
         .find_iter(stem)
@@ -429,6 +428,7 @@ fn is_word_glued(stem: &str, span: Span) -> bool {
 fn channels_value(rules: &Rules, text: &str) -> String {
     let folded = lexical::vocabulary_form(text);
     rules
+        .vocab
         .audio_channel_words
         .get(&folded)
         .cloned()
@@ -456,7 +456,7 @@ fn language_words(
             .any(|word| word.span.0 < span.1 && span.0 < word.span.1);
         if text.len() > 3
             && !covered
-            && let Some(tag) = rules.language_spellings.get(&text)
+            && let Some(tag) = rules.vocab.languages.get(&text)
         {
             found.push((tag.clone(), span));
         }
@@ -546,6 +546,7 @@ fn release_group(rules: &Rules, stem: &str, words: &[FoundWord]) -> Finding<Stri
 /// Returns `true` if a bracketed tag names an index site rather than a group.
 fn is_site(rules: &Rules, tag: &str) -> bool {
     rules
+        .vocab
         .release_site_tags
         .contains(&lexical::vocabulary_form(tag))
         || DOMAIN_PATTERN.is_match(tag)

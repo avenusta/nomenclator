@@ -78,7 +78,7 @@ pub(crate) fn classify_nfo_among(
 ) -> NfoClassification {
     let name = file_name(path);
     let is_nfo = lexical::extension(name, EntryKind::File)
-        .is_some_and(|extension| rules.nfo_extensions.contains(&extension));
+        .is_some_and(|extension| rules.vocab.nfo_extensions.contains(&extension));
     if !is_nfo {
         return NfoClassification { role: None };
     }
@@ -88,7 +88,7 @@ pub(crate) fn classify_nfo_among(
     } else if names.stacks_by_name.contains_key(&stem) {
         Some(NfoRole::Movie)
     } else {
-        rules.nfo_generic_names.get(&stem).copied()
+        rules.vocab.nfo_names.get(&stem).copied()
     };
     NfoClassification { role }
 }

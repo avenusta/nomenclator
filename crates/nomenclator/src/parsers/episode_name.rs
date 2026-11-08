@@ -393,6 +393,7 @@ impl ContextReading<'_> {
         // `END` after the number marks the last episode of a release run; it is no title.
         let is_final = title_after_reference.as_deref().is_some_and(|title| {
             rules
+                .vocab
                 .final_episode_words
                 .contains(&lexical::vocabulary_form(title))
         });
@@ -937,6 +938,7 @@ fn special_reference(rules: &Rules, text: &str) -> Option<Reference> {
         .map(|captures| {
             let whole = captures.get(0).expect("match");
             let kind = rules
+                .vocab
                 .animation_special_words
                 .get(&lexical::vocabulary_form(&captures[1]))
                 .copied()
@@ -1568,7 +1570,7 @@ static VERSION_PATTERN: LazyLock<Regex> =
 /// are never episodes.
 fn bare_number_candidates(rules: &Rules, text: &str, context: &ReadingContext) -> Vec<Candidate> {
     // Under the season-folders-only preset a bare number needs a season folder (T6, X12).
-    if rules.presets.bare_numbers == BareNumbers::SeasonFoldersOnly
+    if rules.vocab.presets.bare_numbers == BareNumbers::SeasonFoldersOnly
         && context.known_season.is_none()
     {
         return Vec::new();

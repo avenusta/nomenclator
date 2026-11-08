@@ -277,7 +277,7 @@ fn sidecar_place<'a>(rules: &Rules, path: &'a str, kind: SidecarKind) -> Sidecar
     let folder = parent_folder(path);
     let is_subtitle_folder = |folder: &str| {
         let name = lexical::vocabulary_form(file_name(folder));
-        rules.subtitle_folder_names.contains(&name)
+        rules.vocab.subtitle_folders.contains(&name)
     };
     match folder {
         _ if kind == SidecarKind::Image => SidecarPlace {

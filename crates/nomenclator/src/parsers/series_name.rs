@@ -75,8 +75,8 @@ impl Rules {
 /// (T16), up to the `latest_plausible_year` preset (X12).
 pub(crate) fn is_valid_season(rules: &Rules, number: u32) -> bool {
     number <= 99
-        || (u32::from(rules.presets.earliest_plausible_year)
-            ..=u32::from(rules.presets.latest_plausible_year))
+        || (u32::from(rules.vocab.presets.earliest_plausible_year)
+            ..=u32::from(rules.vocab.presets.latest_plausible_year))
             .contains(&number)
 }
 
@@ -356,7 +356,7 @@ pub(crate) fn find_season_marker(
     let mut markers = Vec::new();
     let is_series_word = |word: &str| {
         let composed: String = lexical::vocabulary_form(word);
-        rules.series_season_words.contains(&composed)
+        rules.vocab.series_season_words.contains(&composed)
     };
     let bounded = |start: usize, end: usize| {
         lexical::is_boundary_before(text, start) && lexical::is_boundary_after(text, end)

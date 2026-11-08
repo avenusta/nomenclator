@@ -70,6 +70,7 @@ impl Rules {
         SeasonFolder {
             season,
             is_bare_season_folder: rules
+                .vocab
                 .season_words
                 .contains(&folded.nfc().collect::<String>()),
             provider_ids: lexical::provider_ids(rules, name, true),
@@ -87,7 +88,7 @@ fn season(
     let whole_name = Span(0, name.len());
     // The vocabulary holds NFC entries, and a filesystem can return decomposed names.
     let composed: String = folded.nfc().collect();
-    if rules.specials_folder_names.contains(&composed) {
+    if rules.vocab.specials_folders.contains(&composed) {
         return resolved(0, Rule::SpecialsFolder, whole_name);
     }
     if !name.is_empty() && name.len() <= 4 && name.bytes().all(|byte| byte.is_ascii_digit()) {

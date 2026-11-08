@@ -1,0 +1,510 @@
+# The built-in vocabularies, as one overlay document (X10, X25). `Rules::builtin()` applies
+# it, then every language pack (X11), then the canonical names of `data.rs`. An entry is
+# written in any case and normalized the same way as an overlay entry.
+name: builtin
+
+# Words between separators that start another title of a movie (M16).
+alternate_title_words:
+  add: [aka]
+
+# Animation special markers and the kind of each (X20).
+animation_special_words:
+  add:
+    oad: oad
+    ona: ona
+    ova: ova
+
+# Artwork base names and the role of each (S7). The canonical section holds the written
+# name of each role.
+artwork_roles:
+  add:
+    backdrop: backdrop
+    background: backdrop
+    cover: poster
+    default: poster
+    disc: disc_art
+    folder: poster
+    logo: logo
+    thumb: thumb
+
+# Aspect ratios, never a season and episode (T16).
+aspect_ratios:
+  add: ["1.85x1", "16x10", "16x9", "2.35x1", "2.39x1", "2.40x1", "21x9", "4x3"]
+
+# Channel spellings that are not `N.N`, and the layout that each states (X26).
+audio_channel_words:
+  add:
+    "2ch": "2.0"
+    "6ch": "5.1"
+    "8ch": "7.1"
+    mono: "1.0"
+    stereo: "2.0"
+
+# Audio codec words that a channel layout (`5.1`, `2.0x2`) may follow (T16).
+audio_codec_words:
+  add: [aac, ac3, atmos, dd, "dd+", ddp, dts, "dts-hd", eac3, flac, lpcm, opus, pcm, truehd]
+
+# External audio file extensions (S5).
+audio_extensions:
+  add: [aa, aac, ac3, dts, eac3, flac, m4a, mka, mp3, ogg, opus, thd, wav, wma]
+
+# Bracket pairs that the writer does not write (M5, X34). The canonical section holds the
+# others.
+bracket_pairs:
+  add:
+    "【": "】"
+
+# The built-in exclusion groups (X13). An overlay can remove a group, never add one.
+built_in_ignore_groups:
+  add: [generated_metadata, hidden_entries, partial_downloads, system_junk]
+
+# Words that name a folder of episodes below a season folder, before its number (T18).
+disc_folder_words:
+  add: [cd, disc, disk, dvd]
+
+# Disc image extensions: disc structures, reported and never admitted as videos (M13).
+disc_image_extensions:
+  add: [img, iso]
+
+# Folders that hold a disc structure. The files inside are disc clips, not titles (M13).
+disc_structure_folders:
+  add: [bdmv, video_ts]
+
+# Edition phrases of several words, compared without apostrophes. Their words count as
+# edition words where the phrase appears.
+edition_phrases:
+  add: ["directors cut", "final cut", "extended cut", "theatrical cut", "fan edit",
+    "special edition", "collectors edition", "ultimate edition", "extended edition",
+    "anniversary edition", "super sized", "r rated version"]
+
+# Edition words after a title. They are hints, never editions (M9). They cut a title the
+# same way as title-like release words.
+edition_words:
+  add: [criterion, despecialized, extended, hybrid, imax, remastered, restored, theatrical,
+    uncut, unrated, workprint]
+
+# Words before an episode number (X30). The canonical section holds `e`.
+episode_words:
+  add: [aflevering, afsnit, avsnitt, "bölüm", capitulo, "capítulo", diel, "díl", ep, episod,
+    episode, episodio, episodul, "episódio", epizoda, "epizóda", folge, jakso, odcinek,
+    puntata, "épisode", "епизод", "епізод", "серия", "серія", "эпизод", "エピソード", "에피소드"]
+
+# Extras folder names, compared without case or spacing, and the kind of extra that each
+# holds (E1). The canonical section holds the written folder of each kind.
+extras_folders:
+  add:
+    extra: extra
+    teasers: trailer
+
+# Extras suffix words, compared without case or spacing, and the kind of extra that each
+# marks (E3).
+extras_suffixes:
+  add:
+    behindthescenes: behind_the_scenes
+    blooper: blooper
+    clip: clip
+    deleted: deleted_scene
+    deletedscene: deleted_scene
+    extra: extra
+    featurette: featurette
+    interview: interview
+    other: other
+    sample: sample
+    scene: scene
+    short: short
+    teaser: trailer
+    trailer: trailer
+
+# Video file stems that are extras on their own (E4).
+extras_video_names:
+  add:
+    sample: sample
+    trailer: trailer
+
+# Words after an episode number that mark the last episode of a release run (X20).
+final_episode_words:
+  add: [end]
+
+# Sidecar words that set the forced flag (S4). The canonical section holds `forced`.
+forced_flag_words:
+  add: [foreign]
+
+# Words for a 3D layout (M12). `3d` alone is not a layout word.
+format_3d_words:
+  add:
+    "3d": unspecified
+    fsbs: full_side_by_side
+    ftab: full_top_and_bottom
+    hsbs: half_side_by_side
+    htab: half_top_and_bottom
+    mvc: mvc
+    sbs: side_by_side
+    sbs3d: side_by_side
+    tab: top_and_bottom
+
+# Endings of generated preview-image folders (I9).
+generated_metadata_folder_suffixes:
+  add: [".trickplay"]
+
+# Folders that other tools generate beside media (I9). Content-like folders (`Subs`,
+# `extrafanart`, samples, disc structures) are classified instead.
+generated_metadata_folders:
+  add: [".actors", metadata]
+
+# Sidecar words that set the hearing-impaired flag (S4). `hi` is in
+# `hearing_impaired_or_language_words`, because it is also Hindi.
+hearing_impaired_flag_words:
+  add: [cc]
+
+# Words that mean hearing impaired beside another language, and otherwise the language of
+# the tag that each maps to (S4).
+hearing_impaired_or_language_words:
+  add:
+    hi: hi
+
+# Image file extensions.
+image_extensions:
+  add: [bmp, gif, jpeg, jpg, png, webp]
+
+# Languages: each BCP 47 tag and its other spellings, ISO 639-2 codes and English names
+# (S4). Codes that are common English words (`cat`, `may`, `mac`) are left out on purpose.
+languages:
+  add:
+    ar: [ara, arabic]
+    bg: [bul, bulgarian]
+    bn: [ben, bengali]
+    bs: [bos, bosnian]
+    ca: [catalan]
+    cs: [ces, cze, czech]
+    da: [dan, danish]
+    de: [deu, ger, german]
+    el: [ell, gre, greek]
+    en: [eng, english]
+    es: [spa, spanish]
+    et: [est, estonian]
+    fa: [farsi, fas, per, persian]
+    fi: [fin, finnish]
+    fil: [filipino]
+    fr: [fra, fre, french]
+    he: [heb, hebrew]
+    hi: [hin, hindi]
+    hr: [croatian, hrv]
+    hu: [hun, hungarian]
+    id: [ind, indonesian]
+    is: [ice, icelandic, isl]
+    it: [ita, italian]
+    ja: [japanese, jpn]
+    ko: [kor, korean]
+    lt: [lit, lithuanian]
+    lv: [latvian, lav]
+    ms: [malay, msa]
+    nl: [dut, dutch, nld]
+    "no": [nor, norwegian]
+    pl: [pol, polish]
+    pt: [por, portuguese]
+    ro: [romanian, ron, rum]
+    ru: [rus, russian]
+    sk: [slk, slo, slovak]
+    sl: [slovene, slovenian, slv]
+    sr: [serbian, srp]
+    sv: [swe, swedish]
+    ta: [tam, tamil]
+    te: [tel, telugu]
+    th: [tha, thai]
+    tl: [tagalog, tgl]
+    tr: [tur, turkish]
+    uk: [ukr, ukrainian]
+    ur: [urd, urdu]
+    vi: [vie, vietnamese]
+    yue: [cantonese]
+    zh: [chi, chinese, zho]
+
+# Articles that a title's comparison key drops when they lead it (P4, M1), compared
+# case-folded and without accents. Never applied to displayed titles.
+leading_articles:
+  add: [a, an, das, der, die, ein, eine, el, gli, il, l, la, las, le, les, lo, los, the, un,
+    una, une]
+
+# Letters compared as their spelled-out forms (`Æon` matches `Aeon`, P4).
+letter_folds:
+  add:
+    "ß": ss
+    "æ": ae
+    "ø": o
+    "œ": oe
+
+# File names that mark their folder as containing no media (I1, X14).
+no_media_markers:
+  add: [".nomedia"]
+
+# Roman numerals and spelled numbers that a comparison key reads as their number (P4).
+number_words:
+  add:
+    eight: 8
+    eighteen: 18
+    eleven: 11
+    fifteen: 15
+    five: 5
+    four: 4
+    fourteen: 14
+    i: 1
+    ii: 2
+    iii: 3
+    iv: 4
+    ix: 9
+    nine: 9
+    nineteen: 19
+    one: 1
+    seven: 7
+    seventeen: 17
+    six: 6
+    sixteen: 16
+    ten: 10
+    thirteen: 13
+    three: 3
+    twelve: 12
+    twenty: 20
+    two: 2
+    v: 5
+    vi: 6
+    vii: 7
+    viii: 8
+    x: 10
+    xi: 11
+    xii: 12
+    xiii: 13
+    xiv: 14
+    xix: 19
+    xv: 15
+    xvi: 16
+    xvii: 17
+    xviii: 18
+    xx: 20
+
+# Endings that make a number an ordinal before a season word (`2nd Season`, `3. Staffel`).
+ordinal_suffixes:
+  add: [".", nd, rd, st, th]
+
+# Words that name a part before its number or letter (M11). The canonical section holds
+# `part`.
+part_words:
+  add: [cd, disc, disk, dvd, pt]
+
+# File endings of downloads still in progress (I9).
+partial_download_suffixes:
+  add: [".part", ".!qb", ".crdownload"]
+
+# Endings that mark a leading bracket as a release group (M5).
+release_group_endings:
+  add: [subs, raws, encodes, encode, rips, ".com", ".net", ".org"]
+
+# Extensions of shortcuts and executables that releases carry (X22).
+release_junk_extensions:
+  add: [bat, exe, lnk, url]
+
+# Image stems of release screenshots and bitrate graphs, with an optional number after
+# them (`screen1.jpg`, `screenshot_02.png`, X22).
+release_junk_images:
+  add: [bitrate, screen, screencap, screens, screenshot, screenshots]
+
+# File names that tracker and release sites add beside a release (X22).
+release_junk_names:
+  add: ["rarbg.com.txt", "rarbg.txt", "rarbg_do_not_mirror.exe", "torrent downloaded from.txt"]
+
+# Stem beginnings of release notes and ads (`Downloaded from ....txt`, X22). Media files
+# never count.
+release_junk_prefixes:
+  add: ["downloaded from", "torrent downloaded from"]
+
+# Trailing bracketed tags that index sites add after a release name, not a release group.
+release_site_tags:
+  add: [ettv, eztv, publichd, rarbg, rartv, vtv]
+
+# Release words after a title (X19): the fact, its normalized value, and the spellings
+# that state it. In a spelling, a space, `.`, `-` or `_` matches any one of them or none, so
+# `web-dl` also matches `WEB.DL` and `WEBDL`.
+release_words:
+  add:
+    audio_codec:
+      aac: [aac, "aac lc", "he aac"]
+      dolby_atmos: [atmos]
+      dolby_digital: [ac3, dd, "dolby digital"]
+      dolby_digital_plus: ["dd+", ddp, "dolby digital plus", "e ac3"]
+      dolby_truehd: [truehd]
+      dts: [dts]
+      dts_hd: ["dts hd", "dts hd ma", "dts ma"]
+      dts_x: ["dts x", "dts:x"]
+      flac: [flac]
+      lpcm: [lpcm]
+      mp2: [mp2]
+      mp3: [mp3]
+      opus: [opus]
+      pcm: [pcm]
+      vorbis: [vorbis]
+    audio_language:
+      dual: [dual, "dual audio"]
+      multi: [multi, "multi audio", multilang]
+    bit_depth:
+      "10": ["10 bit", "10bit", hi10, hi10p]
+      "12": ["12 bit", "12bit"]
+      "8": ["8 bit", "8bit"]
+    hdr:
+      dolby_vision: ["dolby vision", dovi, dv]
+      hdr: [hdr]
+      hdr10: [hdr10]
+      hdr10_plus: ["hdr10+", hdr10plus]
+      hlg: [hlg]
+    remux:
+      remux: [remux]
+    revision:
+      proper: [proper]
+      real: [real]
+      repack: [repack]
+      rerip: [rerip]
+    source:
+      analog_hdtv: [ahdtv]
+      bluray: [bd, bd25, bd50, bdr, bdremux, bdrip, bdscr, "blu ray", bluray, brrip]
+      camera: [cam, camrip]
+      digital_tv: [dvb, dvbrip, pdtv]
+      dvd: [dvd, "dvd r", dvd5, dvd9, dvdrip, dvdscr]
+      hd_camera: [hdcam]
+      hd_dvd: ["hd dvd", hddvdrip]
+      hd_telecine: ["hd tc", hdtc]
+      hd_telesync: ["hd ts", hdts]
+      hdtv: [hdtv, hdtvrip]
+      laserdisc: [laserdisc, ldrip]
+      satellite: [dsr, dsrip, satrip]
+      screener: [scr, screener]
+      telecine: [tc, telecine]
+      telesync: [telesync, ts]
+      tv: [sdtv, tvrip]
+      uhd_bluray: ["uhd bdremux", "uhd bdrip", "uhd blu ray", "uhd bluray", "ultrahd bluray"]
+      ultra_hdtv: [uhdtv]
+      vhs: [vhs, vhsrip]
+      video_on_demand: [vod, vodrip]
+      web: [web, "web dl", "web hd", "web rip", webrip]
+      workprint: [workprint]
+    streaming_service:
+      amazon_prime: [amazon, amazonhd, amazonuhd, amzn]
+      apple_tv_plus: [atvp]
+      crave: [crav]
+      crunchyroll: [crunchyroll]
+      dc_universe: [dcu]
+      disney_plus: ["disney+", dsnp, dsny]
+      hbo: [hbo]
+      hbo_max: [hmax]
+      hulu: [hulu]
+      itunes: [hditunes, itunes, ituneshd, itunesuhd]
+      netflix: [netflix, netflixhd, netflixuhd, netflixuhdrip, nf]
+      paramount_plus: [pmtp]
+      peacock: [pcok]
+      starz: [stz]
+      viki: [viki]
+      vudu: [vudu]
+    subtitle_language:
+      fr: [vostfr]
+      multi: ["multi sub", "multi subs", multisub, multisubs]
+      subbed: [hardsub, hardsubbed, subbed]
+    video_codec:
+      av1: [av1]
+      divx: [divx]
+      h264: [avc, "h 264", h264, x264]
+      h265: ["h 265", h265, hevc, x265]
+      mpeg2: ["mpeg 2"]
+      vc1: ["vc 1"]
+      vp9: [vp9]
+      xvid: [xvid]
+
+# Text that marks a release word spelling as a remux (X19), as in `BDRemux`.
+remux_markers:
+  add: [remux]
+
+# Text that marks a source spelling as a screener (X19), as in `DVDScr`.
+screener_markers:
+  add: [scr]
+
+# Words that name a season folder, before or after its number (`Season 2`, `3. Staffel`,
+# T9). The canonical section holds `season`.
+season_words:
+  add: [kausi, saison, seasong, seizoen, sezon, sezona, sezonul, "sezóna", staffel, stagione,
+    "säsong", "sæson", temporada, "сезон", "シーズン", "시즌"]
+
+# Characters between words, other than the dash (M6, X34). The canonical section holds the
+# space.
+separators:
+  add: [".", "_"]
+
+# Words that mean a season only directly under a series folder (T9). Elsewhere they are
+# ordinary title words (`Series 7 - The Contenders`).
+series_season_words:
+  add: [seria, serie, series, "séria", "série"]
+
+# Prefixes joined to a number that state an episode of season 0 (T12).
+special_prefixes:
+  add: [sp]
+
+# Folder names that hold a show's specials, season 0.
+specials_folders:
+  add: [special, specials]
+
+# Subtitle extensions (S1). `idx` counts only beside its `sub`, and that `sub` is not
+# counted again.
+subtitle_extensions:
+  add: [ass, idx, mks, sami, smi, srt, ssa, sub, sup, vtt]
+
+# Subtitle folder names beside a video (S2).
+subtitle_folders:
+  add: [subs, subtitles]
+
+# File endings of sync-tool temporaries, excluded wherever they appear (I7).
+system_junk_file_suffixes:
+  add: [".bts", ".sync"]
+
+# NAS, OS and sync-tool entries, excluded wherever they appear (I7). Matched as whole names.
+system_junk_names:
+  add: ["#recycle", "#snapshot", "$recycle.bin", ".@__thumb", ".grab", ".snapshot",
+    ".snapshots", ".wd_tv", ".zfs", "@eadir", "@recycle", "desktop.ini", "lost+found",
+    "network trash folder", ps3_update, ps3_vprm, "system volume information",
+    "temporary items", temprec, tempsbe, "thumbs.db"]
+
+# Bracket tag keys and the typed fact of each (M7, X29). A provider key may be followed by
+# `id`. The canonical section holds `edition`.
+tags:
+  add:
+    anidb: { fact: provider_id, id: integer }
+    anilist: { fact: provider_id, id: integer }
+    anisearch: { fact: provider_id, id: integer }
+    imdb: { fact: provider_id, id: { prefixed: { max_digits: 10, min_digits: 7, prefix: tt } } }
+    tmdb: { fact: provider_id, id: integer }
+    tvdb: { fact: provider_id, id: integer }
+    tvmaze: { fact: provider_id, id: integer }
+
+# Release words that cut a title wherever they appear (M4).
+technical_words:
+  add: [aac, ac3, atmos, av1, avi, bd25, bd50, bdmv, bdremux, bdrip, bluray, brrip, ddp, divx,
+    dovi, dsr, dts, "dts-hd", dtshd, dvd, dvd5, dvd9, dvdrip, dvdscr, eac3, fsbs, ftab, h264,
+    h265, hdc, hddvd, hdr10, "hdr10+", hdrip, hdtc, hdtv, hevc, hsbs, htab, m4v, mkv, mp4,
+    mpeg, mpeg2, mpeg4, mpg, mvc, pdtv, remux, repack, rerip, sbs, sbs3d, sdtv, telesync,
+    truehd, ultrahd, "web-dl", webdl, webrip, wmv, x264, x265, xvid]
+
+# Release words that can also be ordinary title words. They cut only after a year or a
+# technical word, or when nothing but release material follows them (M4).
+title_like_release_words:
+  add: ["3d", "4k", "8k", avc, "blu-ray", cam, complete, dc, dl, dual, dubbed, end, flac,
+    french, german, hdr, internal, limited, multi, multisub, multisubs, opus, proper, sdr, stv,
+    subbed, tab, ts, uhd, vhs, web]
+
+# Extensions read as video and reported as unsupported.
+unsupported_video_extensions:
+  add: [rm, rmvb, vob]
+
+# Extensions of video files that a title can be made of (X7).
+video_extensions:
+  add: ["3gp", avi, divx, flv, m2ts, m4v, mk3d, mkv, mov, mp4, mpeg, mpg, mts, ogv, ts, webm,
+    wmv]
+
+# Video heights: `NNNxHHH` with one of these is a resolution, never a season and episode
+# (T16).
+video_heights:
+  add: ["1080", "1200", "1440", "1600", "2160", "240", "288", "360", "4320", "480", "540",
+    "576", "720", "768", "800", "900"]

@@ -3,13 +3,13 @@
 
 mod pattern;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
 use crate::lexical::fold_case_text;
 use crate::model::EntryKind;
-use crate::rules::{BuiltInExclusions, IgnoreNesting, Rules};
+use crate::rules::{IgnoreNesting, Rules, Vocabularies};
 use pattern::{ParsedLine, Pattern};
 
 /// A rule file that the caller found in the library, by root-relative path. A no-media marker
@@ -122,8 +122,41 @@ pub struct IgnoreRules {
     /// Keyed by the root-relative folder path (`""` for the root).
     folders: BTreeMap<String, FolderRules>,
     diagnostics: Vec<RuleDiagnostic>,
-    built_in_exclusions: BuiltInExclusions,
+    built_ins: BuiltIns,
     nesting: IgnoreNesting,
+}
+
+/// The vocabularies of the built-in exclusions (I6-I9, X13, X14), which no rule file can
+/// override.
+#[derive(Debug, Clone)]
+struct BuiltIns {
+    built_in_ignore_groups: BTreeSet<String>,
+    no_media_markers: BTreeSet<String>,
+    system_junk_names: BTreeSet<String>,
+    system_junk_file_suffixes: BTreeSet<String>,
+    partial_download_suffixes: BTreeSet<String>,
+    generated_metadata_folders: BTreeSet<String>,
+    generated_metadata_folder_suffixes: BTreeSet<String>,
+}
+
+impl BuiltIns {
+    fn of(vocab: &Vocabularies) -> BuiltIns {
+        BuiltIns {
+            built_in_ignore_groups: vocab.built_in_ignore_groups.clone(),
+            no_media_markers: vocab.no_media_markers.clone(),
+            system_junk_names: vocab.system_junk_names.clone(),
+            system_junk_file_suffixes: vocab.system_junk_file_suffixes.clone(),
+            partial_download_suffixes: vocab.partial_download_suffixes.clone(),
+            generated_metadata_folders: vocab.generated_metadata_folders.clone(),
+            generated_metadata_folder_suffixes: vocab.generated_metadata_folder_suffixes.clone(),
+        }
+    }
+}
+
+impl Default for BuiltIns {
+    fn default() -> Self {
+        BuiltIns::of(&Rules::builtin().vocab)
+    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -169,8 +202,8 @@ impl Rules {
         let mut sorted_files: Vec<&IgnoreFile> = ignore_files.iter().collect();
         sorted_files.sort_by(|first, second| first.path.cmp(&second.path));
         let mut rules = IgnoreRules {
-            built_in_exclusions: self.built_in_exclusions.clone(),
-            nesting: self.presets.ignore_nesting,
+            built_ins: BuiltIns::of(&self.vocab),
+            nesting: self.vocab.presets.ignore_nesting,
             ..IgnoreRules::default()
         };
         for file in sorted_files {
@@ -214,7 +247,7 @@ impl IgnoreRules {
             return;
         };
         if self
-            .built_in_exclusions
+            .built_ins
             .no_media_markers
             .contains(&fold_case_text(name))
         {
@@ -278,8 +311,7 @@ impl IgnoreRules {
                 line,
             };
             if let Some(name) = entry.last()
-                && let Some(reason) =
-                    built_in_exclusion(&self.built_in_exclusions, name, is_directory)
+                && let Some(reason) = built_in_exclusion(&self.built_ins, name, is_directory)
             {
                 return self.result(Some(exclusion(reason, None, None)), Vec::new());
             }
@@ -364,13 +396,13 @@ impl IgnoreRules {
 /// Returns the built-in exclusion for one name, which no rule file can override. Returns
 /// `None` if no built-in exclusion matches the name.
 fn built_in_exclusion(
-    built_ins: &BuiltInExclusions,
+    built_ins: &BuiltIns,
     name: &str,
     is_directory: bool,
 ) -> Option<ExclusionReason> {
     let folded = fold_case_text(name);
-    let is_on = |group: &str| built_ins.groups.contains(group);
-    let has_suffix = |suffixes: &[String]| {
+    let is_on = |group: &str| built_ins.built_in_ignore_groups.contains(group);
+    let has_suffix = |suffixes: &BTreeSet<String>| {
         suffixes
             .iter()
             .any(|suffix| folded.ends_with(suffix.as_str()))
@@ -383,16 +415,14 @@ fn built_in_exclusion(
     }
     if is_on("partial_downloads")
         && !is_directory
-        && has_suffix(&built_ins.partial_download_file_suffixes)
+        && has_suffix(&built_ins.partial_download_suffixes)
     {
         return Some(ExclusionReason::PartialDownload);
     }
     if is_on("generated_metadata")
         && is_directory
-        && (built_ins
-            .generated_metadata_directory_names
-            .contains(&folded)
-            || has_suffix(&built_ins.generated_metadata_directory_suffixes))
+        && (built_ins.generated_metadata_folders.contains(&folded)
+            || has_suffix(&built_ins.generated_metadata_folder_suffixes))
     {
         return Some(ExclusionReason::GeneratedMetadata);
     }

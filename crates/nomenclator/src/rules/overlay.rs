@@ -11,13 +11,10 @@ use serde_json::Value;
 
 use crate::data;
 use crate::lexical::{self, fold_case_text};
-use crate::model::{ArtworkRole, ExtraKind, Format3d, NfoRole, SidecarFlag};
-use crate::parsers::episode_name::SpecialKind;
-use crate::parsers::extras::folded_vocabulary_form;
-use crate::parsers::release::{ReleaseFact, release_spelling_form};
-use crate::rendering::template::Template;
+use crate::model::{ExtraKind, SidecarFlag};
 use crate::rendering::{OutputProfile, TemplateSlot, literal_words};
-use crate::rules::{IdShape, PresetError, Rules, RulesIdentity, TagFact};
+use crate::rules::vocabulary::{Shape, Vocabularies, Vocabulary};
+use crate::rules::{PresetError, Presets, Rules, RulesIdentity, TagFact};
 
 /// One overlay, read from a YAML or JSON document:
 ///
@@ -31,19 +28,23 @@ use crate::rules::{IdShape, PresetError, Rules, RulesIdentity, TagFact};
 /// ```
 ///
 /// Every vocabulary takes `add` and `remove`, or `replace`, which has the shape of `add` and
-/// drops every other entry of the vocabulary except its canonical names. Word lists add a list; `extras_folders`,
-/// `extras_suffixes`, `extras_video_names` and `extras_audio_names` add a map from word to
-/// extra kind, `artwork_roles` from word to artwork role, `nfo_names` from name to NFO role,
-/// `languages` from BCP 47 tag to its spellings, `release_words` from release fact to
-/// value to spellings, `audio_channel_words` from word to channel layout,
-/// `tags` from key to its fact, `bracket_pairs` from opening to closing character, `format_3d_words` from word to 3D layout, `letter_folds` from one letter to its spelling,
-/// and `hearing_impaired_or_language_words` from word to BCP 47 tag. `remove` is always a
-/// list of entries.
+/// drops every other entry of the vocabulary except its canonical names. A word list adds a
+/// list. A typed vocabulary adds a map from entry to value: `extras_folders`,
+/// `extras_suffixes`, `extras_video_names` and `extras_audio_names` to an extra kind,
+/// `artwork_roles` to an artwork role, `nfo_names` to an NFO role, `audio_channel_words` to
+/// a channel layout, `tags` to a fact, `bracket_pairs` to a closing character,
+/// `format_3d_words` to a 3D layout, `letter_folds` to a spelling,
+/// `hearing_impaired_or_language_words` to a BCP 47 tag, `animation_special_words` to a
+/// special kind and `number_words` to a number. `languages` maps a BCP 47 tag to its
+/// spellings, and `release_words` maps a release fact to a value to its spellings. `remove`
+/// is always a list of entries. `presets` maps each preset to its value.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Overlay {
     name: String,
     version: Option<String>,
     changes: Vec<Change>,
+    /// The vocabularies that the overlay replaces.
+    replaced: BTreeSet<Vocabulary>,
     /// The line each change's entry is written on, for diagnostics.
     lines: BTreeMap<(Vocabulary, String), usize>,
 }
@@ -51,7 +52,7 @@ pub struct Overlay {
 /// The part of a [`RulesIdentity`] that one overlay contributes.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct OverlayIdentity {
-    /// Returns the name of the overlay.
+    /// The name of the overlay.
     pub name: String,
     /// The overlay's version, when it states one.
     pub version: Option<String>,
@@ -124,277 +125,9 @@ pub enum OverlayDiagnosticReason {
     IneffectiveRemoval,
 }
 
-/// The vocabularies an overlay can change, by their names in an overlay document.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-enum Vocabulary {
-    TechnicalWords,
-    TitleLikeReleaseWords,
-    EditionWords,
-    EditionPhrases,
-    ExtrasFolders,
-    ExtrasSuffixes,
-    ExtrasVideoNames,
-    ExtrasAudioNames,
-    SeasonWords,
-    SeriesSeasonWords,
-    SpecialsFolders,
-    Languages,
-    DefaultFlagWords,
-    ForcedFlagWords,
-    HearingImpairedFlagWords,
-    ArtworkRoles,
-    NfoNames,
-    Tags,
-    EpisodeTokens,
-    Separators,
-    BracketPairs,
-    EpisodeWords,
-    SpecialPrefixes,
-    AnimationSpecialWords,
-    VideoExtensions,
-    AudioExtensions,
-    SubtitleExtensions,
-    ImageExtensions,
-    SystemJunkNames,
-    SystemJunkFileSuffixes,
-    PartialDownloadSuffixes,
-    GeneratedMetadataFolders,
-    GeneratedMetadataFolderSuffixes,
-    LeadingArticles,
-    NumberWords,
-    OrdinalSuffixes,
-    Presets,
-    BuiltInIgnoreGroups,
-    NoMediaMarkers,
-    ReleaseJunkNames,
-    ReleaseJunkPrefixes,
-    ReleaseJunkExtensions,
-    ReleaseJunkImages,
-    ReleaseWords,
-    AudioChannelWords,
-    ReleaseSiteTags,
-    PartWords,
-    DiscFolderWords,
-    Format3dWords,
-    ReleaseGroupEndings,
-    VideoHeights,
-    LetterFolds,
-    DiscImageExtensions,
-    UnsupportedVideoExtensions,
-    DiscStructureFolders,
-    NfoExtensions,
-    StillImageSuffixes,
-    HearingImpairedOrLanguageWords,
-    SubtitleFolders,
-    AspectRatios,
-    AudioCodecWords,
-    FinalEpisodeWords,
-    AlternateTitleWords,
-    RemuxMarkers,
-    ScreenerMarkers,
-}
-
-const VOCABULARIES: &[(&str, Vocabulary)] = &[
-    ("technical_words", Vocabulary::TechnicalWords),
-    (
-        "title_like_release_words",
-        Vocabulary::TitleLikeReleaseWords,
-    ),
-    ("edition_words", Vocabulary::EditionWords),
-    ("edition_phrases", Vocabulary::EditionPhrases),
-    ("extras_folders", Vocabulary::ExtrasFolders),
-    ("extras_suffixes", Vocabulary::ExtrasSuffixes),
-    ("extras_video_names", Vocabulary::ExtrasVideoNames),
-    ("extras_audio_names", Vocabulary::ExtrasAudioNames),
-    ("season_words", Vocabulary::SeasonWords),
-    ("series_season_words", Vocabulary::SeriesSeasonWords),
-    ("specials_folders", Vocabulary::SpecialsFolders),
-    ("languages", Vocabulary::Languages),
-    ("default_flag_words", Vocabulary::DefaultFlagWords),
-    ("forced_flag_words", Vocabulary::ForcedFlagWords),
-    (
-        "hearing_impaired_flag_words",
-        Vocabulary::HearingImpairedFlagWords,
-    ),
-    ("artwork_roles", Vocabulary::ArtworkRoles),
-    ("nfo_names", Vocabulary::NfoNames),
-    ("tags", Vocabulary::Tags),
-    ("episode_tokens", Vocabulary::EpisodeTokens),
-    ("separators", Vocabulary::Separators),
-    ("bracket_pairs", Vocabulary::BracketPairs),
-    ("episode_words", Vocabulary::EpisodeWords),
-    ("special_prefixes", Vocabulary::SpecialPrefixes),
-    ("animation_special_words", Vocabulary::AnimationSpecialWords),
-    ("video_extensions", Vocabulary::VideoExtensions),
-    ("audio_extensions", Vocabulary::AudioExtensions),
-    ("subtitle_extensions", Vocabulary::SubtitleExtensions),
-    ("image_extensions", Vocabulary::ImageExtensions),
-    ("system_junk_names", Vocabulary::SystemJunkNames),
-    (
-        "system_junk_file_suffixes",
-        Vocabulary::SystemJunkFileSuffixes,
-    ),
-    (
-        "partial_download_suffixes",
-        Vocabulary::PartialDownloadSuffixes,
-    ),
-    (
-        "generated_metadata_folders",
-        Vocabulary::GeneratedMetadataFolders,
-    ),
-    (
-        "generated_metadata_folder_suffixes",
-        Vocabulary::GeneratedMetadataFolderSuffixes,
-    ),
-    ("leading_articles", Vocabulary::LeadingArticles),
-    ("number_words", Vocabulary::NumberWords),
-    ("ordinal_suffixes", Vocabulary::OrdinalSuffixes),
-    ("presets", Vocabulary::Presets),
-    ("built_in_ignore_groups", Vocabulary::BuiltInIgnoreGroups),
-    ("no_media_markers", Vocabulary::NoMediaMarkers),
-    ("release_junk_names", Vocabulary::ReleaseJunkNames),
-    ("release_junk_prefixes", Vocabulary::ReleaseJunkPrefixes),
-    ("release_junk_extensions", Vocabulary::ReleaseJunkExtensions),
-    ("release_junk_images", Vocabulary::ReleaseJunkImages),
-    ("release_words", Vocabulary::ReleaseWords),
-    ("audio_channel_words", Vocabulary::AudioChannelWords),
-    ("release_site_tags", Vocabulary::ReleaseSiteTags),
-    ("part_words", Vocabulary::PartWords),
-    ("disc_folder_words", Vocabulary::DiscFolderWords),
-    ("format_3d_words", Vocabulary::Format3dWords),
-    ("release_group_endings", Vocabulary::ReleaseGroupEndings),
-    ("video_heights", Vocabulary::VideoHeights),
-    ("letter_folds", Vocabulary::LetterFolds),
-    ("disc_image_extensions", Vocabulary::DiscImageExtensions),
-    (
-        "unsupported_video_extensions",
-        Vocabulary::UnsupportedVideoExtensions,
-    ),
-    ("disc_structure_folders", Vocabulary::DiscStructureFolders),
-    ("nfo_extensions", Vocabulary::NfoExtensions),
-    ("still_image_suffixes", Vocabulary::StillImageSuffixes),
-    (
-        "hearing_impaired_or_language_words",
-        Vocabulary::HearingImpairedOrLanguageWords,
-    ),
-    ("subtitle_folders", Vocabulary::SubtitleFolders),
-    ("aspect_ratios", Vocabulary::AspectRatios),
-    ("audio_codec_words", Vocabulary::AudioCodecWords),
-    ("final_episode_words", Vocabulary::FinalEpisodeWords),
-    ("alternate_title_words", Vocabulary::AlternateTitleWords),
-    ("remux_markers", Vocabulary::RemuxMarkers),
-    ("screener_markers", Vocabulary::ScreenerMarkers),
-];
-
-impl Vocabulary {
-    /// Returns `true` if the words of the vocabulary are read as whole name words. In such a
-    /// vocabulary, a word that the grammar already reads can never take effect.
-    fn holds_name_words(self) -> bool {
-        matches!(
-            self,
-            Vocabulary::TechnicalWords
-                | Vocabulary::TitleLikeReleaseWords
-                | Vocabulary::EditionWords
-                | Vocabulary::EditionPhrases
-                | Vocabulary::SeasonWords
-                | Vocabulary::SeriesSeasonWords
-                | Vocabulary::SpecialsFolders
-                | Vocabulary::DefaultFlagWords
-                | Vocabulary::ForcedFlagWords
-                | Vocabulary::HearingImpairedFlagWords
-                | Vocabulary::Languages
-                | Vocabulary::LeadingArticles
-                | Vocabulary::NumberWords
-                | Vocabulary::EpisodeWords
-                | Vocabulary::AnimationSpecialWords
-                | Vocabulary::PartWords
-                | Vocabulary::DiscFolderWords
-                | Vocabulary::Format3dWords
-                | Vocabulary::FinalEpisodeWords
-                | Vocabulary::AlternateTitleWords
-        )
-    }
-
-    /// Returns the vocabularies that must not also contain a word of this one. A name word is
-    /// read as one class only.
-    fn rivals(self) -> &'static [Vocabulary] {
-        const RELEASE: &[Vocabulary] = &[
-            Vocabulary::TechnicalWords,
-            Vocabulary::TitleLikeReleaseWords,
-            Vocabulary::EditionWords,
-        ];
-        const FLAGS: &[Vocabulary] = &[
-            Vocabulary::DefaultFlagWords,
-            Vocabulary::ForcedFlagWords,
-            Vocabulary::HearingImpairedFlagWords,
-        ];
-        const SEASONS: &[Vocabulary] = &[Vocabulary::SeasonWords, Vocabulary::SeriesSeasonWords];
-        [RELEASE, FLAGS, SEASONS]
-            .into_iter()
-            .find(|group| group.contains(&self))
-            .unwrap_or(&[])
-    }
-
-    fn name(self) -> &'static str {
-        VOCABULARIES
-            .iter()
-            .find(|(_, vocabulary)| *vocabulary == self)
-            .map(|(name, _)| *name)
-            .expect("every vocabulary is named")
-    }
-
-    /// Normalizes `raw` into the form that the lookups of the vocabulary compare names in.
-    fn normalize(self, raw: &str) -> String {
-        let lower = lexical::vocabulary_form(raw.trim());
-        match self {
-            // A separator can be a space, which trimming would drop.
-            Vocabulary::Separators => raw.to_owned(),
-            Vocabulary::BracketPairs | Vocabulary::EpisodeTokens => raw.trim().to_owned(),
-            Vocabulary::ExtrasFolders
-            | Vocabulary::ExtrasSuffixes
-            | Vocabulary::ExtrasVideoNames
-            | Vocabulary::ExtrasAudioNames => folded_vocabulary_form(&lower),
-            Vocabulary::EditionPhrases => phrase_words(&lower).join(" "),
-            Vocabulary::VideoExtensions
-            | Vocabulary::AudioExtensions
-            | Vocabulary::SubtitleExtensions
-            | Vocabulary::ImageExtensions
-            | Vocabulary::DiscImageExtensions
-            | Vocabulary::UnsupportedVideoExtensions
-            | Vocabulary::NfoExtensions => lower.trim_start_matches('.').to_owned(),
-            Vocabulary::SystemJunkNames
-            | Vocabulary::SystemJunkFileSuffixes
-            | Vocabulary::PartialDownloadSuffixes
-            | Vocabulary::GeneratedMetadataFolders
-            | Vocabulary::GeneratedMetadataFolderSuffixes
-            | Vocabulary::NfoNames
-            | Vocabulary::NoMediaMarkers
-            | Vocabulary::ReleaseJunkNames
-            | Vocabulary::ReleaseJunkPrefixes
-            | Vocabulary::ReleaseJunkImages => fold_case_text(raw.trim()),
-            Vocabulary::ReleaseJunkExtensions => lower.trim_start_matches('.').to_owned(),
-            Vocabulary::ReleaseWords => release_spelling_form(raw),
-            // Compared in a title's comparison form (P4): accents and punctuation dropped.
-            Vocabulary::LeadingArticles | Vocabulary::NumberWords => {
-                lexical::without_accents(&lexical::title_key(Rules::builtin(), raw))
-            }
-            _ => lower,
-        }
-    }
-}
-
-/// Splits an edition phrase into words the same way names are split, with apostrophes
-/// dropped.
-fn phrase_words(text: &str) -> Vec<String> {
-    text.replace(['\'', '’'], "")
-        .split([' ', '.', '_', '-'])
-        .filter(|word| !word.is_empty())
-        .map(str::to_owned)
-        .collect()
-}
-
+/// One change to one entry of one vocabulary.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-struct Change {
+pub(crate) struct Change {
     vocabulary: Vocabulary,
     entry: String,
     action: Action,
@@ -402,50 +135,53 @@ struct Change {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Action {
-    /// Removes every entry of the vocabulary, before the additions of a `replace`.
-    Clear,
     Remove,
-    Add(Meaning),
+    /// Adds the entry with its value, written as JSON text.
+    Add(String),
 }
 
-/// What an added entry means in its vocabulary.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-enum Meaning {
-    Word,
-    Extra(ExtraKind),
-    Artwork(ArtworkRole),
-    Nfo(NfoRole),
-    Language(String),
-    Number(u32),
-    Preset(String),
-    Release(ReleaseFact, String),
-    ChannelLayout(String),
-    Format3d(Format3d),
-    SpelledLetter(String),
-    Tag(TagFact),
-    Special(SpecialKind),
-    ClosingBracket(char),
-}
+impl Change {
+    /// Returns the addition of `raw` with `value`, with the entry in the vocabulary's form.
+    fn add(vocabulary: Vocabulary, raw: &str, value: &Value) -> Change {
+        Change {
+            vocabulary,
+            entry: vocabulary.spec().form.normalize(raw),
+            action: Action::Add(value.to_string()),
+        }
+    }
 
-impl Action {
+    fn is_add(&self) -> bool {
+        matches!(self.action, Action::Add(_))
+    }
+
+    /// Returns the line that the digest of an overlay reads for this change.
     fn describe(&self) -> String {
-        match self {
-            Action::Clear => "replace".to_owned(),
+        let action = match &self.action {
             Action::Remove => "remove".to_owned(),
-            Action::Add(Meaning::Word) => "add".to_owned(),
-            Action::Add(Meaning::Extra(kind)) => format!("add {kind:?}"),
-            Action::Add(Meaning::Artwork(role)) => format!("add {role:?}"),
-            Action::Add(Meaning::Nfo(role)) => format!("add {role:?}"),
-            Action::Add(Meaning::Language(tag)) => format!("add {tag}"),
-            Action::Add(Meaning::Number(number)) => format!("add {number}"),
-            Action::Add(Meaning::Preset(value)) => format!("set {value}"),
-            Action::Add(Meaning::Release(fact, value)) => format!("add {fact:?} {value}"),
-            Action::Add(Meaning::ChannelLayout(layout)) => format!("add {layout}"),
-            Action::Add(Meaning::Format3d(format)) => format!("add {format:?}"),
-            Action::Add(Meaning::SpelledLetter(spelled)) => format!("add {spelled}"),
-            Action::Add(Meaning::Tag(fact)) => format!("add {fact:?}"),
-            Action::Add(Meaning::Special(kind)) => format!("add {kind:?}"),
-            Action::Add(Meaning::ClosingBracket(close)) => format!("add {close}"),
+            Action::Add(value) => format!("add {value}"),
+        };
+        format!("{}\t{action}\t{}\n", self.vocabulary.name(), self.entry)
+    }
+}
+
+impl Vocabularies {
+    /// Applies one change.
+    pub(crate) fn apply(&mut self, change: &Change) {
+        let table = self.table_mut(change.vocabulary);
+        match &change.action {
+            Action::Add(value) => {
+                let value = serde_json::from_str(value).unwrap_or(Value::Null);
+                table.insert(&change.entry, &value);
+            }
+            Action::Remove => table.remove(&change.entry),
+        }
+    }
+
+    /// Removes every entry of `vocabulary`.
+    fn clear(&mut self, vocabulary: Vocabulary) {
+        let table = self.table_mut(vocabulary);
+        for entry in table.entries() {
+            table.remove(&entry);
         }
     }
 }
@@ -473,13 +209,17 @@ impl Overlay {
             _ => None,
         };
         let name = scalar("name").filter(|name| !name.trim().is_empty());
-        let version = scalar("version");
         let mut diagnostics = Vec::new();
         if name.is_none() {
             diagnostics.push(diagnostic(OverlayDiagnosticReason::MissingName));
         }
-        let mut changes = Vec::new();
-        let mut lines = BTreeMap::new();
+        let mut overlay = Overlay {
+            name: name.clone().unwrap_or_default(),
+            version: scalar("version"),
+            changes: Vec::new(),
+            replaced: BTreeSet::new(),
+            lines: BTreeMap::new(),
+        };
         let mut seen = BTreeSet::new();
         for (key, value) in &fields {
             let key = key.as_str();
@@ -492,85 +232,53 @@ impl Overlay {
                 vocabulary: Some(key.to_owned()),
                 ..diagnostic(reason)
             };
-            let Some(&(_, vocabulary)) = VOCABULARIES.iter().find(|(known, _)| *known == key)
-            else {
+            let Some(vocabulary) = Vocabulary::named(key) else {
                 diagnostics.push(at(OverlayDiagnosticReason::UnknownVocabulary));
                 continue;
             };
-            if vocabulary == Vocabulary::Presets {
-                match read_presets(text, key, value) {
-                    Ok(presets) => {
-                        for change in presets {
-                            seen.insert((vocabulary, change.entry.clone()));
-                            changes.push(change);
-                        }
-                    }
-                    Err(found) => {
-                        diagnostics.extend(found.into_iter().map(|diagnostic| OverlayDiagnostic {
-                            overlay: name.clone(),
-                            ..diagnostic
-                        }));
-                    }
+            let (replaces, read) = match read_changes(vocabulary, value) {
+                Ok(read) => read,
+                Err(message) => {
+                    diagnostics.push(OverlayDiagnostic {
+                        message: Some(message),
+                        ..at(OverlayDiagnosticReason::MalformedVocabulary)
+                    });
+                    continue;
                 }
-                continue;
+            };
+            if replaces {
+                overlay.replaced.insert(vocabulary);
             }
-            match read_changes(vocabulary, value) {
-                Ok(read) => {
-                    let mut entry_lines = EntryLines::new(text, line_of_key(text, key));
-                    for (raw, change) in read {
-                        let line = entry_lines.find(&raw);
-                        let at_entry = |reason| OverlayDiagnostic {
-                            line,
-                            entry: Some(change.entry.clone()).filter(|entry| !entry.is_empty()),
-                            ..at(reason)
-                        };
-                        if change.action == Action::Clear {
-                            changes.push(change);
-                        } else if change.entry.is_empty() {
-                            diagnostics.push(at_entry(OverlayDiagnosticReason::EmptyEntry));
-                        } else if vocabulary == Vocabulary::BuiltInIgnoreGroups
-                            && !data::BUILT_IN_IGNORE_GROUPS.contains(&change.entry.as_str())
-                        {
-                            diagnostics.push(at_entry(OverlayDiagnosticReason::UnknownEntry));
-                        } else if !seen.insert((vocabulary, change.entry.clone())) {
-                            diagnostics.push(at_entry(OverlayDiagnosticReason::DuplicateEntry));
-                        } else if vocabulary.holds_name_words()
-                            && matches!(change.action, Action::Add(_))
-                            && change.entry.split(' ').any(lexical::is_reserved_word)
-                        {
-                            diagnostics.push(at_entry(OverlayDiagnosticReason::ReservedToken));
-                        } else {
-                            if let Some(line) = line {
-                                lines.insert((vocabulary, change.entry.clone()), line);
-                            }
-                            changes.push(change);
-                        }
+            let mut entry_lines = EntryLines::new(text, line_of_key(text, key));
+            for (raw, change) in read {
+                let line = entry_lines.find(&raw);
+                let at_entry = |reason| OverlayDiagnostic {
+                    line,
+                    entry: Some(change.entry.clone()),
+                    ..at(reason)
+                };
+                if let Some(reason) = entry_fault(&change) {
+                    diagnostics.push(at_entry(reason));
+                } else if !seen.insert((vocabulary, change.entry.clone())) {
+                    diagnostics.push(at_entry(OverlayDiagnosticReason::DuplicateEntry));
+                } else {
+                    if let Some(line) = line {
+                        overlay
+                            .lines
+                            .insert((vocabulary, change.entry.clone()), line);
                     }
+                    overlay.changes.push(change);
                 }
-                Err(message) => diagnostics.push(OverlayDiagnostic {
-                    message: Some(message),
-                    ..at(OverlayDiagnosticReason::MalformedVocabulary)
-                }),
             }
         }
-        match name {
-            Some(name) if diagnostics.is_empty() => {
-                changes.sort();
-                changes.dedup();
-                Ok(Overlay {
-                    name,
-                    version,
-                    changes,
-                    lines,
-                })
-            }
-            _ => {
-                // The document's keys are read in sorted order, so the diagnostics are put
-                // back in the order of their lines.
-                diagnostics.sort_by_key(|diagnostic| diagnostic.line.unwrap_or(0));
-                Err(diagnostics)
-            }
+        if name.is_none() || !diagnostics.is_empty() {
+            // The document's keys are read in sorted order, so the diagnostics are put back
+            // in the order of their lines.
+            diagnostics.sort_by_key(|diagnostic| diagnostic.line.unwrap_or(0));
+            return Err(diagnostics);
         }
+        overlay.changes.sort();
+        Ok(overlay)
     }
 
     /// Returns the name of the overlay.
@@ -587,15 +295,14 @@ impl Overlay {
     }
 
     fn identity(&self) -> OverlayIdentity {
-        // FNV-1a over the sorted changes: stable across builds and platforms.
+        // FNV-1a over the replaced vocabularies and the sorted changes: stable across
+        // builds and platforms.
         let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
-        for change in &self.changes {
-            let line = format!(
-                "{}\t{}\t{}\n",
-                change.vocabulary.name(),
-                change.action.describe(),
-                change.entry
-            );
+        let replaced = self
+            .replaced
+            .iter()
+            .map(|vocabulary| format!("{}\treplace\n", vocabulary.name()));
+        for line in replaced.chain(self.changes.iter().map(Change::describe)) {
             for byte in line.bytes() {
                 hash ^= u64::from(byte);
                 hash = hash.wrapping_mul(0x0100_0000_01b3);
@@ -607,6 +314,50 @@ impl Overlay {
             digest: format!("{hash:016x}"),
         }
     }
+
+    /// Returns a diagnostic about `change` of this overlay, on the line of its entry.
+    fn diagnostic(&self, change: &Change, reason: OverlayDiagnosticReason) -> OverlayDiagnostic {
+        OverlayDiagnostic {
+            overlay: Some(self.name.clone()),
+            line: self
+                .lines
+                .get(&(change.vocabulary, change.entry.clone()))
+                .copied(),
+            vocabulary: Some(change.vocabulary.name().to_owned()),
+            entry: Some(change.entry.clone()),
+            ..diagnostic(reason)
+        }
+    }
+}
+
+/// Returns the fault of one change on its own: an empty entry, an entry outside a closed
+/// vocabulary, a preset that is unknown or set to a value outside its alternatives, or a
+/// name word that the grammar already reads.
+/// Returns `None` if the change has no such fault.
+fn entry_fault(change: &Change) -> Option<OverlayDiagnosticReason> {
+    let spec = change.vocabulary.spec();
+    if change.entry.is_empty() {
+        return Some(OverlayDiagnosticReason::EmptyEntry);
+    }
+    if spec
+        .closed
+        .is_some_and(|entries| !entries.contains(&change.entry.as_str()))
+    {
+        return Some(OverlayDiagnosticReason::UnknownEntry);
+    }
+    let Action::Add(value) = &change.action else {
+        return None;
+    };
+    if spec.shape == Shape::Settings {
+        let value: String = serde_json::from_str(value).unwrap_or_default();
+        return match Presets::default().set(&change.entry, &value) {
+            Ok(()) => None,
+            Err(PresetError::UnknownPreset) => Some(OverlayDiagnosticReason::UnknownPreset),
+            Err(PresetError::InvalidValue) => Some(OverlayDiagnosticReason::InvalidPresetValue),
+        };
+    }
+    (spec.name_words && change.entry.split(' ').any(lexical::is_reserved_word))
+        .then_some(OverlayDiagnosticReason::ReservedToken)
 }
 
 fn diagnostic(reason: OverlayDiagnosticReason) -> OverlayDiagnostic {
@@ -668,435 +419,190 @@ fn line_of_key(text: &str, key: &str) -> Option<usize> {
         .map(|index| index + 1)
 }
 
-/// Reads the presets that the `presets` section of an overlay sets: a mapping from preset to
-/// value. Checks each value against the catalogued alternatives.
-/// Fails with a diagnostic for each preset or value that is not catalogued.
-fn read_presets(
-    text: &str,
-    key: &str,
-    value: &Value,
-) -> Result<Vec<Change>, Vec<OverlayDiagnostic>> {
-    let at = |reason, line, entry: &str| OverlayDiagnostic {
-        line,
-        vocabulary: Some(key.to_owned()),
-        entry: Some(entry.to_owned()),
-        ..diagnostic(reason)
-    };
-    let Value::Object(fields) = value else {
-        return Err(vec![OverlayDiagnostic {
-            line: line_of_key(text, key),
-            vocabulary: Some(key.to_owned()),
-            message: Some("expected a mapping from preset to value".to_owned()),
-            ..diagnostic(OverlayDiagnosticReason::MalformedVocabulary)
-        }]);
-    };
-    let mut entry_lines = EntryLines::new(text, line_of_key(text, key));
-    let mut changes = Vec::new();
-    let mut diagnostics = Vec::new();
-    for (preset, value) in fields {
-        let preset = preset.as_str();
-        let line = entry_lines.find(preset);
-        let value = match value {
-            Value::String(text) => fold_case_text(text.trim()),
-            Value::Number(number) => number.to_string(),
-            _ => String::new(),
-        };
-        match crate::rules::Presets::default().set(preset, &value) {
-            Ok(()) => changes.push(Change {
-                vocabulary: Vocabulary::Presets,
-                entry: preset.to_owned(),
-                action: Action::Add(Meaning::Preset(value)),
-            }),
-            Err(PresetError::UnknownPreset) => {
-                diagnostics.push(at(OverlayDiagnosticReason::UnknownPreset, line, preset));
-            }
-            Err(PresetError::InvalidValue) => {
-                diagnostics.push(at(
-                    OverlayDiagnosticReason::InvalidPresetValue,
-                    line,
-                    preset,
-                ));
-            }
-        }
+/// Reads the changes of one vocabulary's section, each with the raw text of its entry.
+/// Returns `true` with them if the section replaces the vocabulary.
+/// Fails if the section does not have the shape of the vocabulary, or if a value is not a
+/// value of the vocabulary.
+fn read_changes(
+    vocabulary: Vocabulary,
+    section: &Value,
+) -> Result<(bool, Vec<(String, Change)>), String> {
+    let spec = vocabulary.spec();
+    if spec.shape == Shape::Settings {
+        let settings: BTreeMap<String, Value> = read(section)?;
+        let changes = settings
+            .into_iter()
+            .map(|(entry, value)| {
+                let value = match value {
+                    Value::String(text) => fold_case_text(text.trim()),
+                    Value::Number(number) => number.to_string(),
+                    _ => String::new(),
+                };
+                let change = Change::add(vocabulary, &entry, &Value::String(value));
+                (entry, change)
+            })
+            .collect();
+        return Ok((false, changes));
     }
-    if diagnostics.is_empty() {
-        Ok(changes)
-    } else {
-        Err(diagnostics)
-    }
-}
-
-/// Reads the changes that the `add` and `remove` of one vocabulary make, with entries
-/// normalized.
-/// Fails if `value` does not have the shape of the vocabulary.
-fn read_changes(vocabulary: Vocabulary, value: &Value) -> Result<Vec<(String, Change)>, String> {
-    let Value::Object(fields) = value else {
+    let Value::Object(fields) = section else {
         return Err("expected a mapping with `add`, `remove` or `replace`".to_owned());
     };
-    let mut changes = Vec::new();
     if fields.contains_key("replace") && fields.len() > 1 {
         return Err("expected `replace` without `add` and `remove`".to_owned());
     }
+    let empty = Vocabularies::default();
+    let mut changes = Vec::new();
     for (key, value) in fields {
         match key.as_str() {
-            "replace" => {
-                changes.push((
-                    String::new(),
-                    Change {
-                        vocabulary,
-                        entry: String::new(),
-                        action: Action::Clear,
-                    },
-                ));
-                for (raw, meaning) in read_additions(vocabulary, value)? {
-                    let entry = vocabulary.normalize(&raw);
-                    changes.push((
-                        raw,
-                        Change {
-                            vocabulary,
-                            entry,
-                            action: Action::Add(meaning),
-                        },
-                    ));
-                }
-            }
-            "add" => {
-                for (raw, meaning) in read_additions(vocabulary, value)? {
-                    let entry = vocabulary.normalize(&raw);
-                    changes.push((
-                        raw,
-                        Change {
-                            vocabulary,
-                            entry,
-                            action: Action::Add(meaning),
-                        },
-                    ));
+            "add" | "replace" => {
+                for (raw, value) in read_additions(spec.shape, value)? {
+                    let value = (spec.check)(&raw, value)?;
+                    empty.table(vocabulary).read_value(&value)?;
+                    let change = Change::add(vocabulary, &raw, &value);
+                    changes.push((raw, change));
                 }
             }
             "remove" => {
                 for raw in read::<Vec<String>>(value)? {
-                    let entry = vocabulary.normalize(&raw);
-                    changes.push((
-                        raw,
-                        Change {
-                            vocabulary,
-                            entry,
-                            action: Action::Remove,
-                        },
-                    ));
+                    let change = Change {
+                        vocabulary,
+                        entry: spec.form.normalize(&raw),
+                        action: Action::Remove,
+                    };
+                    changes.push((raw, change));
                 }
             }
             _ => return Err("expected only `add`, `remove` or `replace`".to_owned()),
         }
     }
-    Ok(changes)
+    Ok((fields.contains_key("replace"), changes))
 }
 
-fn read_additions(vocabulary: Vocabulary, value: &Value) -> Result<Vec<(String, Meaning)>, String> {
-    let pairs = |meanings: BTreeMap<String, Meaning>| meanings.into_iter().collect();
-    Ok(match vocabulary {
-        Vocabulary::ExtrasFolders
-        | Vocabulary::ExtrasSuffixes
-        | Vocabulary::ExtrasVideoNames
-        | Vocabulary::ExtrasAudioNames => pairs(
-            read::<BTreeMap<String, ExtraKind>>(value)?
-                .into_iter()
-                .map(|(word, kind)| (word, Meaning::Extra(kind)))
-                .collect(),
-        ),
-        Vocabulary::ArtworkRoles => pairs(
-            read::<BTreeMap<String, ArtworkRole>>(value)?
-                .into_iter()
-                .map(|(word, role)| (word, Meaning::Artwork(role)))
-                .collect(),
-        ),
-        Vocabulary::NfoNames => pairs(
-            read::<BTreeMap<String, NfoRole>>(value)?
-                .into_iter()
-                .map(|(word, role)| (word, Meaning::Nfo(role)))
-                .collect(),
-        ),
-        Vocabulary::NumberWords => read::<BTreeMap<String, u32>>(value)?
+/// Reads the raw entries of an `add` section, each with its value, as the section's shape
+/// lays them out.
+fn read_additions(shape: Shape, section: &Value) -> Result<Vec<(String, Value)>, String> {
+    Ok(match shape {
+        Shape::List => read::<Vec<String>>(section)?
             .into_iter()
-            .map(|(word, number)| (word, Meaning::Number(number)))
+            .map(|entry| (entry, Value::Null))
             .collect(),
-        Vocabulary::Languages => read::<BTreeMap<String, Vec<String>>>(value)?
+        Shape::Map | Shape::Settings => read::<BTreeMap<String, Value>>(section)?
             .into_iter()
-            .flat_map(|(tag, spellings)| {
-                let tag = lexical::vocabulary_form(tag.trim());
-                std::iter::once(tag.clone())
+            .collect(),
+        Shape::Spellings => read::<BTreeMap<String, Vec<String>>>(section)?
+            .into_iter()
+            .flat_map(|(value, spellings)| {
+                let tag = Value::String(value.clone());
+                std::iter::once(value)
                     .chain(spellings)
-                    .map(move |spelling| (spelling, Meaning::Language(tag.clone())))
+                    .map(move |spelling| (spelling, tag.clone()))
             })
             .collect(),
-        Vocabulary::ReleaseWords => {
+        Shape::ReleaseSpellings => {
             let mut additions = Vec::new();
-            for (fact, values) in
-                read::<BTreeMap<ReleaseFact, BTreeMap<String, Vec<String>>>>(value)?
-            {
+            let facts: BTreeMap<String, BTreeMap<String, Vec<String>>> = read(section)?;
+            for (fact, values) in facts {
                 for (value, spellings) in values {
-                    let value = fold_case_text(value.trim());
-                    if fact == ReleaseFact::BitDepth && value.parse::<u8>().is_err() {
-                        return Err(format!("bit depth `{value}` is not a number"));
-                    }
+                    let pair = Value::Array(vec![
+                        Value::String(fact.clone()),
+                        Value::String(value.clone()),
+                    ]);
                     additions.extend(
                         spellings
                             .into_iter()
-                            .map(|spelling| (spelling, Meaning::Release(fact, value.clone()))),
+                            .map(|spelling| (spelling, pair.clone())),
                     );
                 }
             }
             additions
         }
-        Vocabulary::AudioChannelWords => {
-            let mut additions = Vec::new();
-            for (word, layout) in read::<BTreeMap<String, String>>(value)? {
-                let layout = layout.trim().to_owned();
-                if !is_channel_layout(&layout) {
-                    return Err(format!(
-                        "channel layout `{layout}` is not a layout such as `5.1`"
-                    ));
-                }
-                additions.push((word, Meaning::ChannelLayout(layout)));
-            }
-            additions
-        }
-        Vocabulary::Tags => {
-            let mut additions = Vec::new();
-            for (key, fact) in read::<BTreeMap<String, TagFact>>(value)? {
-                let is_key = key.starts_with(|c: char| c.is_ascii_alphabetic())
-                    && key.chars().all(|c| c.is_ascii_alphanumeric() || c == '_');
-                if !is_key {
-                    return Err(format!("tag key `{key}` is not letters, digits and `_`"));
-                }
-                if let TagFact::ProviderId {
-                    id:
-                        IdShape::Prefixed {
-                            prefix,
-                            min_digits,
-                            max_digits,
-                        },
-                } = &fact
-                    && (prefix.is_empty() || *min_digits == 0 || min_digits > max_digits)
-                {
-                    return Err(format!("tag `{key}` has an invalid ID shape"));
-                }
-                additions.push((key, Meaning::Tag(fact)));
-            }
-            additions
-        }
-        Vocabulary::EpisodeTokens => {
-            let tokens = read::<Vec<String>>(value)?;
-            for token in &tokens {
-                check_episode_token(token)?;
-            }
-            tokens
-                .into_iter()
-                .map(|token| (token, Meaning::Word))
-                .collect()
-        }
-        Vocabulary::Separators => {
-            let separators = read::<Vec<String>>(value)?;
-            if let Some(separator) = separators.iter().find(|separator| {
-                let mut characters = separator.chars();
-                !matches!(
-                    (characters.next(), characters.next()),
-                    (Some(character), None)
-                        if !character.is_alphanumeric() && !matches!(character, '-' | '/')
-                )
-            }) {
-                return Err(format!(
-                    "separator `{separator}` is not one character other than a letter, a digit, `-` or `/`"
-                ));
-            }
-            separators
-                .into_iter()
-                .map(|separator| (separator, Meaning::Word))
-                .collect()
-        }
-        Vocabulary::BracketPairs => {
-            let mut additions = Vec::new();
-            for (open, close) in read::<BTreeMap<String, String>>(value)? {
-                let mut closes = close.trim().chars();
-                let (Some(closing), None, 1) =
-                    (closes.next(), closes.next(), open.trim().chars().count())
-                else {
-                    return Err(format!(
-                        "bracket pair `{open}` `{close}` is not one character each"
-                    ));
-                };
-                additions.push((open, Meaning::ClosingBracket(closing)));
-            }
-            additions
-        }
-        Vocabulary::AnimationSpecialWords => read::<BTreeMap<String, SpecialKind>>(value)?
-            .into_iter()
-            .map(|(word, kind)| (word, Meaning::Special(kind)))
-            .collect(),
-        Vocabulary::Format3dWords => read::<BTreeMap<String, Format3d>>(value)?
-            .into_iter()
-            .map(|(word, format)| (word, Meaning::Format3d(format)))
-            .collect(),
-        Vocabulary::HearingImpairedOrLanguageWords => read::<BTreeMap<String, String>>(value)?
-            .into_iter()
-            .map(|(word, tag)| {
-                let tag = lexical::vocabulary_form(tag.trim());
-                (word, Meaning::Language(tag))
-            })
-            .collect(),
-        Vocabulary::LetterFolds => {
-            let mut additions = Vec::new();
-            for (letter, spelled) in read::<BTreeMap<String, String>>(value)? {
-                let spelled = lexical::vocabulary_form(spelled.trim());
-                if letter.trim().chars().count() != 1 || spelled.is_empty() {
-                    return Err(format!(
-                        "letter fold `{letter}` is not one letter with a spelling"
-                    ));
-                }
-                additions.push((letter, Meaning::SpelledLetter(spelled)));
-            }
-            additions
-        }
-        Vocabulary::VideoHeights => {
-            let heights = read::<Vec<String>>(value)?;
-            if let Some(height) = heights.iter().find(|height| {
-                !(3..=4).contains(&height.trim().len())
-                    || !height.trim().bytes().all(|byte| byte.is_ascii_digit())
-            }) {
-                return Err(format!("video height `{height}` is not 3 or 4 digits"));
-            }
-            heights
-                .into_iter()
-                .map(|height| (height, Meaning::Word))
-                .collect()
-        }
-        _ => read::<Vec<String>>(value)?
-            .into_iter()
-            .map(|word| (word, Meaning::Word))
-            .collect(),
     })
 }
 
-/// Returns `true` if `layout` is a channel layout such as `5.1`: a digit from 1 to 9, a dot
-/// and a digit from 0 to 2.
-fn is_channel_layout(layout: &str) -> bool {
-    let bytes = layout.as_bytes();
-    bytes.len() == 3
-        && (b'1'..=b'9').contains(&bytes[0])
-        && bytes[1] == b'.'
-        && (b'0'..=b'2').contains(&bytes[2])
-}
-
-/// Checks that `text` is an episode token template: it uses `episode` once, may use `season`
-/// once, and has no optional section (X34).
-/// Fails with a description of the fault.
-fn check_episode_token(text: &str) -> Result<(), String> {
-    let template = Template::parse(text)
-        .map_err(|error| format!("episode token `{text}`: {:?}", error.reason))?;
-    let fields = template.fields();
-    if !fields.contains("episode")
-        || fields
-            .iter()
-            .any(|field| !matches!(*field, "episode" | "season"))
-        || template.has_optional_or_repeated_field()
-    {
-        return Err(format!(
-            "episode token `{text}` must use `episode` once, may use `season` once, and has no optional section"
-        ));
-    }
-    Ok(())
-}
-
 fn read<T: DeserializeOwned>(value: &Value) -> Result<T, String> {
-    serde_json::from_value(value.clone()).map_err(|error| error.to_string())
+    T::deserialize(value).map_err(|error| error.to_string())
 }
 
 /// Returns the canonical names (X25) as additions to the input vocabularies that read
 /// them.
 fn canonical_changes() -> Vec<Change> {
-    let add = |vocabulary: Vocabulary, word: &str, meaning: Meaning| Change {
-        vocabulary,
-        entry: vocabulary.normalize(word),
-        action: Action::Add(meaning),
-    };
+    fn value(fact: impl Serialize) -> Value {
+        serde_json::to_value(fact).expect("a canonical value serializes")
+    }
+    let word = |vocabulary, word: &str| Change::add(vocabulary, word, &Value::Null);
     let mut changes: Vec<Change> = data::ARTWORK_OUTPUT_WORDS
         .iter()
-        .map(|(role, word)| add(Vocabulary::ArtworkRoles, word, Meaning::Artwork(*role)))
+        .map(|(role, word)| Change::add(Vocabulary::artwork_roles, word, &value(role)))
         .collect();
     changes.extend(
         data::NFO_OUTPUT_NAMES
             .iter()
-            .map(|(role, name)| add(Vocabulary::NfoNames, name, Meaning::Nfo(*role))),
+            .map(|(role, name)| Change::add(Vocabulary::nfo_names, name, &value(role))),
     );
     changes.extend(
         data::EXTRAS_OUTPUT_FOLDERS
             .iter()
-            .map(|(kind, folder)| add(Vocabulary::ExtrasFolders, folder, Meaning::Extra(*kind))),
+            .map(|(kind, folder)| Change::add(Vocabulary::extras_folders, folder, &value(kind))),
     );
-    changes.push(add(
-        Vocabulary::ExtrasAudioNames,
+    changes.push(Change::add(
+        Vocabulary::extras_audio_names,
         data::THEME_OUTPUT_STEM,
-        Meaning::Extra(ExtraKind::ThemeSong),
+        &value(ExtraKind::ThemeSong),
     ));
-    changes.push(add(
-        Vocabulary::SeasonWords,
-        data::SEASON_FOLDER_WORD,
-        Meaning::Word,
-    ));
-    changes.push(add(
-        Vocabulary::Tags,
+    changes.push(Change::add(
+        Vocabulary::tags,
         data::EDITION_TAG_KEY,
-        Meaning::Tag(TagFact::Edition),
+        &value(TagFact::Edition),
     ));
-    changes.push(Change {
-        vocabulary: Vocabulary::Separators,
-        entry: data::SPACE_SEPARATOR.to_string(),
-        action: Action::Add(Meaning::Word),
-    });
     changes.extend(data::CANONICAL_BRACKET_PAIRS.iter().map(|(open, close)| {
-        add(
-            Vocabulary::BracketPairs,
-            &open.to_string(),
-            Meaning::ClosingBracket(*close),
-        )
+        Change::add(Vocabulary::bracket_pairs, &open.to_string(), &value(close))
     }));
-    changes.push(add(
-        Vocabulary::EpisodeWords,
-        data::EPISODE_OUTPUT_LETTER,
-        Meaning::Word,
+    changes.push(word(Vocabulary::season_words, data::SEASON_FOLDER_WORD));
+    changes.push(word(
+        Vocabulary::separators,
+        &data::SPACE_SEPARATOR.to_string(),
     ));
-    changes.push(add(
-        Vocabulary::PartWords,
-        data::PART_OUTPUT_WORD,
-        Meaning::Word,
-    ));
-    changes.push(add(
-        Vocabulary::NfoExtensions,
-        data::NFO_EXTENSION,
-        Meaning::Word,
-    ));
-    changes.push(add(
-        Vocabulary::StillImageSuffixes,
+    changes.push(word(Vocabulary::episode_words, data::EPISODE_OUTPUT_LETTER));
+    changes.push(word(Vocabulary::part_words, data::PART_OUTPUT_WORD));
+    changes.push(word(Vocabulary::nfo_extensions, data::NFO_EXTENSION));
+    changes.push(word(
+        Vocabulary::still_image_suffixes,
         data::STILL_IMAGE_SUFFIX,
-        Meaning::Word,
     ));
-    changes.extend(data::SIDECAR_FLAG_OUTPUT_WORDS.iter().map(|(flag, word)| {
-        let vocabulary = match flag {
-            SidecarFlag::Default => Vocabulary::DefaultFlagWords,
-            SidecarFlag::Forced => Vocabulary::ForcedFlagWords,
-            SidecarFlag::HearingImpaired => Vocabulary::HearingImpairedFlagWords,
-        };
-        add(vocabulary, word, Meaning::Word)
-    }));
+    changes.extend(
+        data::SIDECAR_FLAG_OUTPUT_WORDS
+            .iter()
+            .map(|(flag, flag_word)| {
+                let vocabulary = match flag {
+                    SidecarFlag::Default => Vocabulary::default_flag_words,
+                    SidecarFlag::Forced => Vocabulary::forced_flag_words,
+                    SidecarFlag::HearingImpaired => Vocabulary::hearing_impaired_flag_words,
+                };
+                word(vocabulary, flag_word)
+            }),
+    );
     changes
 }
 
 impl Rules {
+    /// Returns the built-in rules: the built-in document, then the canonical names.
+    pub(crate) fn from_builtin_document() -> Rules {
+        let builtin =
+            Overlay::parse(data::BUILTIN).expect("the built-in document is a valid overlay");
+        let mut rules = Rules::empty();
+        for change in &builtin.changes {
+            rules.vocab.apply(change);
+        }
+        rules.add_canonical_names();
+        rules.recompile();
+        rules
+    }
+
     /// Adds the canonical names (X25) to the input vocabularies. Called whenever the
     /// vocabularies are built, so no other change can drop a canonical name.
-    pub(crate) fn add_canonical_names(&mut self) {
+    fn add_canonical_names(&mut self) {
         for change in canonical_changes() {
-            self.apply(change.vocabulary, &change.entry, &change.action);
+            self.vocab.apply(&change);
         }
     }
 
@@ -1184,13 +690,15 @@ impl Rules {
             let kept: BTreeSet<(Vocabulary, &str)> = overlays
                 .iter()
                 .flat_map(|overlay| &overlay.changes)
-                .filter(|change| matches!(change.action, Action::Add(_)))
+                .filter(|change| change.is_add())
                 .map(|change| (change.vocabulary, change.entry.as_str()))
                 .collect();
             for (_, pack) in &others {
                 for change in &pack.changes {
                     if !kept.contains(&(change.vocabulary, change.entry.as_str())) {
-                        base.apply(change.vocabulary, &change.entry, &Action::Remove);
+                        base.vocab
+                            .table_mut(change.vocabulary)
+                            .remove(&change.entry);
                     }
                 }
             }
@@ -1221,16 +729,8 @@ impl Rules {
         for overlay in user_overlays {
             for change in &overlay.changes {
                 if canonical.contains(&(change.vocabulary, change.entry.clone())) {
-                    diagnostics.push(OverlayDiagnostic {
-                        overlay: Some(overlay.name.clone()),
-                        line: overlay
-                            .lines
-                            .get(&(change.vocabulary, change.entry.clone()))
-                            .copied(),
-                        vocabulary: Some(change.vocabulary.name().to_owned()),
-                        entry: Some(change.entry.clone()),
-                        ..diagnostic(OverlayDiagnosticReason::CanonicalEntry)
-                    });
+                    diagnostics
+                        .push(overlay.diagnostic(change, OverlayDiagnosticReason::CanonicalEntry));
                 }
             }
         }
@@ -1239,6 +739,7 @@ impl Rules {
         let (packs, users) = overlays.split_at(overlays.len() - user_overlays.len());
         // Every user overlay's action on each entry, in declared order.
         let mut actions: BTreeMap<(Vocabulary, &str), Vec<(&str, &Action)>> = BTreeMap::new();
+        let mut replacing: BTreeMap<Vocabulary, Vec<&str>> = BTreeMap::new();
         for overlay in users {
             for change in &overlay.changes {
                 actions
@@ -1246,47 +747,59 @@ impl Rules {
                     .or_default()
                     .push((overlay.name.as_str(), &change.action));
             }
+            for vocabulary in &overlay.replaced {
+                replacing
+                    .entry(*vocabulary)
+                    .or_default()
+                    .push(&overlay.name);
+            }
+        }
+        let conflict = |vocabulary: Vocabulary, entry: Option<&str>, names: &[&str]| {
+            let mut overlays: Vec<String> = Vec::new();
+            for name in names {
+                if !overlays.iter().any(|known| known == name) {
+                    overlays.push((*name).to_owned());
+                }
+            }
+            OverlayDiagnostic {
+                vocabulary: Some(vocabulary.name().to_owned()),
+                entry: entry.map(str::to_owned),
+                overlays,
+                ..diagnostic(OverlayDiagnosticReason::ConflictingChange)
+            }
+        };
+        for (vocabulary, names) in &replacing {
+            if names.len() > 1 {
+                diagnostics.push(conflict(*vocabulary, None, names));
+            }
         }
         for ((vocabulary, entry), entry_actions) in &actions {
             let (_, first) = entry_actions[0];
-            let replaced_twice = *first == Action::Clear && entry_actions.len() > 1;
-            if replaced_twice || entry_actions.iter().any(|(_, action)| *action != first) {
-                let mut names: Vec<String> = Vec::new();
-                for (name, _) in entry_actions {
-                    if !names.iter().any(|known| known == name) {
-                        names.push((*name).to_owned());
-                    }
-                }
-                diagnostics.push(OverlayDiagnostic {
-                    vocabulary: Some(vocabulary.name().to_owned()),
-                    entry: Some((*entry).to_owned()).filter(|entry| !entry.is_empty()),
-                    overlays: names,
-                    ..diagnostic(OverlayDiagnosticReason::ConflictingChange)
-                });
+            if entry_actions.iter().any(|(_, action)| *action != first) {
+                let names: Vec<&str> = entry_actions.iter().map(|(name, _)| *name).collect();
+                diagnostics.push(conflict(*vocabulary, Some(entry), &names));
             }
         }
+        let pack_entries: BTreeSet<(Vocabulary, &str)> = packs
+            .iter()
+            .flat_map(|pack| &pack.changes)
+            .map(|change| (change.vocabulary, change.entry.as_str()))
+            .collect();
         for overlay in user_overlays {
             for change in &overlay.changes {
-                let is_added = actions[&(change.vocabulary, change.entry.as_str())]
+                let key = (change.vocabulary, change.entry.as_str());
+                let is_added = actions[&key]
                     .iter()
                     .any(|(_, action)| matches!(action, Action::Add(_)))
-                    || packs.iter().flat_map(|pack| &pack.changes).any(|added| {
-                        added.vocabulary == change.vocabulary && added.entry == change.entry
-                    });
-                if change.action == Action::Remove
-                    && !is_added
-                    && !Rules::builtin().contains(change.vocabulary, &change.entry)
-                {
-                    diagnostics.push(OverlayDiagnostic {
-                        overlay: Some(overlay.name.clone()),
-                        line: overlay
-                            .lines
-                            .get(&(change.vocabulary, change.entry.clone()))
-                            .copied(),
-                        vocabulary: Some(change.vocabulary.name().to_owned()),
-                        entry: Some(change.entry.clone()),
-                        ..diagnostic(OverlayDiagnosticReason::IneffectiveRemoval)
-                    });
+                    || pack_entries.contains(&key);
+                let is_builtin = Rules::builtin()
+                    .vocab
+                    .table(change.vocabulary)
+                    .contains(&change.entry);
+                if change.action == Action::Remove && !is_added && !is_builtin {
+                    diagnostics.push(
+                        overlay.diagnostic(change, OverlayDiagnosticReason::IneffectiveRemoval),
+                    );
                 }
             }
         }
@@ -1295,16 +808,24 @@ impl Rules {
         }
         let mut rules = base;
         for change in packs.iter().flat_map(|pack| &pack.changes) {
-            rules.apply(change.vocabulary, &change.entry, &change.action);
+            rules.vocab.apply(change);
+        }
+        for vocabulary in replacing.keys() {
+            rules.vocab.clear(*vocabulary);
         }
         for ((vocabulary, entry), entry_actions) in &actions {
-            rules.apply(*vocabulary, entry, entry_actions[0].1);
+            rules.vocab.apply(&Change {
+                vocabulary: *vocabulary,
+                entry: (*entry).to_owned(),
+                action: entry_actions[0].1.clone(),
+            });
         }
         let collisions = rules.collisions(users);
         if !collisions.is_empty() {
             return Err(collisions);
         }
-        // A language pack that is not declared may have removed a canonical name.
+        // A language pack that is not declared, or a replace, may have removed a canonical
+        // name.
         rules.add_canonical_names();
         rules.recompile();
         rules.identity = RulesIdentity {
@@ -1316,49 +837,58 @@ impl Rules {
     }
 
     /// Returns these rules extended to read the names that `profile` writes (R18): its
-    /// extras folder names and its specials folder name, in the form that the writer
-    /// writes them (X25). The identity lists the additions
-    /// as an overlay named `profile`. Returns a copy of these rules if the profile writes
-    /// no name of its own. Fails if a name is in a rival vocabulary.
+    /// extras folder names, its specials folder name, and the literal words of its
+    /// `season_folder`, `part` and `edition_tag` slots, in the form that the writer writes
+    /// them (X25, X33). The identity lists the additions as an overlay named `profile`.
+    /// Returns a copy of these rules if the profile writes no name of its own.
+    /// Fails if a name is in a rival vocabulary.
     pub fn reading_profile(
         &self,
         profile: &OutputProfile,
     ) -> Result<Rules, Vec<OverlayDiagnostic>> {
+        let word = |vocabulary, text: &str| Change::add(vocabulary, text, &Value::Null);
         let mut changes: Vec<Change> = profile
             .extras_folders
             .iter()
-            .map(|(kind, folder)| Change {
-                vocabulary: Vocabulary::ExtrasFolders,
-                entry: Vocabulary::ExtrasFolders.normalize(&profile.clean_fact(folder)),
-                action: Action::Add(Meaning::Extra(*kind)),
+            .map(|(kind, folder)| {
+                let kind = serde_json::to_value(kind).expect("an extra kind serializes");
+                Change::add(
+                    Vocabulary::extras_folders,
+                    &profile.clean_fact(folder),
+                    &kind,
+                )
             })
             .collect();
-        changes.extend(profile.specials_folder.iter().map(|folder| Change {
-            vocabulary: Vocabulary::SpecialsFolders,
-            entry: Vocabulary::SpecialsFolders.normalize(&profile.clean_fact(folder)),
-            action: Action::Add(Meaning::Word),
-        }));
-        let word_changes = [
-            (TemplateSlot::SeasonFolder, Vocabulary::SeasonWords),
-            (TemplateSlot::Part, Vocabulary::PartWords),
+        changes.extend(
+            profile
+                .specials_folder
+                .iter()
+                .map(|folder| word(Vocabulary::specials_folders, &profile.clean_fact(folder))),
+        );
+        let slot_words = [
+            (TemplateSlot::SeasonFolder, Vocabulary::season_words),
+            (TemplateSlot::Part, Vocabulary::part_words),
         ];
-        for (slot, vocabulary) in word_changes {
+        for (slot, vocabulary) in slot_words {
             let words = profile.templates.get(&slot).map(literal_words);
-            changes.extend(words.into_iter().flatten().map(|word| Change {
-                vocabulary,
-                entry: vocabulary.normalize(&word),
-                action: Action::Add(Meaning::Word),
-            }));
+            changes.extend(
+                words
+                    .into_iter()
+                    .flatten()
+                    .map(|text| word(vocabulary, &text)),
+            );
         }
         let edition_keys = profile
             .templates
             .get(&TemplateSlot::EditionTag)
             .map(literal_words);
-        changes.extend(edition_keys.into_iter().flatten().map(|key| Change {
-            vocabulary: Vocabulary::Tags,
-            entry: Vocabulary::Tags.normalize(&key),
-            action: Action::Add(Meaning::Tag(TagFact::Edition)),
-        }));
+        let edition = serde_json::to_value(TagFact::Edition).expect("a tag fact serializes");
+        changes.extend(
+            edition_keys
+                .into_iter()
+                .flatten()
+                .map(|key| Change::add(Vocabulary::tags, &key, &edition)),
+        );
         changes.retain(|change| !change.entry.is_empty());
         if changes.is_empty() {
             return Ok(self.clone());
@@ -1369,11 +899,12 @@ impl Rules {
             name: "profile".to_owned(),
             version: None,
             changes,
+            replaced: BTreeSet::new(),
             lines: BTreeMap::new(),
         };
         let mut rules = self.clone();
         for change in &overlay.changes {
-            rules.apply(change.vocabulary, &change.entry, &change.action);
+            rules.vocab.apply(change);
         }
         let collisions = rules.collisions(std::slice::from_ref(&overlay));
         if !collisions.is_empty() {
@@ -1389,382 +920,28 @@ impl Rules {
     fn collisions(&self, overlays: &[Overlay]) -> Vec<OverlayDiagnostic> {
         let mut diagnostics = Vec::new();
         for overlay in overlays {
-            for change in &overlay.changes {
-                if !matches!(change.action, Action::Add(_)) {
+            for change in overlay.changes.iter().filter(|change| change.is_add()) {
+                let Some(rival) = change.vocabulary.spec().rival else {
                     continue;
-                }
-                let others: Vec<&str> = change
-                    .vocabulary
-                    .rivals()
+                };
+                let others: Vec<&str> = Vocabulary::ALL
                     .iter()
-                    .filter(|rival| **rival != change.vocabulary)
-                    .filter(|rival| {
-                        self.word_set(**rival)
-                            .is_some_and(|words| words.contains(&change.entry))
+                    .filter(|other| {
+                        **other != change.vocabulary
+                            && other.spec().rival == Some(rival)
+                            && self.vocab.table(**other).contains(&change.entry)
                     })
-                    .map(|rival| rival.name())
+                    .map(|other| other.name())
                     .collect();
                 if !others.is_empty() {
                     diagnostics.push(OverlayDiagnostic {
-                        overlay: Some(overlay.name.clone()),
-                        line: overlay
-                            .lines
-                            .get(&(change.vocabulary, change.entry.clone()))
-                            .copied(),
-                        vocabulary: Some(change.vocabulary.name().to_owned()),
-                        entry: Some(change.entry.clone()),
                         message: Some(format!("also in {}", others.join(", "))),
-                        ..diagnostic(OverlayDiagnosticReason::CollidingEntry)
+                        ..overlay.diagnostic(change, OverlayDiagnosticReason::CollidingEntry)
                     });
                 }
             }
         }
         diagnostics
-    }
-
-    fn word_set(&self, vocabulary: Vocabulary) -> Option<&BTreeSet<String>> {
-        Some(match vocabulary {
-            Vocabulary::TechnicalWords => &self.technical_words,
-            Vocabulary::TitleLikeReleaseWords => &self.title_like_release_words,
-            Vocabulary::EditionWords => &self.edition_words,
-            Vocabulary::SeasonWords => &self.season_words,
-            Vocabulary::SeriesSeasonWords => &self.series_season_words,
-            Vocabulary::DefaultFlagWords => &self.default_flag_words,
-            Vocabulary::ForcedFlagWords => &self.forced_flag_words,
-            Vocabulary::HearingImpairedFlagWords => &self.hearing_impaired_flag_words,
-            _ => return None,
-        })
-    }
-
-    /// Returns the entries of `vocabulary`, in the form that the vocabulary compares.
-    fn entries(&self, vocabulary: Vocabulary) -> Vec<String> {
-        fn keys<V>(map: &BTreeMap<String, V>) -> Vec<String> {
-            map.keys().cloned().collect()
-        }
-        fn words(set: &BTreeSet<String>) -> Vec<String> {
-            set.iter().cloned().collect()
-        }
-        let exclusions = &self.built_in_exclusions;
-        match vocabulary {
-            Vocabulary::SpecialsFolders => words(&self.specials_folder_names),
-            Vocabulary::LeadingArticles => words(&self.leading_articles),
-            Vocabulary::OrdinalSuffixes => words(&self.ordinal_suffixes),
-            Vocabulary::VideoExtensions => words(&self.video_extensions),
-            Vocabulary::AudioExtensions => words(&self.audio_extensions),
-            Vocabulary::SubtitleExtensions => words(&self.subtitle_extensions),
-            Vocabulary::ImageExtensions => words(&self.image_extensions),
-            Vocabulary::ReleaseJunkNames => words(&self.release_junk_names),
-            Vocabulary::ReleaseJunkPrefixes => words(&self.release_junk_prefixes),
-            Vocabulary::ReleaseJunkExtensions => words(&self.release_junk_extensions),
-            Vocabulary::ReleaseJunkImages => words(&self.release_junk_images),
-            Vocabulary::ReleaseSiteTags => words(&self.release_site_tags),
-            Vocabulary::EpisodeWords => words(&self.episode_words),
-            Vocabulary::SpecialPrefixes => words(&self.special_prefixes),
-            Vocabulary::PartWords => words(&self.part_words),
-            Vocabulary::DiscFolderWords => words(&self.disc_folder_words),
-            Vocabulary::VideoHeights => words(&self.video_heights),
-            Vocabulary::DiscImageExtensions => words(&self.disc_image_extensions),
-            Vocabulary::UnsupportedVideoExtensions => words(&self.unsupported_video_extensions),
-            Vocabulary::DiscStructureFolders => words(&self.disc_structure_folders),
-            Vocabulary::NfoExtensions => words(&self.nfo_extensions),
-            Vocabulary::StillImageSuffixes => words(&self.still_image_suffixes),
-            Vocabulary::SubtitleFolders => words(&self.subtitle_folder_names),
-            Vocabulary::AspectRatios => words(&self.aspect_ratios),
-            Vocabulary::AudioCodecWords => words(&self.audio_codec_words),
-            Vocabulary::FinalEpisodeWords => words(&self.final_episode_words),
-            Vocabulary::AlternateTitleWords => words(&self.alternate_title_words),
-            Vocabulary::RemuxMarkers => words(&self.remux_markers),
-            Vocabulary::ScreenerMarkers => words(&self.screener_markers),
-            Vocabulary::TechnicalWords => words(&self.technical_words),
-            Vocabulary::TitleLikeReleaseWords => words(&self.title_like_release_words),
-            Vocabulary::EditionWords => words(&self.edition_words),
-            Vocabulary::SeasonWords => words(&self.season_words),
-            Vocabulary::SeriesSeasonWords => words(&self.series_season_words),
-            Vocabulary::DefaultFlagWords => words(&self.default_flag_words),
-            Vocabulary::ForcedFlagWords => words(&self.forced_flag_words),
-            Vocabulary::HearingImpairedFlagWords => words(&self.hearing_impaired_flag_words),
-            Vocabulary::NumberWords => keys(&self.number_words),
-            Vocabulary::ExtrasFolders => keys(&self.extras_folders),
-            Vocabulary::ExtrasSuffixes => keys(&self.extras_suffixes),
-            Vocabulary::ExtrasVideoNames => keys(&self.extras_video_names),
-            Vocabulary::ExtrasAudioNames => keys(&self.extras_audio_names),
-            Vocabulary::ArtworkRoles => keys(&self.artwork_roles),
-            Vocabulary::NfoNames => keys(&self.nfo_generic_names),
-            Vocabulary::Languages => keys(&self.language_spellings),
-            Vocabulary::ReleaseWords => keys(&self.release_words),
-            Vocabulary::AudioChannelWords => keys(&self.audio_channel_words),
-            Vocabulary::Tags => keys(&self.tags),
-            Vocabulary::AnimationSpecialWords => keys(&self.animation_special_words),
-            Vocabulary::Format3dWords => keys(&self.format_3d_words),
-            Vocabulary::HearingImpairedOrLanguageWords => {
-                keys(&self.hearing_impaired_or_language_words)
-            }
-            Vocabulary::Presets => Vec::new(),
-            Vocabulary::EpisodeTokens => words(&self.episode_tokens),
-            Vocabulary::Separators => self.separators.iter().map(char::to_string).collect(),
-            Vocabulary::BracketPairs => self.bracket_pairs.keys().map(char::to_string).collect(),
-            Vocabulary::SystemJunkNames => words(&exclusions.system_junk_names),
-            Vocabulary::BuiltInIgnoreGroups => words(&exclusions.groups),
-            Vocabulary::NoMediaMarkers => words(&exclusions.no_media_markers),
-            Vocabulary::GeneratedMetadataFolders => {
-                words(&exclusions.generated_metadata_directory_names)
-            }
-            Vocabulary::SystemJunkFileSuffixes => exclusions.system_junk_file_suffixes.clone(),
-            Vocabulary::PartialDownloadSuffixes => {
-                exclusions.partial_download_file_suffixes.clone()
-            }
-            Vocabulary::GeneratedMetadataFolderSuffixes => {
-                exclusions.generated_metadata_directory_suffixes.clone()
-            }
-            Vocabulary::ReleaseGroupEndings => self.release_group_endings.clone(),
-            Vocabulary::EditionPhrases => self
-                .edition_phrases
-                .iter()
-                .map(|phrase| phrase.join(" "))
-                .collect(),
-            Vocabulary::LetterFolds => self.letter_folds.keys().map(char::to_string).collect(),
-        }
-    }
-
-    /// Returns `true` if `vocabulary` contains `entry`.
-    fn contains(&self, vocabulary: Vocabulary, entry: &str) -> bool {
-        self.entries(vocabulary).iter().any(|known| known == entry)
-    }
-
-    fn apply(&mut self, vocabulary: Vocabulary, entry: &str, action: &Action) {
-        if *action == Action::Clear {
-            for known in self.entries(vocabulary) {
-                self.apply(vocabulary, &known, &Action::Remove);
-            }
-            return;
-        }
-        let entry = entry.to_owned();
-        let exclusions = &mut self.built_in_exclusions;
-        let words =
-            match vocabulary {
-                Vocabulary::TechnicalWords => &mut self.technical_words,
-                Vocabulary::TitleLikeReleaseWords => &mut self.title_like_release_words,
-                Vocabulary::EditionWords => &mut self.edition_words,
-                Vocabulary::SeasonWords => &mut self.season_words,
-                Vocabulary::SeriesSeasonWords => &mut self.series_season_words,
-                Vocabulary::SpecialsFolders => &mut self.specials_folder_names,
-                Vocabulary::DefaultFlagWords => &mut self.default_flag_words,
-                Vocabulary::ForcedFlagWords => &mut self.forced_flag_words,
-                Vocabulary::HearingImpairedFlagWords => &mut self.hearing_impaired_flag_words,
-                Vocabulary::EpisodeWords => &mut self.episode_words,
-                Vocabulary::SpecialPrefixes => &mut self.special_prefixes,
-                Vocabulary::AnimationSpecialWords => {
-                    return apply_to_map(
-                        &mut self.animation_special_words,
-                        entry,
-                        action,
-                        |meaning| match meaning {
-                            Meaning::Special(kind) => Some(*kind),
-                            _ => None,
-                        },
-                    );
-                }
-                Vocabulary::EpisodeTokens => &mut self.episode_tokens,
-                Vocabulary::Separators => {
-                    if let Some(separator) = entry.chars().next() {
-                        match action {
-                            Action::Add(_) => {
-                                self.separators.insert(separator);
-                            }
-                            Action::Remove | Action::Clear => {
-                                self.separators.remove(&separator);
-                            }
-                        }
-                    }
-                    return;
-                }
-                Vocabulary::BracketPairs => {
-                    let Some(open) = entry.chars().next() else {
-                        return;
-                    };
-                    match action {
-                        Action::Add(Meaning::ClosingBracket(close)) => {
-                            self.bracket_pairs.insert(open, *close);
-                        }
-                        Action::Remove => {
-                            self.bracket_pairs.remove(&open);
-                        }
-                        Action::Add(_) | Action::Clear => {}
-                    }
-                    return;
-                }
-                Vocabulary::Tags => {
-                    return apply_to_map(&mut self.tags, entry, action, |meaning| match meaning {
-                        Meaning::Tag(fact) => Some(fact.clone()),
-                        _ => None,
-                    });
-                }
-                Vocabulary::Presets => {
-                    if let Action::Add(Meaning::Preset(value)) = action {
-                        // Checked when the overlay was read.
-                        let _ = self.presets.set(&entry, value);
-                    }
-                    return;
-                }
-                Vocabulary::LeadingArticles => &mut self.leading_articles,
-                Vocabulary::OrdinalSuffixes => &mut self.ordinal_suffixes,
-                Vocabulary::NumberWords => {
-                    return apply_to_map(&mut self.number_words, entry, action, |meaning| {
-                        match meaning {
-                            Meaning::Number(number) => Some(*number),
-                            _ => None,
-                        }
-                    });
-                }
-                Vocabulary::VideoExtensions => &mut self.video_extensions,
-                Vocabulary::AudioExtensions => &mut self.audio_extensions,
-                Vocabulary::SubtitleExtensions => &mut self.subtitle_extensions,
-                Vocabulary::ImageExtensions => &mut self.image_extensions,
-                Vocabulary::SystemJunkNames => &mut exclusions.system_junk_names,
-                Vocabulary::BuiltInIgnoreGroups => &mut exclusions.groups,
-                Vocabulary::NoMediaMarkers => &mut exclusions.no_media_markers,
-                Vocabulary::ReleaseJunkNames => &mut self.release_junk_names,
-                Vocabulary::ReleaseJunkPrefixes => &mut self.release_junk_prefixes,
-                Vocabulary::ReleaseJunkExtensions => &mut self.release_junk_extensions,
-                Vocabulary::ReleaseJunkImages => &mut self.release_junk_images,
-                Vocabulary::GeneratedMetadataFolders => {
-                    &mut exclusions.generated_metadata_directory_names
-                }
-                Vocabulary::SystemJunkFileSuffixes => {
-                    return apply_to_list(&mut exclusions.system_junk_file_suffixes, entry, action);
-                }
-                Vocabulary::PartialDownloadSuffixes => {
-                    return apply_to_list(
-                        &mut exclusions.partial_download_file_suffixes,
-                        entry,
-                        action,
-                    );
-                }
-                Vocabulary::GeneratedMetadataFolderSuffixes => {
-                    return apply_to_list(
-                        &mut exclusions.generated_metadata_directory_suffixes,
-                        entry,
-                        action,
-                    );
-                }
-                Vocabulary::EditionPhrases => {
-                    let words: Vec<String> = entry.split(' ').map(str::to_owned).collect();
-                    return apply_to_list(&mut self.edition_phrases, words, action);
-                }
-                Vocabulary::ExtrasFolders => {
-                    return apply_to_map(&mut self.extras_folders, entry, action, extra_kind);
-                }
-                Vocabulary::ExtrasSuffixes => {
-                    return apply_to_map(&mut self.extras_suffixes, entry, action, extra_kind);
-                }
-                Vocabulary::ExtrasVideoNames => {
-                    return apply_to_map(&mut self.extras_video_names, entry, action, extra_kind);
-                }
-                Vocabulary::ExtrasAudioNames => {
-                    return apply_to_map(&mut self.extras_audio_names, entry, action, extra_kind);
-                }
-                Vocabulary::ArtworkRoles => {
-                    return apply_to_map(&mut self.artwork_roles, entry, action, |meaning| {
-                        match meaning {
-                            Meaning::Artwork(role) => Some(*role),
-                            _ => None,
-                        }
-                    });
-                }
-                Vocabulary::NfoNames => {
-                    return apply_to_map(&mut self.nfo_generic_names, entry, action, |meaning| {
-                        match meaning {
-                            Meaning::Nfo(role) => Some(*role),
-                            _ => None,
-                        }
-                    });
-                }
-                Vocabulary::Languages => {
-                    return apply_to_map(&mut self.language_spellings, entry, action, |meaning| {
-                        match meaning {
-                            Meaning::Language(tag) => Some(tag.clone()),
-                            _ => None,
-                        }
-                    });
-                }
-                Vocabulary::ReleaseWords => {
-                    return apply_to_map(&mut self.release_words, entry, action, |meaning| {
-                        match meaning {
-                            Meaning::Release(fact, value) => Some((*fact, value.clone())),
-                            _ => None,
-                        }
-                    });
-                }
-                Vocabulary::AudioChannelWords => {
-                    return apply_to_map(&mut self.audio_channel_words, entry, action, |meaning| {
-                        match meaning {
-                            Meaning::ChannelLayout(layout) => Some(layout.clone()),
-                            _ => None,
-                        }
-                    });
-                }
-                Vocabulary::ReleaseSiteTags => &mut self.release_site_tags,
-                Vocabulary::PartWords => &mut self.part_words,
-                Vocabulary::DiscFolderWords => &mut self.disc_folder_words,
-                Vocabulary::Format3dWords => {
-                    return apply_to_map(&mut self.format_3d_words, entry, action, |meaning| {
-                        match meaning {
-                            Meaning::Format3d(format) => Some(*format),
-                            _ => None,
-                        }
-                    });
-                }
-                Vocabulary::ReleaseGroupEndings => {
-                    return apply_to_list(&mut self.release_group_endings, entry, action);
-                }
-                Vocabulary::VideoHeights => &mut self.video_heights,
-                Vocabulary::LetterFolds => {
-                    let Some(letter) = entry.chars().next() else {
-                        return;
-                    };
-                    match action {
-                        Action::Add(Meaning::SpelledLetter(spelled)) => {
-                            self.letter_folds.insert(letter, spelled.clone());
-                        }
-                        Action::Remove => {
-                            self.letter_folds.remove(&letter);
-                        }
-                        Action::Add(_) | Action::Clear => {}
-                    }
-                    return;
-                }
-                Vocabulary::DiscImageExtensions => &mut self.disc_image_extensions,
-                Vocabulary::UnsupportedVideoExtensions => &mut self.unsupported_video_extensions,
-                Vocabulary::DiscStructureFolders => &mut self.disc_structure_folders,
-                Vocabulary::NfoExtensions => &mut self.nfo_extensions,
-                Vocabulary::StillImageSuffixes => &mut self.still_image_suffixes,
-                Vocabulary::HearingImpairedOrLanguageWords => {
-                    return apply_to_map(
-                        &mut self.hearing_impaired_or_language_words,
-                        entry,
-                        action,
-                        |meaning| match meaning {
-                            Meaning::Language(tag) => Some(tag.clone()),
-                            _ => None,
-                        },
-                    );
-                }
-                Vocabulary::SubtitleFolders => &mut self.subtitle_folder_names,
-                Vocabulary::AspectRatios => &mut self.aspect_ratios,
-                Vocabulary::AudioCodecWords => &mut self.audio_codec_words,
-                Vocabulary::FinalEpisodeWords => &mut self.final_episode_words,
-                Vocabulary::AlternateTitleWords => &mut self.alternate_title_words,
-                Vocabulary::RemuxMarkers => &mut self.remux_markers,
-                Vocabulary::ScreenerMarkers => &mut self.screener_markers,
-            };
-        match action {
-            Action::Add(_) => {
-                words.insert(entry);
-            }
-            Action::Remove | Action::Clear => {
-                words.remove(&entry);
-            }
-        }
     }
 }
 
@@ -1777,38 +954,6 @@ fn language_packs() -> Vec<(&'static str, Overlay)> {
             (*tag, pack)
         })
         .collect()
-}
-
-fn extra_kind(meaning: &Meaning) -> Option<ExtraKind> {
-    match meaning {
-        Meaning::Extra(kind) => Some(*kind),
-        _ => None,
-    }
-}
-
-fn apply_to_list<T: PartialEq>(list: &mut Vec<T>, entry: T, action: &Action) {
-    list.retain(|existing| *existing != entry);
-    if matches!(action, Action::Add(_)) {
-        list.push(entry);
-    }
-}
-
-fn apply_to_map<V>(
-    map: &mut BTreeMap<String, V>,
-    entry: String,
-    action: &Action,
-    value: impl Fn(&Meaning) -> Option<V>,
-) {
-    match action {
-        Action::Add(meaning) => {
-            if let Some(value) = value(meaning) {
-                map.insert(entry, value);
-            }
-        }
-        Action::Remove | Action::Clear => {
-            map.remove(&entry);
-        }
-    }
 }
 
 #[cfg(test)]
@@ -1837,43 +982,22 @@ mod tests {
                     .map(|word| (*word).to_owned()),
             )
             .collect();
-        let builtin = Rules::builtin();
-        let language_words = [
-            (
-                Vocabulary::SeasonWords,
-                builtin.season_words.iter().collect::<Vec<_>>(),
-            ),
-            (
-                Vocabulary::SeriesSeasonWords,
-                builtin.series_season_words.iter().collect(),
-            ),
-            (
-                Vocabulary::EpisodeWords,
-                builtin.episode_words.iter().collect(),
-            ),
-            (
-                Vocabulary::LeadingArticles,
-                builtin.leading_articles.iter().collect(),
-            ),
-            (
-                Vocabulary::OrdinalSuffixes,
-                builtin.ordinal_suffixes.iter().collect(),
-            ),
+        let builtin = &Rules::builtin().vocab;
+        let language_vocabularies = [
+            Vocabulary::season_words,
+            Vocabulary::series_season_words,
+            Vocabulary::episode_words,
+            Vocabulary::leading_articles,
+            Vocabulary::ordinal_suffixes,
         ];
-        for (vocabulary, words) in language_words {
-            for word in words {
+        for vocabulary in language_vocabularies {
+            for word in builtin.table(vocabulary).entries() {
                 assert!(
-                    shared_base.iter().any(|entry| entry == word) || in_packs(vocabulary, word),
+                    shared_base.contains(&word) || in_packs(vocabulary, &word),
                     "{} `{word}` is in no language pack",
                     vocabulary.name()
                 );
             }
-        }
-        for word in crate::data::SPELLED_NUMBERS {
-            assert!(
-                in_packs(Vocabulary::NumberWords, word),
-                "number `{word}` is in no pack"
-            );
         }
     }
 
@@ -1881,11 +1005,7 @@ mod tests {
     fn every_language_pack_is_named_after_its_tag_and_adds_only() {
         for (tag, pack) in language_packs() {
             assert_eq!(pack.name, format!("language-{tag}"));
-            assert!(
-                pack.changes
-                    .iter()
-                    .all(|change| change.action != Action::Remove)
-            );
+            assert!(pack.changes.iter().all(Change::is_add));
         }
     }
 
@@ -1893,15 +1013,11 @@ mod tests {
     fn declaring_every_language_keeps_every_built_in_word() {
         let all: Vec<String> = Rules::language_packs().map(str::to_owned).collect();
         let rules = Rules::for_languages(&all, &[]).expect("the packs agree with each other");
-        let builtin = Rules::builtin();
-        assert!(builtin.season_words.is_subset(&rules.season_words));
-        assert!(
-            builtin
-                .series_season_words
-                .is_subset(&rules.series_season_words)
-        );
-        assert!(builtin.episode_words.is_subset(&rules.episode_words));
-        assert!(builtin.leading_articles.is_subset(&rules.leading_articles));
-        assert!(builtin.ordinal_suffixes.is_subset(&rules.ordinal_suffixes));
+        for vocabulary in Vocabulary::ALL {
+            let declared = rules.vocab.table(*vocabulary);
+            for word in Rules::builtin().vocab.table(*vocabulary).entries() {
+                assert!(declared.contains(&word), "{} `{word}`", vocabulary.name());
+            }
+        }
     }
 }

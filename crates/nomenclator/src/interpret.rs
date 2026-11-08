@@ -619,7 +619,7 @@ impl EntryIndex {
             }
         }
         // Under the excluded-samples preset a sample is excluded, not an extra (E6, X12).
-        if rules.presets.samples == Samples::Excluded {
+        if rules.vocab.presets.samples == Samples::Excluded {
             files.retain(|path, role| {
                 let is_sample = matches!(
                     role,

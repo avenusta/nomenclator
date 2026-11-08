@@ -89,14 +89,16 @@ impl Rules {
         let image_stem = stem
             .trim_end_matches(|c: char| c.is_ascii_digit() || matches!(c, ' ' | '.' | '-' | '_'));
         let result = !is_media
-            && (self.release_junk_names.contains(&folded)
-                || extension(path)
-                    .is_some_and(|extension| self.release_junk_extensions.contains(&extension))
+            && (self.vocab.release_junk_names.contains(&folded)
+                || extension(path).is_some_and(|extension| {
+                    self.vocab.release_junk_extensions.contains(&extension)
+                })
                 || self
+                    .vocab
                     .release_junk_prefixes
                     .iter()
                     .any(|prefix| stem.starts_with(prefix.as_str()))
-                || (is_image && self.release_junk_images.contains(image_stem)));
+                || (is_image && self.vocab.release_junk_images.contains(image_stem)));
         FileTypeCheck { result }
     }
 
@@ -105,7 +107,7 @@ impl Rules {
     pub fn is_video_file(&self, path: &str) -> VideoFileCheck {
         let reason = unsupported_video_reason(self, path);
         VideoFileCheck {
-            result: reason.is_none() && has_extension_in(path, &self.video_extensions),
+            result: reason.is_none() && has_extension_in(path, &self.vocab.video_extensions),
             unsupported_video: reason.is_some(),
             unsupported_video_reason: reason,
         }
@@ -114,14 +116,14 @@ impl Rules {
     /// Checks whether `path` is an audio file, by its extension.
     pub fn is_audio_file(&self, path: &str) -> FileTypeCheck {
         FileTypeCheck {
-            result: has_extension_in(path, &self.audio_extensions),
+            result: has_extension_in(path, &self.vocab.audio_extensions),
         }
     }
 
     /// Checks whether `path` is an image, by its extension.
     pub fn is_image_file(&self, path: &str) -> FileTypeCheck {
         FileTypeCheck {
-            result: has_extension_in(path, &self.image_extensions),
+            result: has_extension_in(path, &self.vocab.image_extensions),
         }
     }
 
@@ -139,7 +141,7 @@ impl Rules {
         let result = match extension(path).as_deref() {
             Some("idx") => has_sibling_with_extension("sub"),
             Some("sub") => !has_sibling_with_extension("idx"),
-            Some(other) => self.subtitle_extensions.contains(other),
+            Some(other) => self.vocab.subtitle_extensions.contains(other),
             None => false,
         };
         FileTypeCheck { result }
@@ -148,15 +150,19 @@ impl Rules {
 
 fn unsupported_video_reason(rules: &Rules, path: &str) -> Option<UnsupportedVideoReason> {
     let extension = extension(path)?;
-    if rules.disc_image_extensions.contains(&extension) {
+    if rules.vocab.disc_image_extensions.contains(&extension) {
         return Some(UnsupportedVideoReason::DiscImage);
     }
-    let is_video_extension = rules.video_extensions.contains(&extension)
-        || rules.unsupported_video_extensions.contains(&extension);
+    let is_video_extension = rules.vocab.video_extensions.contains(&extension)
+        || rules
+            .vocab
+            .unsupported_video_extensions
+            .contains(&extension);
     if is_video_extension && is_inside_disc_structure(rules, path) {
         return Some(UnsupportedVideoReason::DiscStructure);
     }
     rules
+        .vocab
         .unsupported_video_extensions
         .contains(&extension)
         .then_some(UnsupportedVideoReason::UnsupportedContainer)
@@ -170,6 +176,7 @@ fn is_inside_disc_structure(rules: &Rules, path: &str) -> bool {
 /// Returns `true` if a folder name is a disc structure folder, such as `VIDEO_TS` (M13).
 pub(crate) fn is_disc_structure_folder(rules: &Rules, name: &str) -> bool {
     rules
+        .vocab
         .disc_structure_folders
         .contains(&lexical::vocabulary_form(name))
 }

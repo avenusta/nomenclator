@@ -189,7 +189,7 @@ impl Rules {
     fn sample_provider_ids(&self, order: &[String]) -> BTreeMap<String, String> {
         order
             .iter()
-            .find_map(|provider| match self.tags.get(provider)? {
+            .find_map(|provider| match self.vocab.tags.get(provider)? {
                 TagFact::ProviderId { id } => Some((provider.clone(), sample_id(id))),
                 TagFact::Edition => None,
             })

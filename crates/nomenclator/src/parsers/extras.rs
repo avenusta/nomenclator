@@ -201,9 +201,9 @@ fn name_extra(
     // The names are stored in the folded form (X25), so the stem is looked up in it.
     let folded_stem = folded_vocabulary_form(stem);
     let exact_names = if rules.is_video_file(path).result {
-        &rules.extras_video_names
+        &rules.vocab.extras_video_names
     } else if rules.is_audio_file(path).result {
-        &rules.extras_audio_names
+        &rules.vocab.extras_audio_names
     } else {
         return None;
     };
@@ -259,7 +259,7 @@ fn extras_suffix<'a>(rules: &Rules, stem: &'a str) -> Option<ExtrasSuffix<'a>> {
     if title.is_empty() {
         return None;
     }
-    let kind = rules.extras_suffixes.get(word)?;
+    let kind = rules.vocab.extras_suffixes.get(word)?;
     Some(ExtrasSuffix {
         kind: *kind,
         title,
@@ -271,7 +271,7 @@ fn extras_suffix<'a>(rules: &Rules, stem: &'a str) -> Option<ExtrasSuffix<'a>> {
 /// Returns `None` if `folder_name` is not an extras folder name.
 pub(crate) fn extras_folder_kind(rules: &Rules, folder_name: &str) -> Option<ExtraKind> {
     let folded = folded_vocabulary_form(folder_name);
-    rules.extras_folders.get(&folded).copied()
+    rules.vocab.extras_folders.get(&folded).copied()
 }
 
 /// Returns `text` in lowercase with spaces, dashes, dots and underscores removed:

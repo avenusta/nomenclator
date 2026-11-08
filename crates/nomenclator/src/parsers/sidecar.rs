@@ -56,6 +56,7 @@ impl Rules {
         if kind == SidecarKind::Image {
             let is_still = rest.is_empty()
                 || rules
+                    .vocab
                     .still_image_suffixes
                     .contains(&lexical::vocabulary_form(rest));
             return Sidecar {
@@ -121,9 +122,9 @@ pub(crate) fn parse_sidecar_descriptors(rules: &Rules, name: &str, kind: Sidecar
 
 fn has_extension_for(rules: &Rules, name: &str, kind: SidecarKind) -> bool {
     let extensions = match kind {
-        SidecarKind::Subtitle => &rules.subtitle_extensions,
-        SidecarKind::Audio => &rules.audio_extensions,
-        SidecarKind::Image => &rules.image_extensions,
+        SidecarKind::Subtitle => &rules.vocab.subtitle_extensions,
+        SidecarKind::Audio => &rules.vocab.audio_extensions,
+        SidecarKind::Image => &rules.vocab.image_extensions,
     };
     lexical::extension(name, EntryKind::File)
         .is_some_and(|extension| extensions.contains(&extension))
@@ -142,6 +143,7 @@ fn read_segments(rules: &Rules, segments: &[Segment]) -> Sidecar {
         if let Some(flag) = lexical::sidecar_flag(rules, segment.text) {
             flags.push(flag);
         } else if let Some(tag) = rules
+            .vocab
             .hearing_impaired_or_language_words
             .get(&lexical::vocabulary_form(segment.text))
         {

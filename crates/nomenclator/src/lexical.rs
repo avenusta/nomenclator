@@ -66,7 +66,7 @@ pub(crate) fn tokenize(rules: &Rules, text: &str) -> Vec<Token> {
         }
     };
     while let Some(character) = text[index..].chars().next() {
-        if let Some(&close) = rules.bracket_pairs.get(&character)
+        if let Some(&close) = rules.vocab.bracket_pairs.get(&character)
             && let Some(close_index) = matching_close(text, index, character, close)
         {
             flush(&mut tokens, &mut word_start, index);
@@ -83,7 +83,7 @@ pub(crate) fn tokenize(rules: &Rules, text: &str) -> Vec<Token> {
         let between_digits = index > 0
             && bytes[index - 1].is_ascii_digit()
             && bytes.get(index + 1).is_some_and(u8::is_ascii_digit);
-        let ends_word = rules.separators.contains(&character)
+        let ends_word = rules.vocab.separators.contains(&character)
             || (character == '-' && word_start.is_some() && !between_digits);
         if ends_word {
             flush(&mut tokens, &mut word_start, index);
@@ -153,17 +153,19 @@ pub(crate) fn classify_word(rules: &Rules, word: &str) -> WordClass {
     }
     let lower = vocabulary_form(word);
     let is_technical =
-        |part: &str| rules.technical_words.contains(part) || TECHNICAL_PATTERN.is_match(part);
+        |part: &str| rules.vocab.technical_words.contains(part) || TECHNICAL_PATTERN.is_match(part);
     if is_technical(&lower) {
         return WordClass::Technical;
     }
     if EPISODE_MARKER_PATTERN.is_match(&lower) {
         return WordClass::EpisodeMarker;
     }
-    if rules.edition_words.contains(&lower) {
+    if rules.vocab.edition_words.contains(&lower) {
         return WordClass::Edition;
     }
-    if rules.title_like_release_words.contains(&lower) || VERSION_WORD_PATTERN.is_match(&lower) {
+    if rules.vocab.title_like_release_words.contains(&lower)
+        || VERSION_WORD_PATTERN.is_match(&lower)
+    {
         return WordClass::TitleLike;
     }
     WordClass::Plain
@@ -240,18 +242,19 @@ pub(crate) fn classify_title_token(rules: &Rules, text: &str, token: Token) -> T
 /// Returns how many of `words` the longest edition phrase that starts at the first word covers.
 /// Returns 0 if no edition phrase starts there.
 pub(crate) fn edition_phrase_length(rules: &Rules, words: &[&str]) -> usize {
-    let longest_phrase = rules
+    let phrases: Vec<Vec<&str>> = rules
+        .vocab
         .edition_phrases
         .iter()
-        .map(|phrase| phrase.len())
-        .max();
+        .map(|phrase| phrase.split(' ').collect())
+        .collect();
+    let longest_phrase = phrases.iter().map(Vec::len).max();
     let comparable: Vec<String> = words
         .iter()
         .take(longest_phrase.unwrap_or_default())
         .map(|word| vocabulary_form(word).replace(['\'', '’'], ""))
         .collect();
-    rules
-        .edition_phrases
+    phrases
         .iter()
         .filter(|phrase| {
             phrase.len() <= words.len()
@@ -268,7 +271,11 @@ pub(crate) fn edition_phrase_length(rules: &Rules, words: &[&str]) -> usize {
 /// Returns the 3D layout that `word` names.
 /// Returns `None` if `word` names no layout.
 pub(crate) fn format_3d_word(rules: &Rules, word: &str) -> Option<Format3d> {
-    rules.format_3d_words.get(&vocabulary_form(word)).copied()
+    rules
+        .vocab
+        .format_3d_words
+        .get(&vocabulary_form(word))
+        .copied()
 }
 
 /// Parses `word` as a four-digit year between the earliest and the latest plausible year of
@@ -277,8 +284,8 @@ pub(crate) fn format_3d_word(rules: &Rules, word: &str) -> Option<Format3d> {
 pub(crate) fn parse_year(rules: &Rules, word: &str) -> Option<u16> {
     year_within(
         word,
-        rules.presets.earliest_plausible_year,
-        rules.presets.latest_plausible_year,
+        rules.vocab.presets.earliest_plausible_year,
+        rules.vocab.presets.latest_plausible_year,
     )
 }
 
@@ -346,6 +353,7 @@ pub(crate) fn classify_bracket(rules: &Rules, text: &str, span: Span, inner: Spa
     }
     let lower = vocabulary_form(trimmed);
     if rules
+        .vocab
         .release_group_endings
         .iter()
         .any(|ending| lower.ends_with(ending.as_str()))
@@ -410,7 +418,7 @@ fn classify_tag(rules: &Rules, text: &str, is_curly: bool) -> Option<BracketClas
 /// Returns the provider whose prefixed shape `text` has.
 /// Returns `None` if no provider has that shape.
 fn bare_id_provider(rules: &Rules, text: &str) -> Option<String> {
-    rules.tags.iter().find_map(|(key, fact)| match fact {
+    rules.vocab.tags.iter().find_map(|(key, fact)| match fact {
         TagFact::ProviderId { id: shape } if shape.is_prefixed() && shape.has_form(text) => {
             Some(key.clone())
         }
@@ -544,7 +552,7 @@ pub(crate) fn display_title_among(rules: &Rules, raw: &str, spaced: bool) -> Str
     if spaced {
         return raw.to_owned();
     }
-    let separators: Vec<char> = rules.separators.iter().copied().collect();
+    let separators: Vec<char> = rules.vocab.separators.iter().copied().collect();
     let mut result = String::with_capacity(raw.len());
     let mut position = 0;
     for acronym in ACRONYM_PATTERN.find_iter(raw) {
@@ -570,11 +578,11 @@ pub(crate) fn display_title_among(rules: &Rules, raw: &str, spaced: bool) -> Str
 /// Returns `None` if `word` names no language.
 pub(crate) fn language_tag(rules: &Rules, word: &str) -> Option<String> {
     let lower = vocabulary_form(word);
-    if let Some(tag) = rules.language_spellings.get(&lower) {
+    if let Some(tag) = rules.vocab.languages.get(&lower) {
         return Some(tag.clone());
     }
     let (base, subtag) = lower.split_once('-')?;
-    let base = rules.language_spellings.get(base)?;
+    let base = rules.vocab.languages.get(base)?;
     let is_region = (subtag.len() == 2 && subtag.bytes().all(|byte| byte.is_ascii_alphabetic()))
         || (subtag.len() == 3 && subtag.bytes().all(|byte| byte.is_ascii_digit()));
     let is_script = subtag.len() == 4 && subtag.bytes().all(|byte| byte.is_ascii_alphabetic());
@@ -595,11 +603,11 @@ pub(crate) fn language_tag(rules: &Rules, word: &str) -> Option<String> {
 /// Returns `None` for `hi`, because `hi` may also be Hindi.
 pub(crate) fn sidecar_flag(rules: &Rules, word: &str) -> Option<SidecarFlag> {
     let lower = vocabulary_form(word);
-    if rules.default_flag_words.contains(&lower) {
+    if rules.vocab.default_flag_words.contains(&lower) {
         Some(SidecarFlag::Default)
-    } else if rules.forced_flag_words.contains(&lower) {
+    } else if rules.vocab.forced_flag_words.contains(&lower) {
         Some(SidecarFlag::Forced)
-    } else if rules.hearing_impaired_flag_words.contains(&lower) {
+    } else if rules.vocab.hearing_impaired_flag_words.contains(&lower) {
         Some(SidecarFlag::HearingImpaired)
     } else {
         None
@@ -665,7 +673,7 @@ pub(crate) fn mask_technical(rules: &Rules, text: &str) -> String {
     mask_matches(&CODEC_PATTERN, &|_| true);
     mask_matches(&RESOLUTION_WORD_PATTERN, &|_| true);
     mask_matches(&DIMENSIONS_PATTERN, &|captures| {
-        rules.video_heights.contains(&captures[1])
+        rules.vocab.video_heights.contains(&captures[1])
     });
     mask_matches(&rules.patterns.aspect_ratio, &|_| true);
     String::from_utf8(bytes).expect("masking keeps UTF-8")
@@ -690,9 +698,19 @@ pub(crate) fn is_boundary_after(text: &str, position: usize) -> bool {
 /// Returns the comparison form of a title: lowercase letters and digits only, with ligatures
 /// spelled out. `Æon Example`, `aeon.example` and `Aeon Example` have the same form.
 pub(crate) fn title_key(rules: &Rules, title: &str) -> String {
+    title_key_with(&rules.vocab.letter_folds, title)
+}
+
+/// Returns the comparison form of a title without letter folds, for vocabulary entries that
+/// are compared in that form before any rules exist.
+pub(crate) fn plain_title_key(title: &str) -> String {
+    title_key_with(&BTreeMap::new(), title)
+}
+
+fn title_key_with(letter_folds: &BTreeMap<char, String>, title: &str) -> String {
     let mut key = String::with_capacity(title.len());
     for character in title.nfc().flat_map(char::to_lowercase) {
-        if let Some(spelled) = rules.letter_folds.get(&character) {
+        if let Some(spelled) = letter_folds.get(&character) {
             key.push_str(spelled);
         } else if character.is_alphanumeric() {
             key.push(character);
@@ -862,7 +880,7 @@ pub(crate) fn find_date(rules: &Rules, text: &str) -> Option<DateMatch> {
         let day_first = calendar_date(year, second, first);
         let month_first = calendar_date(year, first, second);
         // The `date_order` preset decides the order only if both readings are dates (T13, X12).
-        let preferred = match (rules.presets.date_order, &day_first, &month_first) {
+        let preferred = match (rules.vocab.presets.date_order, &day_first, &month_first) {
             (DateOrder::DayFirst, Some(_), Some(_)) => [day_first, None],
             (DateOrder::MonthFirst, Some(_), Some(_)) => [month_first, None],
             _ => [day_first, month_first],
@@ -912,10 +930,11 @@ pub(crate) fn comparison_words_without_trailing_editions(
 ) -> Vec<String> {
     let mut words = comparison_words(title);
     let joined_edition_phrases: Vec<String> = rules
+        .vocab
         .edition_phrases
         .iter()
-        .map(|phrase| phrase.concat())
-        .chain(rules.edition_words.iter().cloned())
+        .map(|phrase| phrase.replace(' ', ""))
+        .chain(rules.vocab.edition_words.iter().cloned())
         .collect();
     'strip: while words.len() > 1 {
         for length in 1..words.len() {
@@ -966,13 +985,14 @@ pub(crate) fn fold_title_comparison_words(rules: &Rules, words: Vec<String>) -> 
         .map(|word| without_accents(&title_key(rules, word)))
         .filter(|word| !word.is_empty())
         .collect();
-    if folded.len() > 1 && rules.leading_articles.contains(&folded[0]) {
+    if folded.len() > 1 && rules.vocab.leading_articles.contains(&folded[0]) {
         folded.remove(0);
     }
     folded
         .into_iter()
         .map(|word| {
             rules
+                .vocab
                 .number_words
                 .get(&word)
                 .map_or(word, |number| number.to_string())

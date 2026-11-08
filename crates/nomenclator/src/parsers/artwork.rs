@@ -53,7 +53,7 @@ fn is_still_of(rules: &Rules, image_path: &str, image_stem: &str, video_path: &s
     parent_folder(image_path) == parent_folder(video_path)
         && lexical::vocabulary_form(image_stem)
             .strip_prefix(&lexical::vocabulary_form(video_stem))
-            .is_some_and(|rest| rules.still_image_suffixes.contains(rest))
+            .is_some_and(|rest| rules.vocab.still_image_suffixes.contains(rest))
 }
 
 /// Returns the role that a role word in `stem` gives. The role word is the whole stem
@@ -66,5 +66,5 @@ fn named_role(rules: &Rules, stem: &str) -> Option<ArtworkRole> {
         .next()
         .unwrap_or(&folded)
         .trim_end_matches(|character: char| character.is_ascii_digit());
-    rules.artwork_roles.get(word).copied()
+    rules.vocab.artwork_roles.get(word).copied()
 }
