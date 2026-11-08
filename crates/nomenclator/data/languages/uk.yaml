@@ -1,9 +1,8 @@
-# Language pack `uk`: the words a library in this language uses. Applied when a
-# caller declares its languages; see decision X11.
-name: language-uk
+# The built-in words of `uk`. The rules contain them when a library declares `uk` or
+# declares no language (X11).
 season_words:
   add: ["сезон"]
-languages:
+language_spellings:
   add: { uk: ["українська"] }
 episode_words:
   add: ["серія", "епізод"]

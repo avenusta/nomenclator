@@ -1,9 +1,8 @@
-# Language pack `ru`: the words a library in this language uses. Applied when a
-# caller declares its languages; see decision X11.
-name: language-ru
+# The built-in words of `ru`. The rules contain them when a library declares `ru` or
+# declares no language (X11).
 season_words:
   add: ["сезон"]
-languages:
+language_spellings:
   add: { ru: ["русский"] }
 episode_words:
   add: ["серия", "эпизод"]

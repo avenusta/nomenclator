@@ -1,6 +1,5 @@
-# Language pack `nl`: the words a library in this language uses. Applied when a
-# caller declares its languages; see decision X11.
-name: language-nl
+# The built-in words of `nl`. The rules contain them when a library declares `nl` or
+# declares no language (X11).
 season_words:
   add: ["seizoen"]
 series_season_words:
@@ -29,7 +28,7 @@ number_words:
     "achttien": 18
     "negentien": 19
     "twintig": 20
-languages:
+language_spellings:
   add: { nl: ["nederlands"] }
 artwork_roles:
   add: { "affiche": poster, "hoes": poster, "achtergrond": backdrop }

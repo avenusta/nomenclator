@@ -449,7 +449,7 @@ fn language_words(
             .any(|word| word.span.0 < span.1 && span.0 < word.span.1);
         if text.len() > 3
             && !covered
-            && let Some(tag) = rules.vocab.languages.get(&text)
+            && let Some(tag) = rules.vocab.language_spellings.get(&text)
         {
             found.push((tag.clone(), span));
         }

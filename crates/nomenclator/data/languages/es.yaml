@@ -1,6 +1,5 @@
-# Language pack `es`: the words a library in this language uses. Applied when a
-# caller declares its languages; see decision X11.
-name: language-es
+# The built-in words of `es`. The rules contain them when a library declares `es` or
+# declares no language (X11).
 season_words:
   add: ["temporada"]
 series_season_words:
@@ -31,7 +30,7 @@ number_words:
     "veinte": 20
 ordinal_suffixes:
   add: ["ª", "º"]
-languages:
+language_spellings:
   add: { es: ["español", "espanol", "castellano"] }
 artwork_roles:
   add: { "cartel": poster, "portada": poster, "caratula": poster, "fondo": backdrop }

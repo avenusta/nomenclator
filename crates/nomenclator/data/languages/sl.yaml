@@ -1,9 +1,8 @@
-# Language pack `sl`: the words a library in this language uses. Applied when a
-# caller declares its languages; see decision X11.
-name: language-sl
+# The built-in words of `sl`. The rules contain them when a library declares `sl` or
+# declares no language (X11).
 season_words:
   add: ["sezona"]
-languages:
+language_spellings:
   add: { sl: ["slovenščina", "slovenscina"] }
 episode_words:
   add: ["epizoda"]

@@ -1,6 +1,5 @@
-# Language pack `it`: the words a library in this language uses. Applied when a
-# caller declares its languages; see decision X11.
-name: language-it
+# The built-in words of `it`. The rules contain them when a library declares `it` or
+# declares no language (X11).
 season_words:
   add: ["stagione"]
 series_season_words:
@@ -31,7 +30,7 @@ number_words:
     "venti": 20
 ordinal_suffixes:
   add: ["ª", "º"]
-languages:
+language_spellings:
   add: { it: ["italiano"] }
 artwork_roles:
   add: { "locandina": poster, "copertina": poster, "sfondo": backdrop }

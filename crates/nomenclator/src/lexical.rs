@@ -579,11 +579,11 @@ pub(crate) fn display_title_among(rules: &Rules, raw: &str, spaced: bool) -> Str
 /// Returns `None` if `word` names no language.
 pub(crate) fn language_tag(rules: &Rules, word: &str) -> Option<String> {
     let lower = vocabulary_form(word);
-    if let Some(tag) = rules.vocab.languages.get(&lower) {
+    if let Some(tag) = rules.vocab.language_spellings.get(&lower) {
         return Some(tag.clone());
     }
     let (base, subtag) = lower.split_once('-')?;
-    let base = rules.vocab.languages.get(base)?;
+    let base = rules.vocab.language_spellings.get(base)?;
     let is_region = (subtag.len() == 2 && subtag.bytes().all(|byte| byte.is_ascii_alphabetic()))
         || (subtag.len() == 3 && subtag.bytes().all(|byte| byte.is_ascii_digit()));
     let is_script = subtag.len() == 4 && subtag.bytes().all(|byte| byte.is_ascii_alphabetic());

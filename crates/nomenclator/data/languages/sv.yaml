@@ -1,9 +1,8 @@
-# Language pack `sv`: the words a library in this language uses. Applied when a
-# caller declares its languages; see decision X11.
-name: language-sv
+# The built-in words of `sv`. The rules contain them when a library declares `sv` or
+# declares no language (X11).
 season_words:
   add: ["säsong"]
-languages:
+language_spellings:
   add: { sv: ["svenska"] }
 episode_words:
   add: ["avsnitt"]

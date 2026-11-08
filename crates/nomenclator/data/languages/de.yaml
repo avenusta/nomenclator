@@ -1,6 +1,5 @@
-# Language pack `de`: the words a library in this language uses. Applied when a
-# caller declares its languages; see decision X11.
-name: language-de
+# The built-in words of `de`. The rules contain them when a library declares `de` or
+# declares no language (X11).
 season_words:
   add: ["staffel"]
 leading_articles:
@@ -29,7 +28,7 @@ number_words:
     "zwanzig": 20
 ordinal_suffixes:
   add: ["."]
-languages:
+language_spellings:
   add: { de: ["deutsch"] }
 artwork_roles:
   add: { "plakat": poster, "cover": poster, "hintergrund": backdrop }

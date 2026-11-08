@@ -160,7 +160,7 @@
   overlays:
     - |
       name: native-language-names
-      languages:
+      language_spellings:
         add: { de: [deutsch], fr: [français] }
   operation: parse_sidecar
   input: { name: Movie.deutsch.srt, video_name: Movie.mkv, kind: subtitle }
@@ -542,7 +542,7 @@
   operation: build_rules
   input:
     overlays:
-      - "name: norway\nlanguages:\n  add: { no: [norsk] }\n"
+      - "name: norway\nlanguage_spellings:\n  add: { no: [norsk] }\n"
   expect:
     diagnostics: []
 

@@ -29,7 +29,7 @@
   operation: build_rules
   input:
     languages: [de]
-    overlays: ["name: no-deutsch\nlanguages:\n  remove: [deutsch]\n"]
+    overlays: ["name: no-deutsch\nlanguage_spellings:\n  remove: [deutsch]\n"]
   expect:
     diagnostics: []
 

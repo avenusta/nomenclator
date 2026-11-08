@@ -1,9 +1,8 @@
-# Language pack `hr`: the words a library in this language uses. Applied when a
-# caller declares its languages; see decision X11.
-name: language-hr
+# The built-in words of `hr`. The rules contain them when a library declares `hr` or
+# declares no language (X11).
 season_words:
   add: ["sezona"]
-languages:
+language_spellings:
   add: { hr: ["hrvatski"] }
 episode_words:
   add: ["epizoda"]

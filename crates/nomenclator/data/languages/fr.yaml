@@ -1,6 +1,5 @@
-# Language pack `fr`: the words a library in this language uses. Applied when a
-# caller declares its languages; see decision X11.
-name: language-fr
+# The built-in words of `fr`. The rules contain them when a library declares `fr` or
+# declares no language (X11).
 season_words:
   add: ["saison"]
 series_season_words:
@@ -27,7 +26,7 @@ number_words:
     "vingt": 20
 ordinal_suffixes:
   add: ["e", "ème", "eme", "er", "re"]
-languages:
+language_spellings:
   add: { fr: ["français", "francais"] }
 artwork_roles:
   add: { "affiche": poster, "jaquette": poster, "fond": backdrop }

@@ -1,9 +1,8 @@
-# Language pack `bs`: the words a library in this language uses. Applied when a
-# caller declares its languages; see decision X11.
-name: language-bs
+# The built-in words of `bs`. The rules contain them when a library declares `bs` or
+# declares no language (X11).
 season_words:
   add: ["sezona"]
-languages:
+language_spellings:
   add: { bs: ["bosanski"] }
 episode_words:
   add: ["epizoda"]

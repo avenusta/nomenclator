@@ -66,7 +66,7 @@ pub(crate) enum Shape {
     /// A map from each entry to its value.
     Map,
     /// A map from each value to its other spellings. The value is also an entry
-    /// (`languages`).
+    /// (`language_spellings`).
     Spellings,
     /// A map from release fact to value to spellings (`release_words`).
     ReleaseSpellings,
@@ -358,7 +358,7 @@ vocabularies! {
         Spec::list(Word).name_words().rival(Rival::Seasons);
     specials_folders: BTreeSet<String> = Spec::list(Word).name_words();
     /// Each spelling, the tag itself included, and the BCP 47 tag that it names.
-    languages: BTreeMap<String, String> =
+    language_spellings: BTreeMap<String, String> =
         Spec::new(Word, Shape::Spellings).name_words().check(language_tag);
     default_flag_words: BTreeSet<String> = Spec::list(Word).name_words().rival(Rival::Flags);
     forced_flag_words: BTreeSet<String> = Spec::list(Word).name_words().rival(Rival::Flags);

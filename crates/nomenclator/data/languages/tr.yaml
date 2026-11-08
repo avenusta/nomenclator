@@ -1,9 +1,8 @@
-# Language pack `tr`: the words a library in this language uses. Applied when a
-# caller declares its languages; see decision X11.
-name: language-tr
+# The built-in words of `tr`. The rules contain them when a library declares `tr` or
+# declares no language (X11).
 season_words:
   add: ["sezon"]
-languages:
+language_spellings:
   add: { tr: ["türkçe", "turkce"] }
 episode_words:
   add: ["bölüm"]

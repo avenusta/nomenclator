@@ -81,7 +81,7 @@ First release. It implements the conventions in `docs/decisions.md`, and the cor
 - The overlay vocabulary `tags` replaces `provider_keys` and gives each key a typed fact (X29). Results have a `tags` map.
 - Overlay vocabularies `episode_words`, `special_prefixes`, `animation_special_words`, `episode_tokens`, `separators` and `bracket_pairs` (X30, X34), and the preset `earliest_plausible_year` (X12).
 - `ArtworkRole::ClearArt`, `ArtworkRole::DiscArt`, `AssetRole::ClearArt`, `AssetRole::DiscArt`, `ExtraKind::Opening` and `ExtraKind::Ending` (X31). The public enums of facts are `#[non_exhaustive]`.
-- A user overlay overrides a language pack, and `replace` sets a vocabulary (X32).
+- A user overlay overrides a word of a language pack like any built-in word, and `replace` sets a vocabulary (X32). The overlay vocabulary `languages` is renamed `language_spellings`.
 - `OutputProfile.templates`, `TemplateSlot` and `Rules::check_profile` (X33).
 
 ### Wire contract

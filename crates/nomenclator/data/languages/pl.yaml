@@ -1,11 +1,10 @@
-# Language pack `pl`: the words a library in this language uses. Applied when a
-# caller declares its languages; see decision X11.
-name: language-pl
+# The built-in words of `pl`. The rules contain them when a library declares `pl` or
+# declares no language (X11).
 season_words:
   add: ["sezon"]
 series_season_words:
   add: ["seria"]
-languages:
+language_spellings:
   add: { pl: ["polski"] }
 episode_words:
   add: ["odcinek"]

@@ -165,7 +165,7 @@ image_extensions:
 
 # Languages: each BCP 47 tag and its other spellings, ISO 639-2 codes and English names
 # (S4). Codes that are common English words (`cat`, `may`, `mac`) are left out on purpose.
-languages:
+language_spellings:
   add:
     ar: [ara, arabic]
     bg: [bul, bulgarian]

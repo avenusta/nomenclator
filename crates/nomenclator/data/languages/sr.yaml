@@ -1,9 +1,8 @@
-# Language pack `sr`: the words a library in this language uses. Applied when a
-# caller declares its languages; see decision X11.
-name: language-sr
+# The built-in words of `sr`. The rules contain them when a library declares `sr` or
+# declares no language (X11).
 season_words:
   add: ["sezona"]
-languages:
+language_spellings:
   add: { sr: ["srpski"] }
 episode_words:
   add: ["epizoda"]
