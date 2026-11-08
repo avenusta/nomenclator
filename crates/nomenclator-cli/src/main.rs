@@ -3,7 +3,7 @@
 //! only names to the library. It never renames anything.
 
 use clap::{Parser, Subcommand, ValueEnum};
-use nomenclator::model::serde_name;
+use nomenclator::model::{AmbiguityReason, serde_name};
 use nomenclator::{
     BlockedRename, CallerInputs, IgnoreDialect, IgnoreFile, ImportPlan, Interpretation, Item,
     LibraryType, MatchFacts, OutputProfile, Overlay, ReferenceMetadata, RenamePlan, Rules,
@@ -781,8 +781,11 @@ fn item_row(item: &Item) -> Vec<String> {
             .cloned()
             .unwrap_or_else(|| "-".to_owned())
     };
-    let ambiguity = |ambiguous: bool, reasons: &[&str]| match ambiguous {
-        true => format!(" [ambiguous: {}]", reasons.join(", ")),
+    let ambiguity = |ambiguous: bool, reasons: &[AmbiguityReason]| match ambiguous {
+        true => {
+            let names: Vec<String> = reasons.iter().map(serde_name).collect();
+            format!(" [ambiguous: {}]", names.join(", "))
+        }
         false => String::new(),
     };
     match item {

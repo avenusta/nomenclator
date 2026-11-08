@@ -1,6 +1,7 @@
 use serde::Serialize;
 
 use crate::lexical;
+use crate::model::AmbiguityReason;
 use crate::model::{EntryKind, Evidence, Finding, Rule, SidecarFlag, SidecarKind, Span};
 use crate::rules::Rules;
 
@@ -185,7 +186,7 @@ fn language_finding(languages: Vec<(String, Span)>) -> Finding<String> {
         (0, _) | (_, None) => Finding::Unknown,
         _ => Finding::Ambiguous {
             candidates,
-            reason: "several_languages",
+            reason: AmbiguityReason::SeveralLanguages,
         },
     }
 }

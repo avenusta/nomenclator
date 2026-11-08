@@ -83,10 +83,48 @@ pub enum Finding<T> {
         /// The competing values.
         candidates: Vec<T>,
         /// Why they compete.
-        reason: &'static str,
+        reason: AmbiguityReason,
     },
     /// No evidence for the fact.
     Unknown,
+}
+
+/// Why a fact or an item is ambiguous (X6).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum AmbiguityReason {
+    /// A release fact is stated with two different values (X19).
+    SeveralValues,
+    /// A name has several readings under a template.
+    SeveralReadings,
+    /// A sidecar name states two different languages (S4).
+    SeveralLanguages,
+    /// Between 10% and 90% of the videos have an episode signal (X21).
+    MixedNames,
+    /// A date reads as day first and as month first (T13).
+    DateOrderUnknown,
+    /// A hint states another value than the names (T20).
+    HintContradictsName,
+    /// A video's title or year contradicts its trusted owning folder (M1).
+    ContradictsOwningFolder,
+    /// A video in a Movies library has an episode name (M15).
+    EpisodeTokenInMovieLibrary,
+    /// A numbering map's season differs from the season folder's season (X17).
+    NumberingContradictsSeason,
+    /// Two sources state different IDs of one provider (M8).
+    ConflictingProviderId,
+    /// One bracket tag key has two values (X29).
+    ConflictingTag,
+    /// Parts have a gap in their numbering (M11).
+    MissingPart,
+    /// Two parts have the same number (M11).
+    DuplicatePart,
+    /// Several items could own an extra (E11).
+    SeveralOwners,
+    /// A name states two different 3D layouts (M12).
+    #[serde(rename = "conflicting_3d_layouts")]
+    Conflicting3dLayouts,
 }
 
 /// The kind of entry that a path names: a file or a folder. A file name ends in its extension.
@@ -226,15 +264,6 @@ pub enum ArtworkRole {
     /// An image whose name gives no role.
     Other,
 }
-
-/// The ambiguity reason of an item with two values of one provider's ID.
-pub(crate) const CONFLICTING_PROVIDER_ID: &str = "conflicting_provider_id";
-/// The ambiguity reason of a bracket tag key with two values (X29).
-pub(crate) const CONFLICTING_TAG: &str = "conflicting_tag";
-/// The ambiguity reason of parts with a gap (M11).
-pub(crate) const MISSING_PART: &str = "missing_part";
-/// The ambiguity reason of parts with a repeated number (M11).
-pub(crate) const DUPLICATE_PART: &str = "duplicate_part";
 
 /// Returns `true` if any finding of `findings` is ambiguous, such as a provider with two
 /// IDs.

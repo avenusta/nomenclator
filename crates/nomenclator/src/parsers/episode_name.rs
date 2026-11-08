@@ -1,3 +1,4 @@
+use crate::model::AmbiguityReason;
 use std::collections::BTreeMap;
 use std::sync::LazyLock;
 
@@ -363,7 +364,7 @@ impl ContextReading<'_> {
             },
             Some(date) => Finding::Ambiguous {
                 candidates: date.candidates.clone(),
-                reason: "date_order_unknown",
+                reason: AmbiguityReason::DateOrderUnknown,
             },
             None => Finding::Unknown,
         };

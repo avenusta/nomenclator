@@ -1,3 +1,4 @@
+use crate::model::AmbiguityReason;
 use std::collections::BTreeMap;
 use std::sync::LazyLock;
 
@@ -415,7 +416,7 @@ fn format_3d(
         },
         _ => Finding::Ambiguous {
             candidates: layouts,
-            reason: "conflicting_3d_layouts",
+            reason: AmbiguityReason::Conflicting3dLayouts,
         },
     }
 }

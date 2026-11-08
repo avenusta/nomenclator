@@ -3,6 +3,7 @@
 //! its versions and parts are ordered (M11, M13), and which videos are misplaced series
 //! content (M15). Extras and sidecars are then attached through `associations`.
 
+use crate::model::AmbiguityReason;
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -29,7 +30,7 @@ struct Unit {
     /// The folder that contains it; `None` at the library root.
     folder: Option<String>,
     parsed: MovieName,
-    part_ambiguity: Option<&'static str>,
+    part_ambiguity: Option<AmbiguityReason>,
 }
 
 impl Unit {
@@ -168,7 +169,7 @@ struct Work<'a> {
     title: Option<(String, String)>,
     year: Option<(u16, String)>,
     is_folder_identity: bool,
-    ambiguity_reasons: Vec<&'static str>,
+    ambiguity_reasons: Vec<AmbiguityReason>,
 }
 
 pub(super) fn interpret(
@@ -562,7 +563,8 @@ fn anchored_work<'a>(rules: &Rules, owner: &'a Owner, units: Vec<&'a Unit>) -> W
         ambiguity_reasons: Vec::new(),
     };
     if is_contradicted {
-        work.ambiguity_reasons.push("contradicts_owning_folder");
+        work.ambiguity_reasons
+            .push(AmbiguityReason::ContradictsOwningFolder);
     }
     work
 }
@@ -714,10 +716,10 @@ fn assemble_movie(rules: &Rules, work: &Work) -> Movie {
         .is_some_and(|owner| !owner.parsed.provider_ids.is_empty());
     let mut ambiguity_reasons = work.ambiguity_reasons.clone();
     if !is_anchored_by_provider && work.units.iter().any(|unit| unit.has_episode_marker(rules)) {
-        ambiguity_reasons.push("episode_token_in_movie_library");
+        ambiguity_reasons.push(AmbiguityReason::EpisodeTokenInMovieLibrary);
     }
     if crate::model::has_ambiguous_value(&provider_ids) {
-        ambiguity_reasons.push(crate::model::CONFLICTING_PROVIDER_ID);
+        ambiguity_reasons.push(AmbiguityReason::ConflictingProviderId);
     }
     ambiguity_reasons.extend(work.units.iter().filter_map(|unit| unit.part_ambiguity));
     ambiguity_reasons.dedup();
@@ -854,7 +856,7 @@ fn apply_hints(rules: &Rules, hints: &Hints, movie: &mut Movie) {
                         provider,
                         Finding::Ambiguous {
                             candidates: named.into_iter().chain([id.clone()]).collect(),
-                            reason: "hint_contradicts_name",
+                            reason: AmbiguityReason::HintContradictsName,
                         },
                     );
                 }
@@ -868,7 +870,9 @@ fn apply_hints(rules: &Rules, hints: &Hints, movie: &mut Movie) {
         .iter()
         .any(|applied| applied.outcome == HintOutcome::Contradicted)
     {
-        movie.ambiguity_reasons.push("hint_contradicts_name");
+        movie
+            .ambiguity_reasons
+            .push(AmbiguityReason::HintContradictsName);
         movie.ambiguous = true;
     }
 }
@@ -936,7 +940,7 @@ fn merged_provider_ids(work: &Work) -> BTreeMap<String, Finding<String>> {
     let unit_ids = work.units.iter().map(|unit| &unit.parsed.provider_ids);
     merge_provider_claims(
         folder_ids.into_iter().chain(unit_ids),
-        crate::model::CONFLICTING_PROVIDER_ID,
+        AmbiguityReason::ConflictingProviderId,
     )
 }
 
@@ -946,7 +950,7 @@ fn merged_tags(work: &Work) -> BTreeMap<String, Finding<String>> {
     let unit_tags = work.units.iter().map(|unit| &unit.parsed.tags);
     merge_provider_claims(
         folder_tags.into_iter().chain(unit_tags),
-        crate::model::CONFLICTING_TAG,
+        AmbiguityReason::ConflictingTag,
     )
 }
 

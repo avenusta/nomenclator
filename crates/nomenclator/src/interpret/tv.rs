@@ -3,6 +3,7 @@
 //! versions of one episode (T15, T17), and where extras and sidecars are attached (E2, E5,
 //! E11, T11, S2-S6) through `associations`.
 
+use crate::model::AmbiguityReason;
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -31,7 +32,7 @@ struct Unit {
     /// Its name: a video stem or a stack name.
     name: String,
     reading: EpisodeReading,
-    part_ambiguity: Option<&'static str>,
+    part_ambiguity: Option<AmbiguityReason>,
     /// The hinted facts compared with the reading (T20).
     hints: Vec<AppliedHint>,
     /// `true` if the caller split it into an episode of its own (X16).
@@ -941,14 +942,14 @@ impl Assembly {
         };
         let provider_ids = merge_provider_claims(
             units.iter().map(|unit| &unit.reading.name.provider_ids),
-            crate::model::CONFLICTING_PROVIDER_ID,
+            AmbiguityReason::ConflictingProviderId,
         );
-        let mut ambiguity_reasons: Vec<&'static str> = Vec::new();
+        let mut ambiguity_reasons: Vec<AmbiguityReason> = Vec::new();
         if let Finding::Ambiguous { reason, .. } = first.reading.name.date {
             ambiguity_reasons.push(reason);
         }
         if crate::model::has_ambiguous_value(&provider_ids) {
-            ambiguity_reasons.push(crate::model::CONFLICTING_PROVIDER_ID);
+            ambiguity_reasons.push(AmbiguityReason::ConflictingProviderId);
         }
         ambiguity_reasons.extend(units.iter().filter_map(|unit| unit.part_ambiguity));
         let hints: Vec<AppliedHint> = units
@@ -959,10 +960,10 @@ impl Assembly {
             .iter()
             .any(|applied| applied.outcome == HintOutcome::Contradicted)
         {
-            ambiguity_reasons.push("hint_contradicts_name");
+            ambiguity_reasons.push(AmbiguityReason::HintContradictsName);
         }
         if units.iter().any(|unit| unit.numbering_contradicts_season) {
-            ambiguity_reasons.push("numbering_contradicts_season");
+            ambiguity_reasons.push(AmbiguityReason::NumberingContradictsSeason);
         }
         ambiguity_reasons.dedup();
 
@@ -1019,7 +1020,7 @@ impl Assembly {
             provider_ids,
             tags: merge_provider_claims(
                 units.iter().map(|unit| &unit.reading.name.tags),
-                crate::model::CONFLICTING_TAG,
+                AmbiguityReason::ConflictingTag,
             ),
             versions,
             extras: Vec::new(),
@@ -1098,7 +1099,7 @@ impl Assembly {
                             provider,
                             Finding::Ambiguous {
                                 candidates: named.into_iter().chain([id.clone()]).collect(),
-                                reason: "hint_contradicts_name",
+                                reason: AmbiguityReason::HintContradictsName,
                             },
                         );
                     }
@@ -1120,7 +1121,9 @@ impl Assembly {
                     episode.series_name = series.title.clone();
                     episode.series_year = series.year;
                     if contradicted {
-                        episode.ambiguity_reasons.push("hint_contradicts_name");
+                        episode
+                            .ambiguity_reasons
+                            .push(AmbiguityReason::HintContradictsName);
                         episode.ambiguous = true;
                     }
                 }

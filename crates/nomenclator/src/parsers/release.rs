@@ -2,6 +2,7 @@
 //! audio, language markers, release group, checksum, revision, streaming service and
 //! container. Every fact is optional and carries the span it was read from.
 
+use crate::model::AmbiguityReason;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::LazyLock;
 
@@ -607,7 +608,7 @@ fn scalar(found: Vec<(String, Span)>) -> Finding<String> {
         },
         _ => Finding::Ambiguous {
             candidates,
-            reason: "several_values",
+            reason: AmbiguityReason::SeveralValues,
         },
     }
 }

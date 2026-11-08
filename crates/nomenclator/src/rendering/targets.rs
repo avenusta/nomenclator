@@ -1,6 +1,7 @@
 //! Computes the path that the profile gives each file of an interpretation. The planner
 //! then checks these paths against each other and against the existing entries (R6).
 
+use crate::model::AmbiguityReason;
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::interpret::{
@@ -783,12 +784,12 @@ fn series_facts(series: Option<&Series>, title: Option<String>, year: Option<u16
 }
 
 /// Returns the block reasons for the interpreter's ambiguity reasons.
-fn ambiguity_block_reasons(reasons: &[&str]) -> Vec<BlockReason> {
+fn ambiguity_block_reasons(reasons: &[AmbiguityReason]) -> Vec<BlockReason> {
     reasons
         .iter()
-        .map(|reason| match *reason {
-            crate::model::CONFLICTING_PROVIDER_ID => BlockReason::AmbiguousProviderId,
-            crate::model::MISSING_PART | crate::model::DUPLICATE_PART => {
+        .map(|reason| match reason {
+            AmbiguityReason::ConflictingProviderId => BlockReason::AmbiguousProviderId,
+            AmbiguityReason::MissingPart | AmbiguityReason::DuplicatePart => {
                 BlockReason::AmbiguousParts
             }
             _ => BlockReason::AmbiguousIdentity,

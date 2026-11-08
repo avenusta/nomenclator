@@ -2,14 +2,15 @@
 //! Validation renames nothing. A profile violation includes the path that the profile
 //! would give the file.
 
+use crate::model::AmbiguityReason;
 use crate::model::serde_name;
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
 use crate::inputs::{
-    EpisodeOrder, InputDiagnostic, InputDiagnosticReason, ReferenceMetadata, SeriesInputs,
-    normalized, series_matches,
+    EpisodeOrder, InputDiagnostic, InputDiagnosticReason, InputKind, ReferenceMetadata,
+    SeriesInputs, normalized, series_matches,
 };
 use crate::interpret::{Artwork, Episode, Extra, Interpretation, Item, Movie, Series, Version};
 use crate::lexical;
@@ -280,7 +281,10 @@ pub enum DiagnosticReason {
     Blocked(BlockReason),
     /// The fact that differs in a folder mismatch (R8).
     Mismatch(MismatchedFact),
-    /// The interpreter's ambiguity reason, or the provider whose IDs conflict.
+    /// The interpreter's ambiguity reason.
+    Ambiguity(AmbiguityReason),
+    /// The provider whose IDs conflict, a reference year or episode, an asset role, or a
+    /// subtitle language.
     Named(String),
 }
 
@@ -384,7 +388,7 @@ fn diagnose_reference(
     diagnostics: &mut Vec<Diagnostic>,
 ) -> Vec<InputDiagnostic> {
     let mut unused = Vec::new();
-    let not_applicable = |input: &'static str, path: &str| InputDiagnostic {
+    let not_applicable = |input: InputKind, path: &str| InputDiagnostic {
         input,
         path: normalized(path),
         reason: InputDiagnosticReason::NotApplicable,
@@ -434,7 +438,7 @@ fn diagnose_reference(
                     .collect();
                 ids.join(", ")
             });
-            unused.push(not_applicable("reference_movie", &path));
+            unused.push(not_applicable(InputKind::ReferenceMovie, &path));
         }
     }
     for series_reference in &reference.series {
@@ -456,7 +460,10 @@ fn diagnose_reference(
             _ => None,
         });
         let Some(series) = series else {
-            unused.push(not_applicable("reference_series", &series_reference.series));
+            unused.push(not_applicable(
+                InputKind::ReferenceSeries,
+                &series_reference.series,
+            ));
             continue;
         };
         let expected: BTreeSet<(u16, u32)> = series_reference.episodes.iter().copied().collect();
@@ -607,6 +614,7 @@ fn render_message(diagnostic: &Diagnostic) -> String {
 fn reason_text(reason: &DiagnosticReason) -> String {
     match reason {
         DiagnosticReason::Named(name) => name.clone(),
+        DiagnosticReason::Ambiguity(reason) => serde_name(reason),
         DiagnosticReason::Blocked(blocked) => serde_name(blocked),
         DiagnosticReason::Mismatch(fact) => serde_name(fact),
     }
@@ -639,13 +647,6 @@ fn finding_value<T>(finding: &Finding<T>) -> Option<&T> {
     }
 }
 
-/// The interpreter reasons that a dedicated rule reports instead of the ambiguity rule.
-const REASONS_WITH_THEIR_OWN_RULE: &[&str] = &[
-    crate::model::CONFLICTING_PROVIDER_ID,
-    crate::model::MISSING_PART,
-    crate::model::DUPLICATE_PART,
-];
-
 fn diagnose_item(rules: &Rules, item: &Item, diagnostics: &mut Vec<Diagnostic>) {
     match item {
         Item::Movie(movie) => {
@@ -658,7 +659,7 @@ fn diagnose_item(rules: &Rules, item: &Item, diagnostics: &mut Vec<Diagnostic>) 
                 ));
             }
             let ambiguity_reasons = movie.ambiguity_reasons.iter().filter(|reason| {
-                !(movie.misplaced_series && **reason == "episode_token_in_movie_library")
+                !(movie.misplaced_series && **reason == AmbiguityReason::EpisodeTokenInMovieLibrary)
             });
             diagnose_ambiguity(ambiguity_reasons, &videos, diagnostics);
             diagnose_provider_conflicts(&movie.provider_ids, &videos, diagnostics);
@@ -682,7 +683,7 @@ fn diagnose_item(rules: &Rules, item: &Item, diagnostics: &mut Vec<Diagnostic>) 
                 diagnostics.push(diagnostic(
                     DiagnosticRule::AmbiguousIdentity,
                     videos.clone(),
-                    named(reason),
+                    Some(DiagnosticReason::Ambiguity(*reason)),
                 ));
             }
             diagnose_provider_conflicts(&episode.provider_ids, &videos, diagnostics);
@@ -704,7 +705,9 @@ fn diagnose_item(rules: &Rules, item: &Item, diagnostics: &mut Vec<Diagnostic>) 
             diagnose_provider_conflicts(&season.provider_ids, &folder, diagnostics);
         }
         Item::Extra(orphan) => {
-            let reason = orphan.ambiguous.then(|| named("several_owners")).flatten();
+            let reason = orphan
+                .ambiguous
+                .then_some(DiagnosticReason::Ambiguity(AmbiguityReason::SeveralOwners));
             diagnostics.push(diagnostic(
                 DiagnosticRule::OrphanExtra,
                 orphan.paths.clone(),
@@ -727,16 +730,26 @@ fn has_provider_id(provider_ids: &BTreeMap<String, Finding<String>>) -> bool {
         .any(|finding| finding_value(finding).is_some())
 }
 
+/// Reports the ambiguity reasons of an item, except the reasons that a rule of their own
+/// reports: conflicting provider IDs and part numbering.
 fn diagnose_ambiguity<'a>(
-    reasons: impl Iterator<Item = &'a &'static str>,
+    reasons: impl Iterator<Item = &'a AmbiguityReason>,
     videos: &[String],
     diagnostics: &mut Vec<Diagnostic>,
 ) {
-    for reason in reasons.filter(|reason| !REASONS_WITH_THEIR_OWN_RULE.contains(reason)) {
+    for reason in reasons {
+        if matches!(
+            reason,
+            AmbiguityReason::ConflictingProviderId
+                | AmbiguityReason::MissingPart
+                | AmbiguityReason::DuplicatePart
+        ) {
+            continue;
+        }
         diagnostics.push(diagnostic(
             DiagnosticRule::AmbiguousIdentity,
             videos.to_vec(),
-            named(reason),
+            Some(DiagnosticReason::Ambiguity(*reason)),
         ));
     }
 }
@@ -765,8 +778,8 @@ fn diagnose_provider_conflicts(
 fn diagnose_versions(versions: &[Version], diagnostics: &mut Vec<Diagnostic>) {
     for version in versions {
         let rule = match version.ambiguity_reason {
-            Some(crate::model::MISSING_PART) => DiagnosticRule::MissingPart,
-            Some(crate::model::DUPLICATE_PART) => DiagnosticRule::DuplicatePart,
+            Some(AmbiguityReason::MissingPart) => DiagnosticRule::MissingPart,
+            Some(AmbiguityReason::DuplicatePart) => DiagnosticRule::DuplicatePart,
             _ => continue,
         };
         diagnostics.push(diagnostic(rule, version.paths.clone(), None));

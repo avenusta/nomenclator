@@ -187,6 +187,65 @@ pub enum MatchComponent {
     Date,
 }
 
+/// The reason for a ranking's outcome, a component's points or a contradiction.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum MatchReason {
+    /// A provider ID of the facts matches one candidate (P6).
+    ProviderId,
+    /// One candidate has the highest score (P6).
+    BestScore,
+    /// Several candidates share the highest score (P6).
+    TiedScores,
+    /// A provider ID of the facts matches several candidates (P6).
+    SeveralProviderIdMatches,
+    /// No candidate was supplied.
+    NoCandidates,
+    /// Every candidate contradicts the facts (P2).
+    AllContradicted,
+    /// The candidate that a provider ID matches contradicts another fact (P2).
+    ProviderIdMatchContradicted,
+    /// No candidate reaches the score that a selection needs (P6).
+    InsufficientEvidence,
+    /// Two candidates share a handle.
+    DuplicateHandle,
+    /// Two queries of a batch share a handle (P9).
+    DuplicateQueryHandle,
+    /// Both sides carry the same ID of a provider.
+    SameId,
+    /// The sides carry different IDs of one provider (P2).
+    DifferentId,
+    /// The candidate is of another kind (P2).
+    DifferentKind,
+    /// The titles are equal in comparison form (P4).
+    ExactTitle,
+    /// The titles are similar in comparison form (P4).
+    SimilarTitle,
+    /// The titles are not similar (P4).
+    DissimilarTitle,
+    /// The facts or the candidate have no title.
+    TitleUnknown,
+    /// The years are equal.
+    SameYear,
+    /// The years differ by at most the tolerance (P5).
+    YearWithinTolerance,
+    /// The years differ by more than the tolerance (P2).
+    YearBeyondTolerance,
+    /// The facts or the candidate have no year.
+    YearUnknown,
+    /// The season and episode are equal.
+    SameEpisode,
+    /// The episode is equal and the facts state no season.
+    SameEpisodeSeasonUnknown,
+    /// The season or episode differs (P2).
+    DifferentEpisode,
+    /// The air dates are equal.
+    SameDate,
+    /// The air dates differ (P2).
+    DifferentDate,
+}
+
 /// The points that one comparison gave a candidate, with the reason.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct ScoreComponent {
@@ -194,8 +253,8 @@ pub struct ScoreComponent {
     pub component: MatchComponent,
     /// The points given. The value can be zero.
     pub points: u32,
-    /// The reason, such as `exact_title` or `similar_title`.
-    pub reason: &'static str,
+    /// The reason for the points.
+    pub reason: MatchReason,
     /// The compared namespace, for a provider ID.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub provider: Option<String>,
@@ -222,8 +281,8 @@ pub struct ScoreComponent {
 pub struct Contradiction {
     /// The contradicted fact.
     pub component: MatchComponent,
-    /// The reason, such as `different_id` or `year_beyond_tolerance` (P2).
-    pub reason: &'static str,
+    /// The reason for the contradiction (P2).
+    pub reason: MatchReason,
     /// The compared namespace, for a provider ID.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub provider: Option<String>,
@@ -250,11 +309,8 @@ pub struct CandidateRanking {
     pub outcome: MatchOutcome,
     /// The selected candidate's handle.
     pub selected: Option<String>,
-    /// The reason for the outcome: `provider_id`, `best_score`, `tied_scores`,
-    /// `several_provider_id_matches`,
-    /// `no_candidates`, `all_contradicted`, `provider_id_match_contradicted`,
-    /// `insufficient_evidence` or `duplicate_handle`.
-    pub reason: &'static str,
+    /// The reason for the outcome.
+    pub reason: MatchReason,
     /// The candidates that an ambiguous result could not choose between.
     pub tied: Vec<String>,
     /// Every candidate. Candidates without contradictions come first, then the order is by
@@ -280,12 +336,17 @@ impl Rules {
             return ranking(
                 rules,
                 MatchOutcome::InvalidInput,
-                "duplicate_handle",
+                MatchReason::DuplicateHandle,
                 Vec::new(),
             );
         }
         if candidates.is_empty() {
-            return ranking(rules, MatchOutcome::NoMatch, "no_candidates", Vec::new());
+            return ranking(
+                rules,
+                MatchOutcome::NoMatch,
+                MatchReason::NoCandidates,
+                Vec::new(),
+            );
         }
         let mut scored: Vec<(ScoredCandidate, bool)> = candidates
             .iter()
@@ -318,19 +379,19 @@ impl Rules {
             match eligible_handles(true).as_slice() {
                 [] => (
                     MatchOutcome::NoMatch,
-                    "provider_id_match_contradicted",
+                    MatchReason::ProviderIdMatchContradicted,
                     None,
                     Vec::new(),
                 ),
                 [(only, _)] => (
                     MatchOutcome::Selected,
-                    "provider_id",
+                    MatchReason::ProviderId,
                     Some(only.clone()),
                     Vec::new(),
                 ),
                 several => (
                     MatchOutcome::Ambiguous,
-                    "several_provider_id_matches",
+                    MatchReason::SeveralProviderIdMatches,
                     None,
                     several.iter().map(|(handle, _)| handle.clone()).collect(),
                 ),
@@ -338,10 +399,15 @@ impl Rules {
         } else {
             let eligible = eligible_handles(false);
             match eligible.first() {
-                None => (MatchOutcome::NoMatch, "all_contradicted", None, Vec::new()),
+                None => (
+                    MatchOutcome::NoMatch,
+                    MatchReason::AllContradicted,
+                    None,
+                    Vec::new(),
+                ),
                 Some((_, best_score)) if *best_score < MINIMUM_SELECTION_SCORE => (
                     MatchOutcome::NoMatch,
-                    "insufficient_evidence",
+                    MatchReason::InsufficientEvidence,
                     None,
                     Vec::new(),
                 ),
@@ -352,11 +418,11 @@ impl Rules {
                         .map(|(handle, _)| handle.clone())
                         .collect();
                     if tied.len() > 1 {
-                        (MatchOutcome::Ambiguous, "tied_scores", None, tied)
+                        (MatchOutcome::Ambiguous, MatchReason::TiedScores, None, tied)
                     } else {
                         (
                             MatchOutcome::Selected,
-                            "best_score",
+                            MatchReason::BestScore,
                             Some(best_handle.clone()),
                             Vec::new(),
                         )
@@ -380,7 +446,7 @@ impl Rules {
 fn ranking(
     rules: &Rules,
     outcome: MatchOutcome,
-    reason: &'static str,
+    reason: MatchReason,
     candidates: Vec<ScoredCandidate>,
 ) -> CandidateRanking {
     CandidateRanking {
@@ -411,13 +477,13 @@ fn score_candidate(
         let is_same_id = candidate_id == fact_id;
         has_same_id |= is_same_id;
         let (points, reason) = if is_same_id {
-            (SAME_PROVIDER_ID_POINTS, "same_id")
+            (SAME_PROVIDER_ID_POINTS, MatchReason::SameId)
         } else {
             contradictions.push(Contradiction {
                 provider: Some(provider.clone()),
-                ..contradiction(MatchComponent::ProviderId, "different_id")
+                ..contradiction(MatchComponent::ProviderId, MatchReason::DifferentId)
             });
-            (0, "different_id")
+            (0, MatchReason::DifferentId)
         };
         components.push(ScoreComponent {
             provider: Some(provider.clone()),
@@ -426,7 +492,10 @@ fn score_candidate(
     }
 
     if facts.kind.is_some_and(|kind| kind != candidate.kind) {
-        contradictions.push(contradiction(MatchComponent::Kind, "different_kind"));
+        contradictions.push(contradiction(
+            MatchComponent::Kind,
+            MatchReason::DifferentKind,
+        ));
     }
 
     components.push(title_component(rules, facts, candidate));
@@ -444,15 +513,22 @@ fn score_candidate(
         let seasons_known = (facts.season.is_some() && candidate_season.is_some())
             || facts.order == Some(EpisodeOrder::Absolute);
         let episode_component = if seasons_differ || !facts.episodes.contains(&candidate_episode) {
-            contradictions.push(contradiction(MatchComponent::Episode, "different_episode"));
-            component(MatchComponent::Episode, 0, "different_episode")
+            contradictions.push(contradiction(
+                MatchComponent::Episode,
+                MatchReason::DifferentEpisode,
+            ));
+            component(MatchComponent::Episode, 0, MatchReason::DifferentEpisode)
         } else if seasons_known {
-            component(MatchComponent::Episode, SAME_EPISODE_POINTS, "same_episode")
+            component(
+                MatchComponent::Episode,
+                SAME_EPISODE_POINTS,
+                MatchReason::SameEpisode,
+            )
         } else {
             component(
                 MatchComponent::Episode,
                 SAME_EPISODE_SEASON_UNKNOWN_POINTS,
-                "same_episode_season_unknown",
+                MatchReason::SameEpisodeSeasonUnknown,
             )
         };
         components.push(ScoreComponent {
@@ -465,10 +541,17 @@ fn score_candidate(
         (candidate.kind, &facts.date, &candidate.date)
     {
         components.push(if fact_date == candidate_date {
-            component(MatchComponent::Date, SAME_DATE_POINTS, "same_date")
+            component(
+                MatchComponent::Date,
+                SAME_DATE_POINTS,
+                MatchReason::SameDate,
+            )
         } else {
-            contradictions.push(contradiction(MatchComponent::Date, "different_date"));
-            component(MatchComponent::Date, 0, "different_date")
+            contradictions.push(contradiction(
+                MatchComponent::Date,
+                MatchReason::DifferentDate,
+            ));
+            component(MatchComponent::Date, 0, MatchReason::DifferentDate)
         });
     }
 
@@ -491,7 +574,7 @@ fn title_component(
 ) -> ScoreComponent {
     let fact_titles: Vec<&String> = facts.title.iter().chain(&facts.alternate_titles).collect();
     if fact_titles.is_empty() {
-        return component(MatchComponent::Title, 0, "title_unknown");
+        return component(MatchComponent::Title, 0, MatchReason::TitleUnknown);
     }
     let candidate_titles = std::iter::once((&candidate.title, None))
         .chain(candidate.original_title.iter().map(|title| (title, None)))
@@ -502,7 +585,7 @@ fn title_component(
                 .iter()
                 .map(|localized| (&localized.title, localized.language.as_ref())),
         );
-    let mut best: Option<(u32, &'static str, &String, Option<&String>)> = None;
+    let mut best: Option<(u32, MatchReason, &String, Option<&String>)> = None;
     for (candidate_title, language) in candidate_titles {
         for fact_title in &fact_titles {
             let (points, reason) = title_agreement(rules, fact_title, candidate_title);
@@ -517,17 +600,17 @@ fn title_component(
             matched_language: language.cloned(),
             ..component(MatchComponent::Title, points, reason)
         },
-        None => component(MatchComponent::Title, 0, "dissimilar_title"),
+        None => component(MatchComponent::Title, 0, MatchReason::DissimilarTitle),
     }
 }
 
 /// Returns the agreement of two titles. Returns exact points if the title keys are equal.
 /// Otherwise returns points from the Dice coefficient of the two word sets (twice the
 /// shared words divided by all words). Returns no points if the coefficient is below 0.5.
-fn title_agreement(rules: &Rules, fact_title: &str, candidate_title: &str) -> (u32, &'static str) {
+fn title_agreement(rules: &Rules, fact_title: &str, candidate_title: &str) -> (u32, MatchReason) {
     let fact_key = lexical::title_comparison_key(rules, fact_title);
     if !fact_key.is_empty() && fact_key == lexical::title_comparison_key(rules, candidate_title) {
-        return (EXACT_TITLE_POINTS, "exact_title");
+        return (EXACT_TITLE_POINTS, MatchReason::ExactTitle);
     }
     let fact_words: BTreeSet<String> = lexical::title_comparison_words(rules, fact_title)
         .into_iter()
@@ -538,11 +621,11 @@ fn title_agreement(rules: &Rules, fact_title: &str, candidate_title: &str) -> (u
     let shared_words = fact_words.intersection(&candidate_words).count() as u32;
     let all_words = (fact_words.len() + candidate_words.len()) as u32;
     if all_words == 0 || 4 * shared_words < all_words {
-        return (0, "dissimilar_title");
+        return (0, MatchReason::DissimilarTitle);
     }
     // Computes round(FULL_WORD_AGREEMENT_POINTS * 2 * shared / all) in integer arithmetic.
     let points = (4 * FULL_WORD_AGREEMENT_POINTS * shared_words + all_words) / (2 * all_words);
-    (points, "similar_title")
+    (points, MatchReason::SimilarTitle)
 }
 
 fn fact_year(facts: &MatchFacts) -> Option<u16> {
@@ -569,24 +652,31 @@ fn year_component(
     let years: Vec<(u16, Option<&ReleaseDate>)> =
         own_year.into_iter().chain(release_years).collect();
     let Some(fact_year) = fact_year(facts) else {
-        return component(MatchComponent::Year, 0, "year_unknown");
+        return component(MatchComponent::Year, 0, MatchReason::YearUnknown);
     };
     let Some(&(year, release)) = years
         .iter()
         .min_by_key(|(year, _)| fact_year.abs_diff(*year))
     else {
-        return component(MatchComponent::Year, 0, "year_unknown");
+        return component(MatchComponent::Year, 0, MatchReason::YearUnknown);
     };
     let year_component = match fact_year.abs_diff(year) {
-        0 => component(MatchComponent::Year, SAME_YEAR_POINTS, "same_year"),
+        0 => component(
+            MatchComponent::Year,
+            SAME_YEAR_POINTS,
+            MatchReason::SameYear,
+        ),
         difference if difference <= YEAR_TOLERANCE => component(
             MatchComponent::Year,
             YEAR_WITHIN_TOLERANCE_POINTS,
-            "year_within_tolerance",
+            MatchReason::YearWithinTolerance,
         ),
         _ => {
-            contradictions.push(contradiction(MatchComponent::Year, "year_beyond_tolerance"));
-            component(MatchComponent::Year, 0, "year_beyond_tolerance")
+            contradictions.push(contradiction(
+                MatchComponent::Year,
+                MatchReason::YearBeyondTolerance,
+            ));
+            component(MatchComponent::Year, 0, MatchReason::YearBeyondTolerance)
         }
     };
     ScoreComponent {
@@ -620,7 +710,7 @@ fn date_year(date: &str) -> Option<u16> {
     date.get(..4)?.parse().ok()
 }
 
-fn component(kind: MatchComponent, points: u32, reason: &'static str) -> ScoreComponent {
+fn component(kind: MatchComponent, points: u32, reason: MatchReason) -> ScoreComponent {
     ScoreComponent {
         component: kind,
         points,
@@ -634,7 +724,7 @@ fn component(kind: MatchComponent, points: u32, reason: &'static str) -> ScoreCo
     }
 }
 
-fn contradiction(kind: MatchComponent, reason: &'static str) -> Contradiction {
+fn contradiction(kind: MatchComponent, reason: MatchReason) -> Contradiction {
     Contradiction {
         component: kind,
         reason,

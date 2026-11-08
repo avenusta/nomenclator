@@ -42,6 +42,7 @@ First release. It implements the conventions in `docs/decisions.md`, and the cor
 
 ### Library API
 
+- Reasons are enums: `model::AmbiguityReason` for `Finding::Ambiguous` and the ambiguity reasons of movies, episodes, versions and stacks, `MatchReason` for rankings, and `InputKind` for input diagnostics. Their written names are unchanged.
 - `OverlayDiagnostic` and `ProfileDiagnostic` implement `Display`. `model::serde_name` returns the written name of a fact value. The core has no `clap` feature.
 
 - Every operation is a method on `Rules`, and `Rules::builtin()` returns the built-in rules. Parsers: `parse_movie_name`, `parse_series_name`, `parse_season_folder`, `parse_episode_name`, `parse_provider_ids`, `parse_sidecar`, `classify_extra`, `classify_artwork`, `classify_nfo`. Whole libraries: `evaluate_ignore`, `group_parts`, `interpret`, `rank_candidates`, `render_names`, `plan_renames`, `validate`.

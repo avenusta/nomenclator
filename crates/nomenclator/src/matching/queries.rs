@@ -11,7 +11,9 @@ use crate::lexical;
 use crate::model::resolved_values;
 use crate::rules::{Rules, RulesIdentity};
 
-use super::{CandidateRanking, EntityKind, MatchCandidate, MatchFacts, MatchOutcome, ranking};
+use super::{
+    CandidateRanking, EntityKind, MatchCandidate, MatchFacts, MatchOutcome, MatchReason, ranking,
+};
 
 /// The separators that end a main title: the text before the last of them is the main
 /// title of `Main: Subtitle` or `Main - Subtitle`.
@@ -189,7 +191,7 @@ impl Rules {
                     ranking(
                         self,
                         MatchOutcome::InvalidInput,
-                        "duplicate_query_handle",
+                        MatchReason::DuplicateQueryHandle,
                         Vec::new(),
                     )
                 } else {

@@ -5,6 +5,7 @@
 //! of zeros, and `[...]` an optional section that is left out if any field in it has no
 //! value. `{{`, `}}`, `[[` and `]]` are the literal characters. A `/` separates folders.
 
+use crate::model::AmbiguityReason;
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Serialize;
@@ -213,7 +214,7 @@ impl Template {
             },
             _ => Finding::Ambiguous {
                 candidates: readings,
-                reason: "several_readings",
+                reason: AmbiguityReason::SeveralReadings,
             },
         }
     }

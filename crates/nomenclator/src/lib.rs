@@ -156,7 +156,7 @@ pub use ignore::{
 };
 pub use inputs::{
     AbsoluteRange, AppliedHint, CallerInputs, EpisodeOrder, ExtraOverride, Hint, HintOutcome,
-    InputDiagnostic, InputDiagnosticReason, MappedNumbering, NumberingMap, Overrides,
+    InputDiagnostic, InputDiagnosticReason, InputKind, MappedNumbering, NumberingMap, Overrides,
     ReferenceMetadata, ReferenceMovie, ReferenceSeries, SceneMapping, SeriesInputs,
 };
 pub use interpret::parts::{Stack, Stacks};
@@ -166,9 +166,9 @@ pub use interpret::{
 };
 pub use matching::{
     BatchRanking, CandidateRanking, Contradiction, EntityKind, EpisodeCoordinates, HandledRanking,
-    LocalizedTitle, MatchCandidate, MatchComponent, MatchFacts, MatchOutcome, QueryReason,
-    RankQuery, ReleaseDate, ScoreComponent, ScoredCandidate, SearchQueries, SearchQuery,
-    match_facts,
+    LocalizedTitle, MatchCandidate, MatchComponent, MatchFacts, MatchOutcome, MatchReason,
+    QueryReason, RankQuery, ReleaseDate, ScoreComponent, ScoredCandidate, SearchQueries,
+    SearchQuery, match_facts,
 };
 pub use operations::OperationError;
 pub use parsers::artwork::ArtworkClassification;

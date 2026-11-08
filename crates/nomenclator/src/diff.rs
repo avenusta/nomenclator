@@ -119,7 +119,7 @@ fn facts_by_path(interpretation: &Interpretation) -> BTreeMap<String, Facts> {
                 set(&mut identity, "title", movie.title.as_ref());
                 set(&mut identity, "year", movie.year);
                 if movie.ambiguous {
-                    identity.insert("ambiguous", movie.ambiguity_reasons.join(", "));
+                    identity.insert("ambiguous", reasons(&movie.ambiguity_reasons));
                 }
                 versions(&mut add, &movie.versions, "movie_video", &identity);
                 let owner = movie.title.clone();
@@ -166,7 +166,7 @@ fn facts_by_path(interpretation: &Interpretation) -> BTreeMap<String, Facts> {
                     episode.episode_title.as_ref(),
                 );
                 if episode.ambiguous {
-                    identity.insert("ambiguous", episode.ambiguity_reasons.join(", "));
+                    identity.insert("ambiguous", reasons(&episode.ambiguity_reasons));
                 }
                 versions(&mut add, &episode.versions, "episode_video", &identity);
                 let owner = episode.series_name.clone();
@@ -292,4 +292,10 @@ fn finding<T: Display>(finding: &Finding<T>) -> Option<String> {
 fn numbers(numbers: &[u32]) -> String {
     let numbers: Vec<String> = numbers.iter().map(u32::to_string).collect();
     numbers.join(", ")
+}
+
+/// Returns the names of `reasons`, joined by commas.
+fn reasons(reasons: &[crate::model::AmbiguityReason]) -> String {
+    let names: Vec<String> = reasons.iter().map(serde_name).collect();
+    names.join(", ")
 }

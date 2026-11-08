@@ -1,6 +1,7 @@
 //! Suggests whether a folder's names look like a Movies or a TV library (4.4, X21). The
 //! suggestion is evidence for the caller. No other operation reads it.
 
+use crate::model::AmbiguityReason;
 use serde::Serialize;
 
 use crate::interpret::parent_folder;
@@ -56,7 +57,7 @@ impl Rules {
         } else {
             Finding::Ambiguous {
                 candidates: vec![LibraryType::Movies, LibraryType::Tv],
-                reason: "mixed_names",
+                reason: AmbiguityReason::MixedNames,
             }
         };
         LibraryTypeSuggestion {

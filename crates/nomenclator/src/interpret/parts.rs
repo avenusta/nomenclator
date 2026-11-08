@@ -1,5 +1,6 @@
 //! Groups ordered parts: sibling files or folders that together make one representation.
 
+use crate::model::AmbiguityReason;
 use std::collections::BTreeMap;
 
 use serde::Serialize;
@@ -18,7 +19,7 @@ pub struct Stack {
     /// `true` if the parts are not contiguous from 1 or `a`.
     pub ambiguous: bool,
     /// `missing_part` or `duplicate_part` if the stack is ambiguous.
-    pub ambiguity_reason: Option<&'static str>,
+    pub ambiguity_reason: Option<AmbiguityReason>,
 }
 
 /// The stacks among the supplied paths.
@@ -110,7 +111,7 @@ fn part_marker(rules: &Rules, stem: &str) -> Option<(String, PartIndex)> {
 /// Checks that parts are numbered 1, 2, 3, … without gaps or repeats. Returns
 /// `duplicate_part` if a number repeats. Returns `missing_part` if a number is missing.
 /// Returns `None` otherwise.
-fn numbering_problem(sorted_parts: &[(PartIndex, String)]) -> Option<&'static str> {
+fn numbering_problem(sorted_parts: &[(PartIndex, String)]) -> Option<AmbiguityReason> {
     let positions: Vec<u32> = sorted_parts
         .iter()
         .map(|(index, _)| match index {
@@ -118,11 +119,11 @@ fn numbering_problem(sorted_parts: &[(PartIndex, String)]) -> Option<&'static st
         })
         .collect();
     if positions.windows(2).any(|pair| pair[0] == pair[1]) {
-        return Some(crate::model::DUPLICATE_PART);
+        return Some(AmbiguityReason::DuplicatePart);
     }
     let is_contiguous_from_one = positions
         .iter()
         .enumerate()
         .all(|(offset, &position)| position as usize == offset + 1);
-    (!is_contiguous_from_one).then_some(crate::model::MISSING_PART)
+    (!is_contiguous_from_one).then_some(AmbiguityReason::MissingPart)
 }

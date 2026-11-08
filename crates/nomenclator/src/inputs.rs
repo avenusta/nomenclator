@@ -237,14 +237,36 @@ impl HintOutcome {
 /// An input that no item could take.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 pub struct InputDiagnostic {
-    /// The kind of input: `hint`, `merge`, `split`, `extra_override` or `series`.
-    pub input: &'static str,
+    /// The kind of input.
+    pub input: InputKind,
     /// The input's path.
     pub path: String,
     /// The reason it was not taken.
     pub reason: InputDiagnosticReason,
     /// The fact that no item took, for `not_applicable`.
     pub fact: Option<String>,
+}
+
+/// A kind of caller input. The variants are in the order of their names, the order of
+/// input diagnostics.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum InputKind {
+    /// An `extras` override (X16).
+    ExtraOverride,
+    /// A hint (T20).
+    Hint,
+    /// A `merge` override (X16).
+    Merge,
+    /// A movie of the reference metadata (X18).
+    ReferenceMovie,
+    /// A series of the reference metadata (X18).
+    ReferenceSeries,
+    /// Series inputs (X17).
+    Series,
+    /// A `split` override (X16).
+    Split,
 }
 
 /// The reason an input was not taken.
@@ -357,7 +379,7 @@ pub(crate) fn hint_diagnostics(
     for hint in hints {
         let path = normalized(&hint.path);
         let diagnostic = |reason, fact: Option<String>| InputDiagnostic {
-            input: "hint",
+            input: InputKind::Hint,
             path: path.clone(),
             reason,
             fact,
@@ -436,7 +458,7 @@ pub(crate) fn override_diagnostics(
         );
     }
     let mut diagnostics = BTreeSet::new();
-    let mut check = |input: &'static str, path: &str, taken: bool| {
+    let mut check = |input: InputKind, path: &str, taken: bool| {
         let path = normalized(path);
         let reason = if !listed.contains(&path) {
             InputDiagnosticReason::UnknownPath
@@ -454,20 +476,20 @@ pub(crate) fn override_diagnostics(
     };
     for group in &overrides.merge {
         for path in group {
-            check("merge", path, videos.contains(path.as_str()));
+            check(InputKind::Merge, path, videos.contains(path.as_str()));
         }
     }
     for path in &overrides.split {
-        check("split", path, videos.contains(path.as_str()));
+        check(InputKind::Split, path, videos.contains(path.as_str()));
     }
     for extra in &overrides.extras {
         check(
-            "extra_override",
+            InputKind::ExtraOverride,
             &extra.path,
             extras.contains(extra.path.as_str()),
         );
         if let Some(owner) = &extra.owner {
-            check("extra_override", owner, true);
+            check(InputKind::ExtraOverride, owner, true);
         }
     }
     diagnostics.into_iter().collect()
@@ -497,7 +519,7 @@ pub(crate) fn series_diagnostics(
         .map(|input| {
             let path = normalized(&input.series);
             InputDiagnostic {
-                input: "series",
+                input: InputKind::Series,
                 reason: if listed.contains(&path) {
                     InputDiagnosticReason::NotApplicable
                 } else {

@@ -14,6 +14,7 @@ mod scopes;
 pub use scopes::ScopeGroup;
 mod tv;
 
+use crate::model::AmbiguityReason;
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Serialize;
@@ -126,7 +127,7 @@ pub struct Movie {
     /// `true` if the evidence does not resolve the movie. `ambiguity_reasons` lists the reasons.
     pub ambiguous: bool,
     /// Why the movie is ambiguous, as stable `snake_case` codes.
-    pub ambiguity_reasons: Vec<&'static str>,
+    pub ambiguity_reasons: Vec<AmbiguityReason>,
 }
 
 /// A series: the work its seasons and episodes belong to.
@@ -232,7 +233,7 @@ pub struct Episode {
     /// reasons.
     pub ambiguous: bool,
     /// Why the episode is ambiguous, as stable `snake_case` codes.
-    pub ambiguity_reasons: Vec<&'static str>,
+    pub ambiguity_reasons: Vec<AmbiguityReason>,
 }
 
 /// One representation: a file, a disc, or ordered parts.
@@ -244,7 +245,7 @@ pub struct Version {
     /// version or the version's name contains nothing beyond the movie's name.
     pub label: Option<String>,
     /// `missing_part` or `duplicate_part` if the parts are not numbered 1, 2, … in sequence.
-    pub ambiguity_reason: Option<&'static str>,
+    pub ambiguity_reason: Option<AmbiguityReason>,
     /// The raw `{edition-X}` tag of the version's name, or of its folder's name if the version's
     /// name has none (M9).
     pub edition: Option<String>,
@@ -766,7 +767,7 @@ pub(crate) fn resolution_of(label: &str) -> u32 {
 /// different values (M8).
 pub(crate) fn merge_provider_claims<'a>(
     claim_sets: impl Iterator<Item = &'a BTreeMap<String, Finding<String>>>,
-    reason: &'static str,
+    reason: AmbiguityReason,
 ) -> BTreeMap<String, Finding<String>> {
     let mut claims: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for ids in claim_sets {

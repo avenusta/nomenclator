@@ -2,6 +2,7 @@
 //! and release words. The module only recognizes this syntax. The movie and TV pipelines
 //! decide what it means.
 
+use crate::model::AmbiguityReason;
 use std::collections::BTreeMap;
 use std::sync::LazyLock;
 
@@ -483,7 +484,7 @@ pub(crate) fn provider_ids(
             } else {
                 Finding::Ambiguous {
                     candidates: values,
-                    reason: crate::model::CONFLICTING_PROVIDER_ID,
+                    reason: AmbiguityReason::ConflictingProviderId,
                 }
             };
             (provider, finding)
@@ -519,7 +520,7 @@ pub(crate) fn custom_tags(rules: &Rules, text: &str) -> BTreeMap<String, Finding
             } else {
                 Finding::Ambiguous {
                     candidates: values,
-                    reason: crate::model::CONFLICTING_TAG,
+                    reason: AmbiguityReason::ConflictingTag,
                 }
             };
             (key, finding)
