@@ -220,7 +220,7 @@
       system_junk_names:
         add: ["@SynoResource"]
   operation: evaluate_ignore
-  input: { path: Movies/@SynoResource, kind: file, library: movies }
+  input: { path: Movies/@SynoResource, kind: file }
   expect:
     excluded: true
     exclusion: { path: Movies/@SynoResource, reason: system_junk }

@@ -35,11 +35,11 @@ Paths are root-relative strings separated by `/` (`Show/Season 01/Show S01E02.mk
 
 ## Operations
 
-Each meaning has one field name across all operations. If a case needs a field that is not listed, add the field here first.
+Each meaning has one field name across all operations. If a case needs a field that is not listed, add the field here first. `Rules::run` runs the operations by name. An input field that an operation does not read fails the case, and a test checks that this table lists exactly the operations of `Rules::run`.
 
 | Operation | Input | Expect |
 |---|---|---|
-| `parse_movie_name` | `name`, `kind` (`file`/`directory`), `library`, `parent_name` | `title`, `year`, `tags`, `edition`, `edition_hint`, `format_3d`, `container`, `trusted`, `alternate_titles` (`[{ title, span }]`, M16) |
+| `parse_movie_name` | `name`, `kind` (`file`/`directory`) | `title`, `year`, `tags`, `edition`, `edition_hint`, `format_3d`, `container`, `trusted`, `alternate_titles` (`[{ title, span }]`, M16) |
 | `parse_series_name` | `name` or `path` | `title`, `year`, `season`, `provider_ids` |
 | `parse_season_folder` | `name`, `parent_name`, `parent_is_series_folder` | `season`, `is_bare_season_folder`, `provider_ids` |
 | `parse_episode_name` | `path`, `kind`, `season_folder_number` | `series_name`, `series_year`, `series_path`, `season`, `episodes`, `first_episode`, `last_episode`, `absolute`, `date`, `episode_title`, `alternate_identity` (`{ title, year }`), `provider_ids`, `ambiguous`, `is_episode`, `presentation_kind` (`episode`/`multi_episode`/`absolute`/`dated`/`special`), `special` (`{ kind (ova/oad/ona/recap), number }`), `release_version`, `is_final` (X20) |
@@ -63,6 +63,11 @@ Each meaning has one field name across all operations. If a case needs a field t
 | `check_profile` | `profile` | `invalid` (`true` if the profile is not valid), `diagnostics` (`[{ reason, slot, fact, message }]`, X33) |
 | `build_rules` | `overlays` (overlay documents, YAML or JSON strings), `languages` (optional) | `identity` (`{ version, languages, overlays: [{ name, version, digest }] }`, `null` when no rules are built), `diagnostics` (`[{ reason, overlay, line, vocabulary, entry, overlays, message }]`) |
 | `rank_candidates` | `facts` (`{ kind, title, alternate_titles, year, date, provider_ids, season, episodes }`), `candidates` (`[{ handle, kind, title, alternate_titles, year, date, provider_ids, season, episode }]`) | `outcome`, `selected`, `reason`, `tied`, `candidates` (`[{ handle, score, components, contradictions }]`) |
+| `rank_batch` | `queries` (`[{ handle, facts, candidates }]`, as for `rank_candidates`) | `results` (`[{ handle, ranking }]`, sorted by handle) (P9) |
+| `search_queries` | `facts` (as for `rank_candidates`) | `queries` (`[{ reason, kind, title, year, provider, id }]`, in the order a caller sends them, P7) |
+| `match_facts` | `library`, `paths`, `ignore_files`, `inputs` (the paths are interpreted) | `facts` (the `rank_candidates` facts of each item) |
+| `convert_layout` | `library`, `paths`, `ignore_files`, `inputs`, `from_profile`, `to_profile` (the paths are read under `from_profile`, then planned under `to_profile`, R18) | as for `plan_renames` |
+| `plan_import` | `library`, `paths` (the download folder), `ignore_files`, `inputs`, `library_paths` (the library's paths), `profile` (R17) | `proposals`, `left_in_place` (`[{ path, reason }]`), `blocked` |
 | `is_video_file`, `is_audio_file`, `is_image_file`, `is_subtitle_file`, `is_release_junk` (X22) | `path`, `sibling_paths` | `result`, `unsupported_video`, `unsupported_video_reason` |
 
 ### Field meanings

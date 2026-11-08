@@ -142,6 +142,7 @@ mod inputs;
 mod interpret;
 mod lexical;
 mod matching;
+mod operations;
 mod rendering;
 mod rules;
 mod suggestion;
@@ -169,6 +170,7 @@ pub use matching::{
     RankQuery, ReleaseDate, ScoreComponent, ScoredCandidate, SearchQueries, SearchQuery,
     match_facts,
 };
+pub use operations::OperationError;
 pub use parsers::artwork::ArtworkClassification;
 pub use parsers::episode_name::{
     AlternateIdentity, EpisodeName, PresentationKind, Special, SpecialKind,
