@@ -4,55 +4,55 @@
 
 - name: without declared languages a localized poster word is a poster
   operation: classify_artwork
-  input: { name: Locandina.png }
+  input: { path: Locandina.png }
   expect:
     role: poster
 
 - name: an English library does not read an Italian poster word
   languages: [en]
   operation: classify_artwork
-  input: { name: Locandina.png }
+  input: { path: Locandina.png }
   expect:
     role: other
 
 - name: an Italian library reads an Italian poster word
   languages: [it]
   operation: classify_artwork
-  input: { name: Locandina.png }
+  input: { path: Locandina.png }
   expect:
     role: poster
 
 - name: a French library reads French poster and backdrop words
   languages: [fr]
   operation: classify_artwork
-  input: { name: affiche.jpg }
+  input: { path: affiche.jpg }
   expect:
     role: poster
 
 - name: a French backdrop word is a backdrop
   languages: [fr]
   operation: classify_artwork
-  input: { name: fond.jpg }
+  input: { path: fond.jpg }
   expect:
     role: backdrop
 
 - name: a German library reads German poster and backdrop words
   languages: [de]
   operation: classify_artwork
-  input: { name: Hintergrund.jpg }
+  input: { path: Hintergrund.jpg }
   expect:
     role: backdrop
 
 - name: a Spanish library reads a Spanish cover word
   languages: [es]
   operation: classify_artwork
-  input: { name: portada.jpg }
+  input: { path: portada.jpg }
   expect:
     role: poster
 
 - name: the English artwork words stay whatever the declared languages
   languages: [it]
   operation: classify_artwork
-  input: { name: fanart.jpg }
+  input: { path: fanart.jpg }
   expect:
     role: backdrop

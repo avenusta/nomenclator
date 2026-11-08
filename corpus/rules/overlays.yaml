@@ -209,7 +209,7 @@
       artwork_roles:
         add: { keyart: poster }
   operation: classify_artwork
-  input: { name: keyart.jpg }
+  input: { path: keyart.jpg }
   expect:
     role: poster
 

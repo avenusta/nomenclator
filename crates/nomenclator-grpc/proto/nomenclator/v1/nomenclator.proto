@@ -378,6 +378,8 @@ message ExtraQuery {
   // The other in-scope entries. The library judges ownership only from these entries
   // and the path.
   repeated string context_paths = 4;
+  // The rule files of the library. Only the context entries that they keep are read.
+  repeated IgnoreFile ignore_files = 5;
 }
 
 message ArtworkQuery {

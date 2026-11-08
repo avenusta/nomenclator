@@ -11,9 +11,9 @@ use serde_json::Value;
 use crate::model::{EntryKind, SidecarKind};
 use crate::rendering::Template;
 use crate::{
-    CallerInputs, IgnoreFile, LibraryType, MatchCandidate, MatchFacts, NamingFacts, OutputProfile,
-    OverlayDiagnostic, ProfileDiagnostic, RankQuery, ReferenceMetadata, Rules, RulesIdentity,
-    TemplateError, TemplateFacts, diff_rules, match_facts,
+    CallerInputs, IgnoreFile, Interpretation, LibraryType, MatchCandidate, MatchFacts, NamingFacts,
+    OutputProfile, OverlayDiagnostic, ProfileDiagnostic, RankQuery, ReferenceMetadata, Rules,
+    RulesIdentity, ScopeGroup, TemplateError, TemplateFacts, diff_rules, match_facts,
 };
 
 /// The reason an operation returns no result.
@@ -59,11 +59,7 @@ const OPERATIONS: &[(&str, Handler)] = &[
     }),
     ("parse_series_name", |rules, input| {
         let input: SeriesNameInput = read(input)?;
-        let name_or_path = input
-            .name
-            .or(input.path)
-            .ok_or_else(|| OperationError::InvalidInput("needs `name` or `path`".to_owned()))?;
-        Ok(json(rules.parse_series_name(&name_or_path)))
+        Ok(json(rules.parse_series_name(&input.name_or_path)))
     }),
     ("parse_season_folder", |rules, input| {
         let input: SeasonFolderInput = read(input)?;
@@ -127,13 +123,10 @@ const OPERATIONS: &[(&str, Handler)] = &[
     }),
     ("classify_artwork", |rules, input| {
         let input: ArtworkInput = read(input)?;
-        let path = input
-            .path
-            .or(input.name)
-            .ok_or_else(|| OperationError::InvalidInput("needs `name` or `path`".to_owned()))?;
-        Ok(json(
-            rules.classify_artwork(&path, input.video_path.as_deref()),
-        ))
+        Ok(json(rules.classify_artwork(
+            &input.path,
+            input.video_path.as_deref(),
+        )))
     }),
     ("classify_nfo", |rules, input| {
         let input: NfoInput = read(input)?;
@@ -216,7 +209,7 @@ const OPERATIONS: &[(&str, Handler)] = &[
         ))
     }),
     ("plan_renames", |rules, input| {
-        let tree: ProfiledTree = read(input)?;
+        let tree: Tree = read(input)?;
         let interpretation = tree.interpret(rules);
         Ok(json(rules.plan_renames(
             &interpretation,
@@ -246,7 +239,11 @@ const OPERATIONS: &[(&str, Handler)] = &[
             &input.ignore_files,
             &input.inputs,
         );
-        let library = rules.interpret(input.library, &input.library_paths, &[]);
+        let library = rules.interpret(
+            input.library,
+            &input.library_paths,
+            &input.library_ignore_files,
+        );
         Ok(json(rules.plan_import(
             &download,
             &library,
@@ -255,7 +252,7 @@ const OPERATIONS: &[(&str, Handler)] = &[
         )))
     }),
     ("validate", |rules, input| {
-        let tree: ProfiledTree = read(input)?;
+        let tree: Tree = read(input)?;
         let interpretation = tree.interpret(rules);
         Ok(json(rules.validate_with(
             &interpretation,
@@ -264,7 +261,7 @@ const OPERATIONS: &[(&str, Handler)] = &[
         )))
     }),
     ("end_to_end", |rules, input| {
-        let tree: ProfiledTree = read(input)?;
+        let tree: Tree = read(input)?;
         let interpretation = tree.interpret(rules);
         let plan = rules.plan_renames(&interpretation, &tree.paths, &tree.profile);
         let validation = rules.validate_with(&interpretation, &tree.profile, &tree.reference);
@@ -361,8 +358,7 @@ struct NameAndKind {
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct SeriesNameInput {
-    name: Option<String>,
-    path: Option<String>,
+    name_or_path: String,
 }
 
 #[derive(serde::Deserialize)]
@@ -418,8 +414,7 @@ struct ExtraInput {
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct ArtworkInput {
-    name: Option<String>,
-    path: Option<String>,
+    path: String,
     video_path: Option<String>,
 }
 
@@ -448,29 +443,11 @@ struct IgnoreInput {
     ignore_files: Vec<IgnoreFile>,
 }
 
-/// A library listing with its ignore files and caller inputs.
+/// A library listing with its ignore files and caller inputs, and the profile, reference
+/// metadata and scope group of the operations that read them.
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Tree {
-    library: LibraryType,
-    #[serde(default)]
-    paths: Vec<String>,
-    #[serde(default)]
-    ignore_files: Vec<IgnoreFile>,
-    #[serde(default)]
-    inputs: CallerInputs,
-}
-
-impl Tree {
-    fn interpret(&self, rules: &Rules) -> crate::Interpretation {
-        rules.interpret_with(self.library, &self.paths, &self.ignore_files, &self.inputs)
-    }
-}
-
-/// A library listing that is planned or validated under a profile.
-#[derive(serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-struct ProfiledTree {
     library: LibraryType,
     #[serde(default)]
     paths: Vec<String>,
@@ -482,11 +459,45 @@ struct ProfiledTree {
     profile: OutputProfile,
     #[serde(default)]
     reference: ReferenceMetadata,
+    /// The scope group to interpret (X23). Unset for the whole listing.
+    scope_group: Option<ScopeGroupInput>,
 }
 
-impl ProfiledTree {
-    fn interpret(&self, rules: &Rules) -> crate::Interpretation {
-        rules.interpret_with(self.library, &self.paths, &self.ignore_files, &self.inputs)
+impl Tree {
+    /// Interprets the listing, or only its scope group if the input names one.
+    fn interpret(&self, rules: &Rules) -> Interpretation {
+        match &self.scope_group {
+            Some(group) => rules.interpret_scopes(
+                self.library,
+                &group.scopes(),
+                &self.paths,
+                &self.ignore_files,
+                &self.inputs,
+            ),
+            None => {
+                rules.interpret_with(self.library, &self.paths, &self.ignore_files, &self.inputs)
+            }
+        }
+    }
+}
+
+/// A scope group: the files at the library root, the folders at the root, or both.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ScopeGroupInput {
+    #[serde(default)]
+    root: bool,
+    #[serde(default)]
+    folders: Vec<String>,
+}
+
+impl ScopeGroupInput {
+    fn scopes(&self) -> ScopeGroup {
+        let mut scopes: ScopeGroup = self.folders.iter().cloned().map(Some).collect();
+        if self.root {
+            scopes.insert(None);
+        }
+        scopes
     }
 }
 
@@ -551,6 +562,8 @@ struct ImportInput {
     #[serde(default)]
     inputs: CallerInputs,
     library_paths: Vec<String>,
+    #[serde(default)]
+    library_ignore_files: Vec<IgnoreFile>,
     #[serde(default)]
     profile: OutputProfile,
 }

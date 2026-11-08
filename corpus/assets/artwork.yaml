@@ -1,70 +1,70 @@
 - name: a poster.jpg file is poster artwork
   operation: classify_artwork
   input:
-    name: poster.jpg
+    path: poster.jpg
   expect:
     role: poster
 
 - name: a backdrop.jpg file is backdrop artwork
   operation: classify_artwork
   input:
-    name: backdrop.jpg
+    path: backdrop.jpg
   expect:
     role: backdrop
 
 - name: a fanart.jpg file is backdrop artwork
   operation: classify_artwork
   input:
-    name: fanart.jpg
+    path: fanart.jpg
   expect:
     role: backdrop
 
 - name: a banner.jpg file is banner artwork
   operation: classify_artwork
   input:
-    name: banner.jpg
+    path: banner.jpg
   expect:
     role: banner
 
 - name: a logo.jpg file is logo artwork
   operation: classify_artwork
   input:
-    name: logo.jpg
+    path: logo.jpg
   expect:
     role: logo
 
 - name: a clearlogo.jpg file is logo artwork
   operation: classify_artwork
   input:
-    name: clearlogo.jpg
+    path: clearlogo.jpg
   expect:
     role: logo
 
 - name: a thumb.jpg file is thumb artwork
   operation: classify_artwork
   input:
-    name: thumb.jpg
+    path: thumb.jpg
   expect:
     role: thumb
 
 - name: a landscape.jpg file is thumb artwork
   operation: classify_artwork
   input:
-    name: landscape.jpg
+    path: landscape.jpg
   expect:
     role: thumb
 
 - name: an image without an artwork keyword is artwork of role other
   operation: classify_artwork
   input:
-    name: screen1.png
+    path: screen1.png
   expect:
     role: other
 
 - name: a file with an artwork word in its name and no image extension is not artwork
   operation: classify_artwork
   input:
-    name: poster.nfo
+    path: poster.nfo
   expect:
     role: null
 

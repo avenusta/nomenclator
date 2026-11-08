@@ -2,19 +2,19 @@
 
 - name: clear art is an artwork role
   operation: classify_artwork
-  input: { name: clearart.png }
+  input: { path: clearart.png }
   expect:
     role: clear_art
 
 - name: disc art is an artwork role, also from the word disc
   operation: classify_artwork
-  input: { name: disc.png }
+  input: { path: disc.png }
   expect:
     role: disc_art
 
 - name: a named work's clear art follows its stem
   operation: classify_artwork
-  input: { name: Heat (1995)-discart.png }
+  input: { path: Heat (1995)-discart.png }
   expect:
     role: disc_art
 

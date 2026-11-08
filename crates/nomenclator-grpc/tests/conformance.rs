@@ -11,6 +11,7 @@ use nomenclator_grpc::proto::{
     RankCandidatesRequest, RenderNamesRequest, SearchQueriesRequest, SuggestLibraryTypeRequest,
     ValidateRequest,
 };
+use nomenclator_grpc::service::{Rpc, wire_call};
 use nomenclator_grpc::wire::{json_to_message, message_to_json};
 use nomenclator_grpc::{RULES_VERSION, WIRE_CONTRACT, serve_tcp};
 #[path = "../../nomenclator/tests/support/cases.rs"]
@@ -68,20 +69,13 @@ async fn corpus_cases_match_expected_facts_over_the_wire() {
     let mut failures = Vec::new();
     let mut replayed = 0;
     for file in collect_yaml_files(&corpus_directory()) {
-        // Skips `build_rules` and `diff_rules`, because the service has no such calls. A
-        // request's rules are built with the request, and a diff is two calls that the
-        // caller compares. Skips templates and `match_facts`, which are library helpers.
+        // Skips the operations that the contract has no call for. A request's rules are
+        // built with the request, a diff is two calls that the caller compares, and
+        // templates and match facts are library helpers.
         let replayable = |case: &CorpusCase| {
             !case.pending
-                && ![
-                    "build_rules",
-                    "check_profile",
-                    "diff_rules",
-                    "render_template",
-                    "read_template",
-                    "match_facts",
-                ]
-                .contains(&case.operation.as_str())
+                && (wire_call(&case.operation).is_some()
+                    || ["end_to_end", "rank_batch"].contains(&case.operation.as_str()))
         };
         for case in load_cases(&file).into_iter().filter(replayable) {
             replayed += 1;
@@ -167,33 +161,6 @@ async fn interpret_response_contains_overlays_of_its_rules() {
     assert_eq!(overlays.len(), 1);
     assert_eq!(overlays[0].name, "keeps-end");
     assert_eq!(overlays[0].version.as_deref(), Some("3"));
-}
-
-#[tokio::test]
-async fn interpret_reads_only_the_scope_group() {
-    let mut client = start_server().await;
-    let request: InterpretRequest = json_to_message(&json!({
-        "queries": [{
-            "handle": "one",
-            "library": "movies",
-            "paths": ["Arrival (2016)/Arrival (2016).mkv", "Heat (1995)/Heat (1995).mkv", "Loose (2001).mkv"],
-            "scope_group": { "folders": ["Heat (1995)"] },
-        }]
-    }))
-    .expect("a valid interpret request");
-    let response = client
-        .interpret(request)
-        .await
-        .expect("Interpret answers")
-        .into_inner();
-    let response = message_to_json(&response).expect("a valid response");
-    let titles: Vec<&Json> = response["results"][0]["items"]
-        .as_array()
-        .expect("a list of items")
-        .iter()
-        .map(|item| &item["title"])
-        .collect();
-    assert_eq!(titles, [&json!("Heat")]);
 }
 
 #[tokio::test]
@@ -307,174 +274,28 @@ async fn start_server() -> Client {
 
 /// Sends the case's input as the operation's wire query and returns the one result in
 /// the library's shape.
-async fn replay_case(client: &Replay, case: &CorpusCase) -> Result<Value, String> {
-    let input = serde_json::to_value(&case.input).map_err(|error| error.to_string())?;
-    let field = |name: &str| input.get(name).cloned().unwrap_or(Json::Null);
-    let either = |first: &str, second: &str| match field(first) {
-        Json::Null => field(second),
-        value => value,
-    };
-    let result = match case.operation.as_str() {
-        "parse_movie_name" => {
-            let query = json!({ "name": field("name"), "kind": field("kind") });
-            parse_name(client, "movie_name", query).await?
-        }
-        "parse_series_name" => {
-            let query = json!({ "name_or_path": either("name", "path") });
-            parse_name(client, "series_name", query).await?
-        }
-        "parse_season_folder" => {
-            let query = json!({
-                "name": field("name"),
-                "parent_name": field("parent_name"),
-                "parent_is_series_folder": field("parent_is_series_folder"),
-            });
-            parse_name(client, "season_folder", query).await?
-        }
-        "parse_episode_name" => {
-            let kind = match field("kind") {
-                Json::Null => json!("file"),
-                kind => kind,
-            };
-            let query = json!({
-                "path": field("path"),
-                "kind": kind,
-                "season_folder_number": field("season_folder_number"),
-            });
-            parse_name(client, "episode_name", query).await?
-        }
-        "suggest_library_type" => {
-            let request =
-                json!({ "queries": [query_with_handle(json!({ "paths": field("paths") }))] });
-            only_result(rpc!(
-                client,
-                suggest_library_type,
-                SuggestLibraryTypeRequest,
-                request
-            )?)?
-        }
-        "parse_release" => {
-            let query = json!({ "name": field("name"), "kind": field("kind") });
-            parse_name(client, "release", query).await?
-        }
-        "parse_provider_ids" => {
-            parse_name(client, "provider_ids", json!({ "text": field("text") })).await?
-        }
-        "parse_sidecar" => {
-            let query = json!({
-                "name": field("name"),
-                "video_name": field("video_name"),
-                "kind": field("kind"),
-            });
-            parse_name(client, "sidecar", query).await?
-        }
-        "classify_extra" => {
-            // Keeps only the entries that the ignore rules keep, as a caller would.
-            let context_paths =
-                paths_kept_by_ignore_rules(client, field("context_paths"), field("ignore_files"))
-                    .await?;
-            let query = json!({
-                "path": field("path"),
-                "kind": field("kind"),
-                "library": field("library"),
-                "context_paths": context_paths,
-            });
-            parse_name(client, "extra", query).await?
-        }
-        "classify_artwork" => {
-            let query =
-                json!({ "path": either("path", "name"), "video_path": field("video_path") });
-            parse_name(client, "artwork", query).await?
-        }
-        "classify_nfo" => {
-            let query = json!({ "path": field("path"), "video_paths": field("video_paths") });
-            parse_name(client, "nfo", query).await?
-        }
-        "is_video_file" => {
-            parse_name(client, "video_file", json!({ "path": field("path") })).await?
-        }
-        "is_release_junk" => {
-            parse_name(client, "release_junk", json!({ "path": field("path") })).await?
-        }
-        "is_audio_file" => {
-            parse_name(client, "audio_file", json!({ "path": field("path") })).await?
-        }
-        "is_image_file" => {
-            parse_name(client, "image_file", json!({ "path": field("path") })).await?
-        }
-        "is_subtitle_file" => {
-            let query = json!({ "path": field("path"), "sibling_paths": field("sibling_paths") });
-            parse_name(client, "subtitle_file", query).await?
-        }
-        "group_parts" => {
-            let request =
-                json!({ "queries": [query_with_handle(json!({ "paths": field("paths") }))] });
-            only_result(rpc!(client, group_parts, GroupPartsRequest, request)?)?
-        }
-        "evaluate_ignore" => {
-            let query = json!({ "path": field("path"), "kind": field("kind") });
-            let request = json!({ "ignore_files": field("ignore_files"), "queries": [query_with_handle(query)] });
-            only_result(rpc!(
-                client,
-                evaluate_ignore,
-                EvaluateIgnoreRequest,
-                request
-            )?)?
-        }
-        "interpret" => {
-            let request = json!({ "queries": [library_tree(&input)] });
-            only_result(rpc!(client, interpret, InterpretRequest, request)?)?
-        }
-        "plan_renames" => {
-            let request = json!({ "profile": field("profile"), "queries": [library_tree(&input)] });
-            only_result(rpc!(client, plan_renames, PlanRenamesRequest, request)?)?
-        }
-        "convert_layout" => {
-            let request = json!({
-                "from_profile": field("from_profile"),
-                "to_profile": field("to_profile"),
-                "queries": [library_tree(&input)],
-            });
-            only_result(rpc!(
-                client,
-                plan_conversion,
-                PlanConversionRequest,
-                request
-            )?)?
-        }
-        "plan_import" => {
-            let mut query = library_tree(&input);
-            query["library_paths"] = field("library_paths");
-            if let Json::Object(fields) = &mut query {
-                fields.remove("reference");
-            }
-            let request = json!({ "profile": field("profile"), "queries": [query] });
-            only_result(rpc!(client, plan_import, PlanImportRequest, request)?)?
-        }
-        "validate" => {
-            let request = json!({ "profile": field("profile"), "queries": [library_tree(&input)] });
-            only_result(rpc!(client, validate, ValidateRequest, request)?)?
-        }
+async fn replay_case(replay: &Replay, case: &CorpusCase) -> Result<Value, String> {
+    let input = case.input.clone();
+    match case.operation.as_str() {
         "end_to_end" => {
-            let tree = json!({ "queries": [library_tree(&input)] });
-            let profiled =
-                json!({ "profile": field("profile"), "queries": [library_tree(&input)] });
-            json!({
-                "interpretation": only_result(rpc!(client, interpret, InterpretRequest, tree)?)?,
-                "plan": only_result(rpc!(client, plan_renames, PlanRenamesRequest, profiled.clone())?)?,
-                "validation": only_result(rpc!(client, validate, ValidateRequest, profiled)?)?,
-            })
-        }
-        "render_names" => {
-            let query = query_with_handle(json!({ "facts": field("facts") }));
-            let request = json!({ "profile": field("profile"), "queries": [query] });
-            only_result(rpc!(client, render_names, RenderNamesRequest, request)?)?
+            let without = |fields: &[&str]| {
+                let mut input = input.clone();
+                if let Json::Object(object) = &mut input {
+                    object.retain(|key, _| !fields.contains(&key.as_str()));
+                }
+                input
+            };
+            Ok(json!({
+                "interpretation": replay_operation(replay, "interpret", without(&["profile", "reference"])).await?,
+                "plan": replay_operation(replay, "plan_renames", without(&["reference"])).await?,
+                "validation": replay_operation(replay, "validate", input).await?,
+            }))
         }
         "rank_batch" => {
             // Each query keeps its own handle, and each result keeps the ranking fields
             // beside its handle.
-            let request = json!({ "queries": field("queries") });
-            let response = rpc!(client, rank_candidates, RankCandidatesRequest, request)?;
+            let request = json!({ "queries": input["queries"] });
+            let response = send(replay, Rpc::RankCandidates, request).await?;
             let results: Vec<Json> = response["results"]
                 .as_array()
                 .cloned()
@@ -487,80 +308,64 @@ async fn replay_case(client: &Replay, case: &CorpusCase) -> Result<Value, String
                     json!({ "handle": handle, "ranking": result })
                 })
                 .collect();
-            json!({ "results": results })
+            Ok(json!({ "results": results }))
         }
-        "search_queries" => {
-            let query = json!({ "facts": field("facts") });
-            let request = json!({ "queries": [query_with_handle(query)] });
-            only_result(rpc!(client, search_queries, SearchQueriesRequest, request)?)?
-        }
-        "rank_candidates" => {
-            let query = json!({ "facts": field("facts"), "candidates": field("candidates") });
-            let request = json!({ "queries": [query_with_handle(query)] });
-            only_result(rpc!(
-                client,
-                rank_candidates,
-                RankCandidatesRequest,
-                request
-            )?)?
-        }
-        unknown_operation => return Err(format!("unknown operation `{unknown_operation}`")),
+        operation => replay_operation(replay, operation, input).await,
+    }
+}
+
+/// Sends `input` as one query of the call that carries `operation`: the call's request
+/// fields go into the request, and the other fields into the query.
+async fn replay_operation(replay: &Replay, operation: &str, input: Json) -> Result<Json, String> {
+    let call = wire_call(operation).ok_or_else(|| format!("no call carries `{operation}`"))?;
+    let Json::Object(mut query) = input else {
+        return Err("the input is not a mapping".to_owned());
     };
-    serde_json::to_value(result).map_err(|error| error.to_string())
-}
-
-/// Sends one `ParseNames` query that selects `operation`, and returns the result under
-/// the same name.
-async fn parse_name(client: &Replay, operation: &str, query: Json) -> Result<Json, String> {
-    let request = json!({ "queries": [query_with_handle(json!({ operation: query }))] });
-    let mut result = only_result(rpc!(client, parse_names, ParseNamesRequest, request)?)?;
-    result
-        .get_mut(operation)
-        .map(Json::take)
-        .ok_or_else(|| format!("no `{operation}` result in {result}"))
-}
-
-async fn paths_kept_by_ignore_rules(
-    client: &Replay,
-    paths: Json,
-    ignore_files: Json,
-) -> Result<Vec<Json>, String> {
-    let paths = paths.as_array().cloned().unwrap_or_default();
-    if paths.is_empty() {
-        return Ok(paths);
+    let mut request = serde_json::Map::new();
+    for field in call.request_fields {
+        if let Some(value) = query.remove(*field) {
+            request.insert((*field).to_owned(), value);
+        }
     }
-    let queries: Vec<Json> = paths
-        .iter()
-        .enumerate()
-        .map(|(index, path)| json!({ "handle": index.to_string(), "path": path, "kind": "file" }))
-        .collect();
-    let request = json!({ "ignore_files": ignore_files, "queries": queries });
-    let response = rpc!(client, evaluate_ignore, EvaluateIgnoreRequest, request)?;
-    let results = response["results"].as_array().cloned().unwrap_or_default();
-    if results.len() != paths.len() {
-        return Err(format!(
-            "{} paths, {} ignore results",
-            paths.len(),
-            results.len()
-        ));
+    let query = match call.parse_field {
+        Some(field) => json!({ field: query }),
+        None => Json::Object(query),
+    };
+    request.insert("queries".to_owned(), json!([query_with_handle(query)]));
+    let mut result = only_result(send(replay, call.rpc, Json::Object(request)).await?)?;
+    match call.parse_field {
+        Some(field) => result
+            .get_mut(field)
+            .map(Json::take)
+            .ok_or_else(|| format!("no `{field}` result in {result}")),
+        None => Ok(result),
     }
-    Ok(paths
-        .into_iter()
-        .zip(results)
-        .filter(|(_, result)| result["excluded"] == json!(false))
-        .map(|(path, _)| path)
-        .collect())
 }
 
-fn library_tree(input: &Json) -> Json {
-    let field = |name: &str| input.get(name).cloned().unwrap_or(Json::Null);
-    query_with_handle(json!({
-        "library": field("library"),
-        "paths": field("paths"),
-        "inputs": field("inputs"),
-        "reference": field("reference"),
-        "ignore_files": field("ignore_files"),
-    }))
+/// Sends `request` to `rpc` with the rules of the case, and returns the response's JSON
+/// shape.
+async fn send(replay: &Replay, rpc: Rpc, request: Json) -> Result<Json, String> {
+    match rpc {
+        Rpc::ParseNames => rpc!(replay, parse_names, ParseNamesRequest, request),
+        Rpc::GroupParts => rpc!(replay, group_parts, GroupPartsRequest, request),
+        Rpc::EvaluateIgnore => rpc!(replay, evaluate_ignore, EvaluateIgnoreRequest, request),
+        Rpc::Interpret => rpc!(replay, interpret, InterpretRequest, request),
+        Rpc::RankCandidates => rpc!(replay, rank_candidates, RankCandidatesRequest, request),
+        Rpc::SearchQueries => rpc!(replay, search_queries, SearchQueriesRequest, request),
+        Rpc::RenderNames => rpc!(replay, render_names, RenderNamesRequest, request),
+        Rpc::PlanRenames => rpc!(replay, plan_renames, PlanRenamesRequest, request),
+        Rpc::PlanImport => rpc!(replay, plan_import, PlanImportRequest, request),
+        Rpc::PlanConversion => rpc!(replay, plan_conversion, PlanConversionRequest, request),
+        Rpc::Validate => rpc!(replay, validate, ValidateRequest, request),
+        Rpc::SuggestLibraryType => {
+            rpc!(
+                replay,
+                suggest_library_type,
+                SuggestLibraryTypeRequest,
+                request
+            )
+        }
+    }
 }
 
 fn query_with_handle(mut query: Json) -> Json {

@@ -1,0 +1,35 @@
+# Scope groups (decision X23): `scope_group` interprets only the folders it names at the
+# library root, the files at the root (`root: true`), or both. A scoped result has no
+# input diagnostics.
+
+- name: a scope group of one movie folder interprets only that folder
+  operation: interpret
+  input:
+    library: movies
+    paths: ["Arrival (2016)/Arrival (2016).mkv", "Heat (1995)/Heat (1995).mkv", "Loose (2001).mkv"]
+    scope_group: { folders: ["Heat (1995)"] }
+  expect:
+    items:
+      - { kind: movie, title: Heat, year: 1995 }
+
+- name: a scope group of the library root interprets only the files at the root
+  operation: interpret
+  input:
+    library: movies
+    paths: ["Arrival (2016)/Arrival (2016).mkv", "Loose (2001).mkv"]
+    scope_group: { root: true }
+  expect:
+    items:
+      - { kind: movie, title: Loose, year: 2001 }
+
+- name: a scope group of one series folder interprets only that series
+  operation: interpret
+  input:
+    library: tv
+    paths: ["Quiet Hours/Season 01/Quiet Hours - S01E01.mkv", "Harbor Lights/Season 02/Harbor Lights - S02E03.mkv"]
+    scope_group: { folders: ["Harbor Lights"] }
+  expect:
+    items:
+      - { kind: series, title: Harbor Lights }
+      - { kind: season, season: 2 }
+      - { kind: episode, season: 2, episodes: [3] }

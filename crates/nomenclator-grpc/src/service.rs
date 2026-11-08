@@ -1,6 +1,7 @@
-//! Implements the gRPC service. Each call reads its queries through the wire layer,
-//! calls the library once per query, and returns the results with the caller's handles,
-//! in request order. `RankCandidates` returns its results sorted by handle (P9).
+//! Implements the gRPC service. Each call reads its queries through the wire layer, runs
+//! the library operation of the call once per query with [`Rules::run`], and returns the
+//! results with the caller's handles, in request order. `RankCandidates` returns its
+//! results sorted by handle (P9).
 
 use crate::proto::nomenclator_server::Nomenclator;
 use crate::proto::{
@@ -13,280 +14,119 @@ use crate::proto::{
     SuggestLibraryTypeResponse, ValidateRequest, ValidateResponse,
 };
 use crate::{RULES_VERSION, WIRE_CONTRACT, wire};
-use nomenclator::model::{EntryKind, SidecarKind};
-use nomenclator::{
-    CallerInputs, IgnoreFile, LibraryType, MatchFacts, NamingFacts, OutputProfile, RankQuery,
-    ReferenceMetadata, Rules, ScopeGroup,
-};
+use nomenclator::{OutputProfile, Rules};
+use serde_json::{Map, Value as Json};
 use std::borrow::Cow;
-use tonic::Streaming;
-
-use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
-use serde_json::Value as Json;
-use tonic::{Request, Response, Status};
+use tonic::{Request, Response, Status, Streaming};
 
 /// The naming service. It keeps no state, because every call contains all the context
 /// that it needs.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct NamingService;
 
-#[derive(Deserialize)]
-struct ParseNameQuery {
-    handle: String,
-    #[serde(flatten)]
-    query: NameQuery,
+/// A call of the contract that answers queries.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Rpc {
+    /// `ParseNames`.
+    ParseNames,
+    /// `GroupParts`.
+    GroupParts,
+    /// `EvaluateIgnore`.
+    EvaluateIgnore,
+    /// `Interpret` and `InterpretStream`.
+    Interpret,
+    /// `RankCandidates`.
+    RankCandidates,
+    /// `SearchQueries`.
+    SearchQueries,
+    /// `RenderNames`.
+    RenderNames,
+    /// `PlanRenames`.
+    PlanRenames,
+    /// `PlanImport`.
+    PlanImport,
+    /// `PlanConversion`.
+    PlanConversion,
+    /// `Validate`.
+    Validate,
+    /// `SuggestLibraryType`.
+    SuggestLibraryType,
 }
 
-/// A query about one name. The variant names are the fields of the contract's `query`
-/// oneof.
-#[derive(Deserialize)]
-#[serde(rename_all = "snake_case")]
-enum NameQuery {
-    MovieName {
-        name: String,
-        kind: EntryKind,
-    },
-    SeriesName {
-        name_or_path: String,
-    },
-    SeasonFolder {
-        name: String,
-        parent_name: Option<String>,
-        parent_is_series_folder: bool,
-    },
-    EpisodeName {
-        path: String,
-        kind: EntryKind,
-        season_folder_number: Option<u16>,
-    },
-    ProviderIds {
-        text: String,
-    },
-    Sidecar {
-        name: String,
-        video_name: String,
-        kind: SidecarKind,
-    },
-    Extra {
-        path: String,
-        kind: EntryKind,
-        library: Option<LibraryType>,
-        context_paths: Vec<String>,
-    },
-    Artwork {
-        path: String,
-        video_path: Option<String>,
-    },
-    Nfo {
-        path: String,
-        video_paths: Vec<String>,
-    },
-    VideoFile {
-        path: String,
-    },
-    AudioFile {
-        path: String,
-    },
-    ImageFile {
-        path: String,
-    },
-    SubtitleFile {
-        path: String,
-        sibling_paths: Vec<String>,
-    },
-    Release {
-        name: String,
-        kind: EntryKind,
-    },
-    ReleaseJunk {
-        path: String,
-    },
+/// How one library operation is called over the wire.
+#[derive(Debug, Clone, Copy)]
+pub struct WireCall {
+    /// The library operation that [`Rules::run`] runs for each query.
+    pub operation: &'static str,
+    /// The call that carries the operation.
+    pub rpc: Rpc,
+    /// The field of a `ParseNames` query and result that selects the operation.
+    pub parse_field: Option<&'static str>,
+    /// The input fields that a request states once for all its queries.
+    pub request_fields: &'static [&'static str],
 }
 
-impl NameQuery {
-    /// Answers the query. Returns the name of the field in the contract's `result` oneof
-    /// and the result for that field.
-    fn answer(self, rules: &Rules) -> Result<(&'static str, Json), Status> {
-        Ok(match self {
-            NameQuery::MovieName { name, kind } => {
-                ("movie_name", to_json(rules.parse_movie_name(&name, kind))?)
-            }
-            NameQuery::SeriesName { name_or_path } => (
-                "series_name",
-                to_json(rules.parse_series_name(&name_or_path))?,
-            ),
-            NameQuery::SeasonFolder {
-                name,
-                parent_name,
-                parent_is_series_folder,
-            } => (
-                "season_folder",
-                to_json(rules.parse_season_folder(
-                    &name,
-                    parent_name.as_deref(),
-                    parent_is_series_folder,
-                ))?,
-            ),
-            NameQuery::EpisodeName {
-                path,
-                kind,
-                season_folder_number,
-            } => (
-                "episode_name",
-                to_json(rules.parse_episode_name(&path, kind, season_folder_number))?,
-            ),
-            NameQuery::ProviderIds { text } => {
-                ("provider_ids", to_json(rules.parse_provider_ids(&text))?)
-            }
-            NameQuery::Sidecar {
-                name,
-                video_name,
-                kind,
-            } => (
-                "sidecar",
-                to_json(rules.parse_sidecar(&name, &video_name, kind))?,
-            ),
-            NameQuery::Extra {
-                path,
-                kind,
-                library,
-                context_paths,
-            } => (
-                "extra",
-                to_json(rules.classify_extra(&path, kind, library, &context_paths))?,
-            ),
-            NameQuery::Artwork { path, video_path } => (
-                "artwork",
-                to_json(rules.classify_artwork(&path, video_path.as_deref()))?,
-            ),
-            NameQuery::Nfo { path, video_paths } => {
-                ("nfo", to_json(rules.classify_nfo(&path, &video_paths))?)
-            }
-            NameQuery::VideoFile { path } => ("video_file", to_json(rules.is_video_file(&path))?),
-            NameQuery::AudioFile { path } => ("audio_file", to_json(rules.is_audio_file(&path))?),
-            NameQuery::ImageFile { path } => ("image_file", to_json(rules.is_image_file(&path))?),
-            NameQuery::SubtitleFile {
-                path,
-                sibling_paths,
-            } => (
-                "subtitle_file",
-                to_json(rules.is_subtitle_file(&path, &sibling_paths))?,
-            ),
-            NameQuery::ReleaseJunk { path } => {
-                ("release_junk", to_json(rules.is_release_junk(&path))?)
-            }
-            NameQuery::Release { name, kind } => {
-                ("release", to_json(rules.parse_release(&name, kind))?)
-            }
-        })
+const fn parse(operation: &'static str, field: &'static str) -> WireCall {
+    WireCall {
+        operation,
+        rpc: Rpc::ParseNames,
+        parse_field: Some(field),
+        request_fields: &[],
     }
 }
 
-#[derive(Deserialize)]
-struct GroupPartsQuery {
-    handle: String,
-    paths: Vec<String>,
-}
-
-#[derive(Deserialize)]
-struct SuggestLibraryTypeQuery {
-    handle: String,
-    paths: Vec<String>,
-}
-
-#[derive(Deserialize)]
-struct EvaluateIgnoreQuery {
-    handle: String,
-    path: String,
-    kind: EntryKind,
-}
-
-#[derive(Deserialize)]
-struct LibraryTreeQuery {
-    handle: String,
-    library: LibraryType,
-    paths: Vec<String>,
-    ignore_files: Vec<IgnoreFile>,
-    #[serde(default)]
-    inputs: CallerInputs,
-    #[serde(default)]
-    reference: ReferenceMetadata,
-    #[serde(default)]
-    scope_group: Option<WireScopeGroup>,
-}
-
-/// Interprets a tree, or only its scope group if the query names one (X23).
-fn interpret_tree(
-    rules: &Rules,
-    library: LibraryType,
-    scope_group: Option<&WireScopeGroup>,
-    paths: &[String],
-    ignore_files: &[IgnoreFile],
-    inputs: &CallerInputs,
-) -> nomenclator::Interpretation {
-    match scope_group {
-        Some(group) => {
-            rules.interpret_scopes(library, &group.scopes(), paths, ignore_files, inputs)
-        }
-        None => rules.interpret_with(library, paths, ignore_files, inputs),
+const fn call(
+    operation: &'static str,
+    rpc: Rpc,
+    request_fields: &'static [&'static str],
+) -> WireCall {
+    WireCall {
+        operation,
+        rpc,
+        parse_field: None,
+        request_fields,
     }
 }
 
-/// The header of an `InterpretStream` call.
-#[derive(Deserialize)]
-struct StreamHeader {
-    handle: String,
-    library: LibraryType,
-    #[serde(default)]
-    ignore_files: Vec<IgnoreFile>,
-    #[serde(default)]
-    inputs: CallerInputs,
-    #[serde(default)]
-    scope_group: Option<WireScopeGroup>,
-}
+/// Every library operation that the contract carries.
+pub const WIRE_CALLS: &[WireCall] = &[
+    parse("parse_movie_name", "movie_name"),
+    parse("parse_series_name", "series_name"),
+    parse("parse_season_folder", "season_folder"),
+    parse("parse_episode_name", "episode_name"),
+    parse("parse_provider_ids", "provider_ids"),
+    parse("parse_sidecar", "sidecar"),
+    parse("classify_extra", "extra"),
+    parse("classify_artwork", "artwork"),
+    parse("classify_nfo", "nfo"),
+    parse("is_video_file", "video_file"),
+    parse("is_audio_file", "audio_file"),
+    parse("is_image_file", "image_file"),
+    parse("is_subtitle_file", "subtitle_file"),
+    parse("parse_release", "release"),
+    parse("is_release_junk", "release_junk"),
+    call("group_parts", Rpc::GroupParts, &[]),
+    call("evaluate_ignore", Rpc::EvaluateIgnore, &["ignore_files"]),
+    call("interpret", Rpc::Interpret, &[]),
+    call("rank_candidates", Rpc::RankCandidates, &[]),
+    call("search_queries", Rpc::SearchQueries, &[]),
+    call("render_names", Rpc::RenderNames, &["profile"]),
+    call("plan_renames", Rpc::PlanRenames, &["profile"]),
+    call("plan_import", Rpc::PlanImport, &["profile"]),
+    call(
+        "convert_layout",
+        Rpc::PlanConversion,
+        &["from_profile", "to_profile"],
+    ),
+    call("validate", Rpc::Validate, &["profile"]),
+    call("suggest_library_type", Rpc::SuggestLibraryType, &[]),
+];
 
-/// The wire form of a scope group (X23).
-#[derive(Deserialize)]
-struct WireScopeGroup {
-    #[serde(default)]
-    root: bool,
-    #[serde(default)]
-    folders: Vec<String>,
-}
-
-impl WireScopeGroup {
-    fn scopes(&self) -> ScopeGroup {
-        let mut scopes: ScopeGroup = self.folders.iter().cloned().map(Some).collect();
-        if self.root {
-            scopes.insert(None);
-        }
-        scopes
-    }
-}
-
-#[derive(Deserialize)]
-struct ImportQuery {
-    handle: String,
-    library: LibraryType,
-    paths: Vec<String>,
-    ignore_files: Vec<IgnoreFile>,
-    #[serde(default)]
-    inputs: CallerInputs,
-    library_paths: Vec<String>,
-    library_ignore_files: Vec<IgnoreFile>,
-}
-
-#[derive(Deserialize)]
-struct RenderNamesQuery {
-    handle: String,
-    facts: NamingFacts,
-}
-
-#[derive(Deserialize)]
-struct SearchQueriesQuery {
-    handle: String,
-    facts: MatchFacts,
+/// Returns how the library operation `operation` is called over the wire.
+/// Returns `None` if the contract has no call for the operation.
+#[must_use]
+pub fn wire_call(operation: &str) -> Option<&'static WireCall> {
+    WIRE_CALLS.iter().find(|call| call.operation == operation)
 }
 
 #[tonic::async_trait]
@@ -295,10 +135,13 @@ impl Nomenclator for NamingService {
         &self,
         _request: Request<GetVersionRequest>,
     ) -> Result<Response<GetVersionResponse>, Status> {
+        let identity = without_nulls(to_json(Rules::builtin().identity()));
         Ok(Response::new(GetVersionResponse {
             wire_contract: WIRE_CONTRACT.to_owned(),
             rules_version: RULES_VERSION.to_owned(),
-            rules: Some(rules_identity(Rules::builtin())),
+            rules: Some(
+                wire::json_to_message(&identity).expect("an identity fits the wire contract"),
+            ),
             implementation_version: env!("CARGO_PKG_VERSION").to_owned(),
         }))
     }
@@ -307,71 +150,28 @@ impl Nomenclator for NamingService {
         &self,
         request: Request<ParseNamesRequest>,
     ) -> Result<Response<ParseNamesResponse>, Status> {
-        let request = read_request(request.get_ref())?;
-        let rules = request_rules(&request)?;
-        let rules = rules.as_ref();
-        let mut results = Vec::new();
-        for ParseNameQuery { handle, query } in read_queries(&request)? {
-            let (operation, result) = query.answer(rules)?;
-            results.push(serde_json::json!({ "handle": handle, operation: result }));
-        }
-        respond(rules, results)
+        answer(request.get_ref(), Rpc::ParseNames)
     }
 
     async fn group_parts(
         &self,
         request: Request<GroupPartsRequest>,
     ) -> Result<Response<GroupPartsResponse>, Status> {
-        let request = read_request(request.get_ref())?;
-        let rules = request_rules(&request)?;
-        let rules = rules.as_ref();
-        let results = read_queries(&request)?
-            .into_iter()
-            .map(|GroupPartsQuery { handle, paths }| with_handle(handle, rules.group_parts(&paths)))
-            .collect::<Result<_, _>>()?;
-        respond(rules, results)
+        answer(request.get_ref(), Rpc::GroupParts)
     }
 
     async fn evaluate_ignore(
         &self,
         request: Request<EvaluateIgnoreRequest>,
     ) -> Result<Response<EvaluateIgnoreResponse>, Status> {
-        let request = read_request(request.get_ref())?;
-        let rules = request_rules(&request)?;
-        let rules = rules.as_ref();
-        let ignore_files: Vec<IgnoreFile> = read_field(&request, "ignore_files")?;
-        let ignore_rules = rules.ignore_rules(&ignore_files);
-        let results = read_queries(&request)?
-            .into_iter()
-            .map(|EvaluateIgnoreQuery { handle, path, kind }| {
-                with_handle(handle, ignore_rules.evaluate(&path, kind))
-            })
-            .collect::<Result<_, _>>()?;
-        respond(rules, results)
+        answer(request.get_ref(), Rpc::EvaluateIgnore)
     }
 
     async fn interpret(
         &self,
         request: Request<InterpretRequest>,
     ) -> Result<Response<InterpretResponse>, Status> {
-        let request = read_request(request.get_ref())?;
-        let rules = request_rules(&request)?;
-        let rules = rules.as_ref();
-        let results = read_queries(&request)?
-            .into_iter()
-            .map(|tree: LibraryTreeQuery| {
-                let interpretation = interpret_tree(
-                    rules,
-                    tree.library,
-                    tree.scope_group.as_ref(),
-                    &tree.paths,
-                    &tree.ignore_files,
-                    &tree.inputs,
-                );
-                with_handle(tree.handle, interpretation)
-            })
-            .collect::<Result<_, _>>()?;
-        respond(rules, results)
+        answer(request.get_ref(), Rpc::Interpret)
     }
 
     async fn interpret_stream(
@@ -402,205 +202,151 @@ impl Nomenclator for NamingService {
         let header = header.ok_or_else(|| {
             Status::invalid_argument("header: the stream has no message. Send the header first")
         })?;
-        let header = read_request(&header)?;
-        let rules = request_rules(&header)?;
-        let rules = rules.as_ref();
-        let tree: StreamHeader = serde_json::from_value(header).map_err(|error| {
-            Status::invalid_argument(format!(
-                "header: cannot read the header: {error}. Check the wire contract"
-            ))
-        })?;
-        let interpretation = interpret_tree(
-            rules,
-            tree.library,
-            tree.scope_group.as_ref(),
-            &paths,
-            &tree.ignore_files,
-            &tree.inputs,
-        );
-        respond(rules, vec![with_handle(tree.handle, interpretation)?])
+        let mut query = read_request(&header)?;
+        let rules = request_rules(&mut query)?;
+        query["paths"] = Json::from(paths);
+        let result = run_query(rules.as_ref(), &Json::Null, Rpc::Interpret, query)?;
+        respond(to_json(rules.identity()), vec![result])
     }
 
     async fn rank_candidates(
         &self,
         request: Request<RankCandidatesRequest>,
     ) -> Result<Response<RankCandidatesResponse>, Status> {
-        let request = read_request(request.get_ref())?;
-        let rules = request_rules(&request)?;
-        let rules = rules.as_ref();
-        let queries: Vec<RankQuery> = read_queries(&request)?;
-        let results = rules
-            .rank_batch(&queries)
-            .results
+        let mut request = read_request(request.get_ref())?;
+        let rules = request_rules(&mut request)?;
+        let input = serde_json::json!({ "queries": request["queries"].take() });
+        let ranking = rules.run("rank_batch", input).map_err(invalid)?;
+        let results = ranking["results"]
+            .as_array()
             .into_iter()
-            .map(|result| with_handle(result.handle, result.ranking))
-            .collect::<Result<_, _>>()?;
-        respond(rules, results)
+            .flatten()
+            .map(|result| with_handle(&result["handle"], result["ranking"].clone()))
+            .collect();
+        respond(to_json(rules.identity()), results)
     }
 
     async fn search_queries(
         &self,
         request: Request<SearchQueriesRequest>,
     ) -> Result<Response<SearchQueriesResponse>, Status> {
-        let request = read_request(request.get_ref())?;
-        let rules = request_rules(&request)?;
-        let rules = rules.as_ref();
-        let results = read_queries(&request)?
-            .into_iter()
-            .map(|query: SearchQueriesQuery| {
-                with_handle(query.handle, rules.search_queries(&query.facts))
-            })
-            .collect::<Result<_, _>>()?;
-        respond(rules, results)
+        answer(request.get_ref(), Rpc::SearchQueries)
     }
 
     async fn render_names(
         &self,
         request: Request<RenderNamesRequest>,
     ) -> Result<Response<RenderNamesResponse>, Status> {
-        let request = read_request(request.get_ref())?;
-        let rules = request_rules(&request)?;
-        let rules = rules.as_ref();
-        let profile = read_profile(&request, rules)?;
-        let results = read_queries(&request)?
-            .into_iter()
-            .map(|RenderNamesQuery { handle, facts }| {
-                with_handle(handle, rules.render_names(&facts, &profile))
-            })
-            .collect::<Result<_, _>>()?;
-        respond(rules, results)
+        answer(request.get_ref(), Rpc::RenderNames)
     }
 
     async fn plan_renames(
         &self,
         request: Request<PlanRenamesRequest>,
     ) -> Result<Response<PlanRenamesResponse>, Status> {
-        let request = read_request(request.get_ref())?;
-        let rules = request_rules(&request)?;
-        let rules = rules.as_ref();
-        let profile = read_profile(&request, rules)?;
-        let results = read_queries(&request)?
-            .into_iter()
-            .map(|tree: LibraryTreeQuery| {
-                let interpretation = rules.interpret_with(
-                    tree.library,
-                    &tree.paths,
-                    &tree.ignore_files,
-                    &tree.inputs,
-                );
-                let plan = rules.plan_renames(&interpretation, &tree.paths, &profile);
-                with_handle(tree.handle, plan)
-            })
-            .collect::<Result<_, _>>()?;
-        respond(rules, results)
+        answer(request.get_ref(), Rpc::PlanRenames)
     }
 
     async fn plan_conversion(
         &self,
         request: Request<PlanConversionRequest>,
     ) -> Result<Response<PlanRenamesResponse>, Status> {
-        let request = read_request(request.get_ref())?;
-        let rules = request_rules(&request)?;
-        let rules = rules.as_ref();
-        let from: OutputProfile = read_field(&request, "from_profile")?;
-        let to: OutputProfile = read_field(&request, "to_profile")?;
-        check_profile(rules, &from)?;
-        check_profile(rules, &to)?;
-        let mut identity = rules.identity().clone();
-        let mut results = Vec::new();
-        for tree in read_queries::<LibraryTreeQuery>(&request)? {
-            let plan = rules
-                .plan_conversion(
-                    tree.library,
-                    &tree.paths,
-                    &tree.ignore_files,
-                    &tree.inputs,
-                    &from,
-                    &to,
-                )
-                .map_err(|diagnostics| {
-                    Status::invalid_argument(format!(
-                        "from_profile: the rules cannot read the profile's folder names: {}. Use other folder names",
-                        serde_json::to_string(&diagnostics).unwrap_or_default()
-                    ))
-                })?;
-            // The plan states the rules that read the source profile's names.
-            identity = plan.rules.clone();
-            results.push(with_handle(tree.handle, plan)?);
-        }
-        respond_with_identity(&identity, results)
+        answer(request.get_ref(), Rpc::PlanConversion)
     }
 
     async fn plan_import(
         &self,
         request: Request<PlanImportRequest>,
     ) -> Result<Response<PlanImportResponse>, Status> {
-        let request = read_request(request.get_ref())?;
-        let rules = request_rules(&request)?;
-        let rules = rules.as_ref();
-        let profile = read_profile(&request, rules)?;
-        let results = read_queries(&request)?
-            .into_iter()
-            .map(|query: ImportQuery| {
-                let download = rules.interpret_with(
-                    query.library,
-                    &query.paths,
-                    &query.ignore_files,
-                    &query.inputs,
-                );
-                let library = rules.interpret(
-                    query.library,
-                    &query.library_paths,
-                    &query.library_ignore_files,
-                );
-                let plan = rules.plan_import(&download, &library, &query.library_paths, &profile);
-                with_handle(query.handle, plan)
-            })
-            .collect::<Result<_, _>>()?;
-        respond(rules, results)
+        answer(request.get_ref(), Rpc::PlanImport)
     }
 
     async fn suggest_library_type(
         &self,
         request: Request<SuggestLibraryTypeRequest>,
     ) -> Result<Response<SuggestLibraryTypeResponse>, Status> {
-        let request = read_request(request.get_ref())?;
-        let rules = request_rules(&request)?;
-        let rules = rules.as_ref();
-        let results = read_queries(&request)?
-            .into_iter()
-            .map(|SuggestLibraryTypeQuery { handle, paths }| {
-                with_handle(handle, rules.suggest_library_type(&paths))
-            })
-            .collect::<Result<_, _>>()?;
-        respond(rules, results)
+        answer(request.get_ref(), Rpc::SuggestLibraryType)
     }
 
     async fn validate(
         &self,
         request: Request<ValidateRequest>,
     ) -> Result<Response<ValidateResponse>, Status> {
-        let request = read_request(request.get_ref())?;
-        let rules = request_rules(&request)?;
-        let rules = rules.as_ref();
-        let profile = read_profile(&request, rules)?;
-        let results = read_queries(&request)?
-            .into_iter()
-            .map(|tree: LibraryTreeQuery| {
-                let interpretation = rules.interpret_with(
-                    tree.library,
-                    &tree.paths,
-                    &tree.ignore_files,
-                    &tree.inputs,
-                );
-                with_handle(
-                    tree.handle,
-                    rules.validate_with(&interpretation, &profile, &tree.reference),
-                )
-            })
-            .collect::<Result<_, _>>()?;
-        respond(rules, results)
+        answer(request.get_ref(), Rpc::Validate)
     }
+}
+
+/// Answers every query of a request to `rpc`, under the rules of the request. Fails if
+/// the rules or a profile of the request are rejected, or if a query cannot be answered.
+fn answer<M, R>(request: &M, rpc: Rpc) -> Result<Response<R>, Status>
+where
+    M: prost::Message + prost::Name,
+    R: prost::Message + prost::Name + Default,
+{
+    let mut request = read_request(request)?;
+    let rules = request_rules(&mut request)?;
+    check_profiles(&rules, &request)?;
+    let queries = match request["queries"].take() {
+        Json::Array(queries) => queries,
+        _ => Vec::new(),
+    };
+    let results: Vec<Json> = queries
+        .into_iter()
+        .map(|query| run_query(&rules, &request, rpc, query))
+        .collect::<Result<_, _>>()?;
+    // A conversion states the rules that read the source profile's names, which every
+    // result shares.
+    let identity = results
+        .first()
+        .and_then(|result| result.get("rules"))
+        .cloned()
+        .unwrap_or_else(|| to_json(rules.identity()));
+    respond(identity, results)
+}
+
+/// Runs the operation of one query, with the request fields that the operation reads.
+/// Returns the result with the query's handle.
+fn run_query(rules: &Rules, request: &Json, rpc: Rpc, query: Json) -> Result<Json, Status> {
+    let Json::Object(mut input) = query else {
+        return Err(Status::invalid_argument(
+            "query: a query is a message. Check the wire contract",
+        ));
+    };
+    let handle = input.remove("handle").unwrap_or(Json::Null);
+    let call = match rpc {
+        Rpc::ParseNames => {
+            let chosen = input.keys().next().cloned().unwrap_or_default();
+            let call = WIRE_CALLS
+                .iter()
+                .find(|call| call.parse_field == Some(chosen.as_str()))
+                .ok_or_else(|| {
+                    Status::invalid_argument(format!(
+                        "query {handle}: the query chooses no operation. Set one field of `query`"
+                    ))
+                })?;
+            input = match input.remove(&chosen) {
+                Some(Json::Object(fields)) => fields,
+                _ => Map::new(),
+            };
+            call
+        }
+        _ => WIRE_CALLS
+            .iter()
+            .find(|call| call.rpc == rpc)
+            .expect("every rpc that answers queries has a call"),
+    };
+    for field in call.request_fields {
+        if let Some(value) = request.get(field) {
+            input.insert((*field).to_owned(), value.clone());
+        }
+    }
+    let result = rules
+        .run(call.operation, Json::Object(input))
+        .map_err(|error| Status::invalid_argument(format!("query {handle}: {error}")))?;
+    Ok(match call.parse_field {
+        Some(field) => serde_json::json!({ "handle": handle, field: result }),
+        None => with_handle(&handle, result),
+    })
 }
 
 /// Converts the request to the library's serialized shape. Leaves out unset fields so
@@ -611,104 +357,79 @@ fn read_request<M: prost::Message + prost::Name>(request: &M) -> Result<Json, St
     Ok(without_nulls(json))
 }
 
-#[derive(Deserialize, Default)]
-struct RulesSelection {
-    #[serde(default)]
-    overlays: Vec<String>,
-    #[serde(default)]
-    languages: Vec<String>,
-}
-
-/// Builds the rules that a request is answered under: the built-in rules, or the rules
-/// of its declared languages, with its overlays applied. Fails with every overlay
-/// diagnostic if the rules cannot be built.
-fn request_rules(request: &Json) -> Result<Cow<'static, Rules>, Status> {
-    let selection: RulesSelection = read_field(request, "rules")?;
-    if selection.overlays.is_empty() && selection.languages.is_empty() {
+/// Builds the rules that a request is answered under, and removes the request's `rules`
+/// field: the built-in rules, or the rules of its declared languages, with its overlays
+/// applied. Fails with every overlay diagnostic if the rules cannot be built.
+fn request_rules(request: &mut Json) -> Result<Cow<'static, Rules>, Status> {
+    let selection = request
+        .as_object_mut()
+        .and_then(|fields| fields.remove("rules"))
+        .unwrap_or(Json::Null);
+    let strings = |field: &str| -> Vec<String> {
+        serde_json::from_value(selection[field].clone()).unwrap_or_default()
+    };
+    let (overlays, languages) = (strings("overlays"), strings("languages"));
+    if overlays.is_empty() && languages.is_empty() {
         return Ok(Cow::Borrowed(Rules::builtin()));
     }
-    let built = Rules::from_documents(&selection.languages, &selection.overlays);
-    built.map(Cow::Owned).map_err(|diagnostics| {
-        let listed = serde_json::to_string(&diagnostics).unwrap_or_default();
-        Status::invalid_argument(format!(
-            "rules: cannot build the rules: {listed}. Correct the listed overlays or languages"
-        ))
-    })
-}
-
-fn rules_identity(rules: &Rules) -> crate::proto::RulesIdentity {
-    let identity = without_nulls(to_json(rules.identity()).expect("an identity serializes"));
-    wire::json_to_message(&identity).expect("an identity fits the wire contract")
-}
-
-fn read_queries<Q: DeserializeOwned>(request: &Json) -> Result<Vec<Q>, Status> {
-    let queries = request["queries"].as_array().cloned().unwrap_or_default();
-    queries
-        .into_iter()
-        .map(|query| {
-            let handle = query["handle"].as_str().unwrap_or_default().to_owned();
-            serde_json::from_value(query).map_err(|error| {
-                Status::invalid_argument(format!(
-                    "query {handle:?}: cannot read the query: {error}. Check the wire contract"
-                ))
-            })
+    Rules::from_documents(&languages, &overlays)
+        .map(Cow::Owned)
+        .map_err(|diagnostics| {
+            let listed = serde_json::to_string(&diagnostics).unwrap_or_default();
+            Status::invalid_argument(format!(
+                "rules: cannot build the rules: {listed}. Correct the listed overlays or languages"
+            ))
         })
-        .collect()
 }
 
-fn read_field<T: DeserializeOwned + Default>(request: &Json, field: &str) -> Result<T, Status> {
-    match request.get(field) {
-        None => Ok(T::default()),
-        Some(value) => serde_json::from_value(value.clone()).map_err(|error| {
-            Status::invalid_argument(format!("{field}: cannot read the field: {error}"))
-        }),
+/// Fails with `INVALID_ARGUMENT` if the reader does not read back a name that a profile of
+/// the request writes (X33).
+fn check_profiles(rules: &Rules, request: &Json) -> Result<(), Status> {
+    for field in ["profile", "from_profile", "to_profile"] {
+        let Some(profile) = request.get(field) else {
+            continue;
+        };
+        let profile: OutputProfile = serde_json::from_value(profile.clone()).map_err(|error| {
+            Status::invalid_argument(format!("{field}: cannot read the profile: {error}"))
+        })?;
+        let diagnostics = rules.check_profile(&profile);
+        if !diagnostics.is_empty() {
+            return Err(Status::invalid_argument(format!(
+                "{field}: the output profile is rejected: {diagnostics:?}. Change the listed templates"
+            )));
+        }
     }
+    Ok(())
 }
 
-/// Fails with `INVALID_ARGUMENT` if the reader does not read back a name that `profile`
-/// writes.
-fn check_profile(rules: &Rules, profile: &OutputProfile) -> Result<(), Status> {
-    let diagnostics = rules.check_profile(profile);
-    if diagnostics.is_empty() {
-        return Ok(());
-    }
-    Err(Status::invalid_argument(format!(
-        "the output profile is rejected: {diagnostics:?}"
-    )))
+fn invalid(error: nomenclator::OperationError) -> Status {
+    Status::invalid_argument(error.to_string())
 }
 
-fn read_profile(request: &Json, rules: &Rules) -> Result<OutputProfile, Status> {
-    let profile = read_field(request, "profile")?;
-    check_profile(rules, &profile)?;
-    Ok(profile)
+/// Returns `result` with `handle`.
+fn with_handle(handle: &Json, mut result: Json) -> Json {
+    result["handle"] = handle.clone();
+    result
 }
 
-/// Returns `result` with its handle. Removes the rules identity, because the response
-/// states it once per call.
-fn with_handle(handle: String, result: impl Serialize) -> Result<Json, Status> {
-    let mut json = to_json(result)?;
-    if let Json::Object(fields) = &mut json {
+fn without_rules(mut result: Json) -> Json {
+    if let Json::Object(fields) = &mut result {
         fields.remove("rules");
     }
-    json["handle"] = Json::String(handle);
-    Ok(json)
+    result
 }
 
-fn to_json(result: impl Serialize) -> Result<Json, Status> {
-    serde_json::to_value(result).map_err(|error| Status::internal(error.to_string()))
+fn to_json(result: impl serde::Serialize) -> Json {
+    serde_json::to_value(result).expect("every result serializes")
 }
 
+/// Returns the response with `results` and the rules `identity`. Removes the identity of
+/// each result, because the response states it once.
 fn respond<M: prost::Message + prost::Name + Default>(
-    rules: &Rules,
+    identity: Json,
     results: Vec<Json>,
 ) -> Result<Response<M>, Status> {
-    respond_with_identity(rules.identity(), results)
-}
-
-fn respond_with_identity<M: prost::Message + prost::Name + Default>(
-    identity: &nomenclator::RulesIdentity,
-    results: Vec<Json>,
-) -> Result<Response<M>, Status> {
+    let results: Vec<Json> = results.into_iter().map(without_rules).collect();
     let response = serde_json::json!({ "results": results, "rules": identity });
     wire::json_to_message(&response)
         .map(Response::new)

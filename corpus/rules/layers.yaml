@@ -13,7 +13,7 @@
   languages: [de]
   overlays: ["name: plakat\nartwork_roles:\n  add: { plakat: backdrop }\n"]
   operation: classify_artwork
-  input: { name: plakat.jpg }
+  input: { path: plakat.jpg }
   expect:
     role: backdrop
 
