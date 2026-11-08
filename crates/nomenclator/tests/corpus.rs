@@ -263,14 +263,12 @@ fn corpus_cases_match_expected_facts() {
     let mut failures = Vec::new();
     let mut now_passing: BTreeMap<PathBuf, Vec<usize>> = BTreeMap::new();
     let mut pending_passed_and_total: BTreeMap<PathBuf, (usize, usize)> = BTreeMap::new();
-    // Every case runs under an explicit rules value instead of the crate's free
-    // functions, so that the corpus tests the `Rules` methods.
-    let rules = Rules::default();
+    let rules = Rules::builtin();
 
     for file in collect_yaml_files(&corpus_directory()) {
         for (index, case) in load_cases(&file).into_iter().enumerate() {
             let outcome = case_rules(&case)
-                .and_then(|case_rules| run_case(case_rules.as_ref().unwrap_or(&rules), &case));
+                .and_then(|case_rules| run_case(case_rules.as_ref().unwrap_or(rules), &case));
             if !case.pending {
                 if let Err(reason) = outcome {
                     failures.push(format!("{} › {}: {reason}", file.display(), case.name));

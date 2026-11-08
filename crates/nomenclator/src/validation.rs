@@ -303,27 +303,6 @@ pub enum MismatchedFact {
     Season,
 }
 
-/// Validates the names of an interpreted library under `profile`.
-///
-/// Uses the built-in rules. [`Rules::validate`] runs under another rules value.
-#[must_use]
-pub fn validate(interpretation: &Interpretation, profile: &OutputProfile) -> Validation {
-    Rules::builtin().validate(interpretation, profile)
-}
-
-/// Validates like [`validate`] and also compares the library with the caller's reference
-/// metadata (X18).
-///
-/// Uses the built-in rules. [`Rules::validate_with`] runs under another rules value.
-#[must_use]
-pub fn validate_with(
-    interpretation: &Interpretation,
-    profile: &OutputProfile,
-    reference: &ReferenceMetadata,
-) -> Validation {
-    Rules::builtin().validate_with(interpretation, profile, reference)
-}
-
 impl Rules {
     /// Validates the names of an interpreted library under `profile`.
     pub fn validate(&self, interpretation: &Interpretation, profile: &OutputProfile) -> Validation {

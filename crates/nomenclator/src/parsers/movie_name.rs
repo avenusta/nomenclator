@@ -45,14 +45,6 @@ pub struct AlternateTitle {
     pub span: Span,
 }
 
-/// Reads the title, year and provider IDs from one movie file or folder name.
-///
-/// Uses the built-in rules. [`Rules::parse_movie_name`] takes other rules.
-#[must_use]
-pub fn parse_movie_name(name: &str, kind: EntryKind) -> MovieName {
-    Rules::builtin().parse_movie_name(name, kind)
-}
-
 impl Rules {
     /// Reads the title, year and provider IDs from one movie file or folder name.
     pub fn parse_movie_name(&self, name: &str, kind: EntryKind) -> MovieName {

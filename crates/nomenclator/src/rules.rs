@@ -1,6 +1,5 @@
 //! Provides the input vocabulary as one value: every word list that gives the meaning of an
-//! existing name. Operations are methods on [`Rules`]. The free functions of the crate use
-//! [`Rules::builtin`]. The output profile, not the rules, defines how names are written
+//! existing name. Every operation is a method on [`Rules`]. The output profile, not the rules, defines how names are written
 //! (extras output folders, flag words, reserved device names).
 
 use std::sync::{LazyLock, OnceLock};
@@ -248,12 +247,6 @@ pub(crate) struct EpisodeTokenPattern {
 
 static BASE: LazyLock<Rules> = LazyLock::new(Rules::from_builtin_document);
 static BUILTIN: LazyLock<Rules> = LazyLock::new(Rules::with_every_language);
-
-impl Default for Rules {
-    fn default() -> Self {
-        Rules::builtin().clone()
-    }
-}
 
 impl Rules {
     /// Returns the built-in rules: the vocabularies that the decisions accept.

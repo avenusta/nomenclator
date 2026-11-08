@@ -107,25 +107,6 @@ pub enum PresentationKind {
     Special,
 }
 
-/// Reads the series, season and episode facts from the root-relative path of an episode. The
-/// series folder is the parent of the nearest season folder. If there is no season folder,
-/// the series folder is the folder that contains the entry (T1).
-/// One name alone cannot distinguish a file-named series from an episode title before the
-/// code (`The X-Files/Pilot - S01E01`). The function reports the text as `series_name`, and
-/// the interpreter decides from the other files of the folder (T2).
-/// `season_folder_number` is the season that the caller already knows for the folder of the
-/// entry.
-///
-/// Uses the built-in rules. [`Rules::parse_episode_name`] takes other rules.
-#[must_use]
-pub fn parse_episode_name(
-    path: &str,
-    kind: EntryKind,
-    season_folder_number: Option<u16>,
-) -> EpisodeName {
-    Rules::builtin().parse_episode_name(path, kind, season_folder_number)
-}
-
 impl Rules {
     /// Reads the series, season and episode facts from the root-relative path of an episode. The
     /// series folder is the parent of the nearest season folder. If there is no season folder,

@@ -14,13 +14,6 @@ pub struct ProviderIds {
     pub provider_ids: BTreeMap<String, Finding<String>>,
 }
 
-/// Reads provider IDs from the bracketed tags in any name or path text, under the built-in
-/// rules.
-#[must_use]
-pub fn parse_provider_ids(text: &str) -> ProviderIds {
-    Rules::builtin().parse_provider_ids(text)
-}
-
 impl Rules {
     /// Reads provider IDs from the bracketed tags in any name or path text.
     pub fn parse_provider_ids(&self, text: &str) -> ProviderIds {

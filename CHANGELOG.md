@@ -42,20 +42,19 @@ First release. It implements the conventions in `docs/decisions.md`, and the cor
 
 ### Library API
 
-- Parsers: `parse_movie_name`, `parse_series_name`, `parse_season_folder`, `parse_episode_name`, `parse_provider_ids`, `parse_sidecar`, `classify_extra`, `classify_artwork`, `classify_nfo`.
-- `evaluate_ignore`, `group_parts`, `interpret`, `rank_candidates`, `render_names`, `plan_renames`, `validate`.
-- The parser modules are private. The crate root exports their functions and types. `model` contains the shared fact types.
+- Every operation is a method on `Rules`, and `Rules::builtin()` returns the built-in rules. Parsers: `parse_movie_name`, `parse_series_name`, `parse_season_folder`, `parse_episode_name`, `parse_provider_ids`, `parse_sidecar`, `classify_extra`, `classify_artwork`, `classify_nfo`. Whole libraries: `evaluate_ignore`, `group_parts`, `interpret`, `rank_candidates`, `render_names`, `plan_renames`, `validate`.
+- The parser modules are private. The crate root exports their types. `model` contains the shared fact types.
 - Templates (R14): `Template` renders facts into names and reads names into facts, with ambiguous readings reported.
 - Reporting (R13): `Diagnostic.code` and `Diagnostic.message`, `diagnostic_message`, `Validation.summary` (`ValidationSummary`, `RuleCount`), `OutputProfile.suppressions` (`Suppression`) and `RenamePlan.removals` (`ProposedRemoval`) for release junk.
 - Coverage (R12): `OutputProfile.required_assets` (`AssetItemKind`, `AssetRole`) and `OutputProfile.wanted_subtitles` (`WantedSubtitle`); the `missing_asset` and `missing_subtitle` rules.
 - Duplicates (R11): the `duplicate_work` and `duplicate_episode` rules. `episode_not_in_reference` is renamed `unexpected_episode`.
 - Alternate titles (M16): `MovieName.alternate_titles` (`AlternateTitle`) and `Movie.alternate_titles` from `AKA`, ` / ` and a trailing parenthesised title. A parenthesised original title is no longer part of the title.
 - Localized artwork words (X11): the `de`, `fr`, `es`, `it`, `pt` and `nl` language packs add artwork role words.
-- Release junk (X22): `is_release_junk`, `Interpretation.release_junk`, the `release_junk` diagnostic rule and four overlay vocabularies. Screenshot and bitrate images are no longer artwork.
+- Release junk (X22): `Rules::is_release_junk`, `Interpretation.release_junk`, the `release_junk` diagnostic rule and four overlay vocabularies. Screenshot and bitrate images are no longer artwork.
 - `parse_document` and `DocumentError` read a YAML or JSON document in the toolkit's dialect (X27). The YAML parser is `serde-saphyr`, which is written in safe Rust. `serde_yaml_ng` and the unmaintained `unsafe-libyaml` are no longer dependencies. An overlay that repeats a key is a syntax error.
 - Release vocabularies (X26): the overlay vocabularies `release_words`, `audio_channel_words` and `release_site_tags` change what `parse_release` reads.
 - `Rules::is_no_media_marker` tells a caller that scans folders which files are no-media markers (X14). The comparison ignores case.
-- Library type suggestion (X21): `suggest_library_type` returns a `LibraryTypeSuggestion` with the videos as evidence.
+- Library type suggestion (X21): `Rules::suggest_library_type` returns a `LibraryTypeSuggestion` with the videos as evidence.
 - Category folders (R10): `Movie.collection`; planned paths keep the category folders above movies and series, so a plan no longer moves items to the library root.
 - Fansub grammar (X20): `EpisodeName.special` (`Special`, `SpecialKind`), `release_version` and `is_final`; `PresentationKind::Special`; `Episode.special`; evidence rule `special_marker`. `S2 - 03` gives season 2, episode 3.
 - Release facts (X19): `parse_release` reads resolution, source, codecs, bit depth, HDR, audio, language markers, release group, checksum, revision, streaming service and container, each with its span (`ReleaseFacts`, `ReleaseMarker`). Evidence rule `release_word`.
@@ -68,8 +67,7 @@ First release. It implements the conventions in `docs/decisions.md`, and the cor
 - Presets (X12): an overlay's `presets` section selects catalogued alternatives for `latest_plausible_year`, `date_order`, `bare_numbers`, `ignore_nesting` and `samples`. `ExclusionReason::Sample` marks samples that a preset excludes.
 - Language packs (X11): `Rules::for_languages` limits the rules to the shared base and the packs of the declared languages. The packs also add words (native language names, spelled numbers, ordinals). `Rules::language_packs` lists the packs. `RulesIdentity.languages` records the declared languages. Overlays can change `leading_articles`, `number_words` and `ordinal_suffixes`.
 - Overlays (X10): `Overlay::parse` reads a YAML or JSON overlay. `Rules::from_overlays` applies several overlays together. It reports each problem as an `OverlayDiagnostic` with the line that caused it: conflicting changes, duplicate names, malformed vocabularies, duplicate entries, reserved tokens, and entries that collide with another word class. `RulesIdentity.overlays` lists each applied overlay with a digest of its changes.
-- `Rules`: one value that holds every input vocabulary. Each operation is also a method on `Rules`. The free functions use `Rules::builtin()`. `Rules::ignore_rules` compiles rule files together with the built-in exclusions. `Interpretation`, `RenamePlan`, `Validation` and `CandidateRanking` contain the `RulesIdentity` that they were produced under (X9).
-- `Rules::group_parts` runs part grouping under a rules value. The free function `group_parts` uses the built-in rules.
+- `Rules`: one value that holds every input vocabulary. `Rules::ignore_rules` compiles rule files together with the built-in exclusions. `Interpretation`, `RenamePlan`, `Validation` and `CandidateRanking` contain the `RulesIdentity` that they were produced under (X9).
 - Overlays change every table that the reader compares a name against (X28): 19 new vocabularies, among them `part_words`, `subtitle_folders`, `format_3d_words` and `alternate_title_words`.
 - An overlay that removes an entry that the built-in rules do not contain is rejected with `OverlayDiagnosticReason::IneffectiveRemoval` (X28).
 - An overlay can remove the codec words `x264`, `x265`, `h264`, `h265`, `mpeg2`, `mpeg4`, `hdr10` and `hdr10+` from `technical_words`. These words are no longer `reserved_token`s.

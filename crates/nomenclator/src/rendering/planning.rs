@@ -106,20 +106,6 @@ pub struct BlockedRename {
     pub conflicting_paths: Vec<String>,
 }
 
-/// Proposes renames for the files of `interpretation`'s items. `entries` holds every
-/// root-relative path that the caller has, with directories ending in `/`. A file
-/// without a proposal stays where it is.
-///
-/// Uses the built-in rules. [`Rules::plan_renames`] runs under another rules value.
-#[must_use]
-pub fn plan_renames(
-    interpretation: &Interpretation,
-    entries: &[String],
-    profile: &OutputProfile,
-) -> RenamePlan {
-    Rules::builtin().plan_renames(interpretation, entries, profile)
-}
-
 impl Rules {
     /// Proposes renames for the files of `interpretation`'s items. `entries` holds every
     /// root-relative path that the caller has, with directories ending in `/`. A file

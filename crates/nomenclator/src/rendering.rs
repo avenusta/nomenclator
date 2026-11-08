@@ -23,9 +23,7 @@ use crate::parsers::extras::LibraryType;
 use crate::rules::Rules;
 
 pub use import::{ImportPlan, ImportProposal, LeftFile, LeftReason};
-pub use planning::{
-    BlockedRename, ProposedRemoval, RemovalReason, RenamePlan, RenameProposal, plan_renames,
-};
+pub use planning::{BlockedRename, ProposedRemoval, RemovalReason, RenamePlan, RenameProposal};
 pub use profile::{
     AssetItemKind, AssetRole, ExtensionCase, MovieLayout, OutputProfile, ProviderTagStyle,
     SeasonFolderStyle, Suppression, TargetFilesystem, VersionLabelStyle, WantedSubtitle,
@@ -208,15 +206,6 @@ impl BlockReason {
             BlockReason::ReservedName | BlockReason::ComponentTooLong
         )
     }
-}
-
-/// Renders the root-relative path that `profile` gives the file described by `facts`.
-/// If the path cannot be rendered, the result has no path and lists every block reason.
-///
-/// Uses the built-in rules. [`Rules::render_names`] runs under another rules value.
-#[must_use]
-pub fn render_names(facts: &NamingFacts, profile: &OutputProfile) -> RenderedName {
-    Rules::builtin().render_names(facts, profile)
 }
 
 impl Rules {

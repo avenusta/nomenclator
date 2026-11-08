@@ -16,13 +16,6 @@ pub struct ArtworkClassification {
     pub is_episode_still: bool,
 }
 
-/// Classifies an image by its name under the built-in rules. If `video_path` is given, an
-/// image beside that video named `<video stem>-thumb` is classified as the still of the video.
-#[must_use]
-pub fn classify_artwork(path: &str, video_path: Option<&str>) -> ArtworkClassification {
-    Rules::builtin().classify_artwork(path, video_path)
-}
-
 impl Rules {
     /// Classifies an image by its name. If `video_path` is given, an image beside that video
     /// named `<video stem>-thumb` is classified as the still of the video.

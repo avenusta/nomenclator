@@ -25,13 +25,6 @@ struct Segment<'a> {
     span: Span,
 }
 
-/// Checks whether `name` is a sidecar of `video_name`, and reads the language, flags and
-/// title in the name, under the built-in rules.
-#[must_use]
-pub fn parse_sidecar(name: &str, video_name: &str, kind: SidecarKind) -> Sidecar {
-    Rules::builtin().parse_sidecar(name, video_name, kind)
-}
-
 impl Rules {
     /// Checks whether `name` is a sidecar of `video_name`, and reads the language, flags and
     /// title in the name.

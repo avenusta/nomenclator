@@ -61,14 +61,6 @@ pub enum QueryReason {
     MainTitle,
 }
 
-/// Returns the search queries for `facts` under the built-in rules (P7).
-///
-/// [`Rules::search_queries`] runs under another rules value.
-#[must_use]
-pub fn search_queries(facts: &MatchFacts) -> SearchQueries {
-    Rules::builtin().search_queries(facts)
-}
-
 /// Returns the match facts of each movie, series and episode of `items`, in item order
 /// (P7). Seasons and orphan extras have no match facts.
 pub fn match_facts(items: &[Item]) -> Vec<MatchFacts> {

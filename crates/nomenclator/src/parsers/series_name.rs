@@ -26,16 +26,6 @@ pub struct SeriesName {
     pub tags: BTreeMap<String, Finding<String>>,
 }
 
-/// Reads the title, year, season and provider IDs from a series folder name. If the input is
-/// a path, the series folder is its last component, or the parent of that component if that
-/// component is a season folder.
-///
-/// Uses the built-in rules. [`Rules::parse_series_name`] takes other rules.
-#[must_use]
-pub fn parse_series_name(name_or_path: &str) -> SeriesName {
-    Rules::builtin().parse_series_name(name_or_path)
-}
-
 impl Rules {
     /// Reads the title, year, season and provider IDs from a series folder name. If the input is
     /// a path, the series folder is its last component, or the parent of that component if that

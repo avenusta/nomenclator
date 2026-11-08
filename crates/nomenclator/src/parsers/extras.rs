@@ -38,20 +38,6 @@ pub struct ExtraClassification {
     pub supplemental_dir: Option<String>,
 }
 
-/// Classifies one root-relative `path`. `context_paths` are the other files in scope.
-/// Without them only the path itself is known, so no folder can be shown to own features.
-///
-/// Uses the built-in rules. [`Rules::classify_extra`] takes other rules.
-#[must_use]
-pub fn classify_extra(
-    path: &str,
-    kind: EntryKind,
-    library: Option<LibraryType>,
-    context_paths: &[String],
-) -> ExtraClassification {
-    Rules::builtin().classify_extra(path, kind, library, context_paths)
-}
-
 impl Rules {
     /// Classifies one root-relative `path`. `context_paths` are the other files in scope;
     /// without them only the path itself is known, so no folder can be shown to own features.

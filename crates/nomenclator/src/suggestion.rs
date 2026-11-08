@@ -22,14 +22,6 @@ pub struct LibraryTypeSuggestion {
     pub movie_videos: Vec<String>,
 }
 
-/// Suggests a library type for `paths` under the built-in rules.
-///
-/// Uses the built-in rules; [`Rules::suggest_library_type`] takes others.
-#[must_use]
-pub fn suggest_library_type(paths: &[String]) -> LibraryTypeSuggestion {
-    Rules::builtin().suggest_library_type(paths)
-}
-
 impl Rules {
     /// Suggests a library type for `paths`, the root-relative paths of a library folder.
     /// Extras are left out of the evidence.

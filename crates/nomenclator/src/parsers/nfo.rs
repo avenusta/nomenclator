@@ -16,16 +16,6 @@ pub struct NfoClassification {
     pub role: Option<NfoRole>,
 }
 
-/// Classifies an NFO file by its name. With the videos in scope, `<video stem>.nfo` belongs
-/// to that video, and the shared name of a stack (`Movie-cd1.mkv` → `Movie.nfo`) belongs to
-/// its movie. Otherwise the generic names `movie`, `tvshow` and `season` give their role. The
-/// interpreter decides whether a generic name applies to its folder (one title only, S8).
-/// Uses the built-in rules.
-#[must_use]
-pub fn classify_nfo(path: &str, video_paths: &[String]) -> NfoClassification {
-    Rules::builtin().classify_nfo(path, video_paths)
-}
-
 impl Rules {
     /// Classifies an NFO file by its name, as [`classify_nfo`] does, under these rules.
     pub fn classify_nfo(&self, path: &str, video_paths: &[String]) -> NfoClassification {

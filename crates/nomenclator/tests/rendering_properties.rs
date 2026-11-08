@@ -5,11 +5,7 @@
 use std::collections::BTreeMap;
 
 use nomenclator::model::{EntryKind, ExtraKind, Finding, SidecarFlag, SidecarKind};
-use nomenclator::{
-    ExtraFacts, Item, LibraryType, NamingFacts, OutputProfile, SidecarFacts, classify_extra,
-    interpret, parse_episode_name, parse_movie_name, parse_series_name, parse_sidecar,
-    plan_renames, render_names,
-};
+use nomenclator::{ExtraFacts, Item, LibraryType, NamingFacts, OutputProfile, Rules, SidecarFacts};
 
 fn facts(library: LibraryType) -> NamingFacts {
     NamingFacts {
@@ -34,7 +30,7 @@ fn facts(library: LibraryType) -> NamingFacts {
 }
 
 fn rendered(facts: &NamingFacts) -> String {
-    let result = render_names(facts, &OutputProfile::default());
+    let result = Rules::builtin().render_names(facts, &OutputProfile::default());
     result
         .path
         .unwrap_or_else(|| panic!("{facts:?} renders, got {:?}", result.blocked_reasons))
@@ -88,7 +84,7 @@ fn render_names_movie_parses_back_to_title_year_provider_id_and_edition() {
         let path = rendered(&sample);
         let (folder, file) = path.split_once('/').expect("a movie folder and a file");
         for (name, kind) in [(folder, EntryKind::Directory), (file, EntryKind::File)] {
-            let parsed = parse_movie_name(name, kind);
+            let parsed = Rules::builtin().parse_movie_name(name, kind);
             assert_eq!(resolved(&parsed.title), sample.title, "title of {name}");
             if sample.year.is_some() {
                 assert_eq!(resolved(&parsed.year), sample.year, "year of {name}");
@@ -99,7 +95,7 @@ fn render_names_movie_parses_back_to_title_year_provider_id_and_edition() {
                 "{name}"
             );
         }
-        let parsed_file = parse_movie_name(file, EntryKind::File);
+        let parsed_file = Rules::builtin().parse_movie_name(file, EntryKind::File);
         assert_eq!(
             resolved(&parsed_file.edition),
             sample.edition,
@@ -135,7 +131,7 @@ fn render_names_versions_and_parts_interpret_as_one_movie() {
             paths.push(rendered(&subtitle));
         }
     }
-    let interpretation = interpret(LibraryType::Movies, &paths, &[]);
+    let interpretation = Rules::builtin().interpret(LibraryType::Movies, &paths, &[]);
     let [Item::Movie(movie)] = interpretation.items.as_slice() else {
         panic!("one movie, got {:?}", interpretation.items);
     };
@@ -175,14 +171,14 @@ fn render_names_episode_parses_back_to_series_season_episodes_and_title() {
                 sample.episodes = episodes.to_vec();
                 sample.episode_title = episode_title.map(str::to_owned);
                 let path = rendered(&sample);
-                let parsed = parse_episode_name(&path, EntryKind::File, None);
+                let parsed = Rules::builtin().parse_episode_name(&path, EntryKind::File, None);
                 assert_eq!(resolved(&parsed.series_name), sample.title, "{path}");
                 assert_eq!(resolved(&parsed.series_year), year, "{path}");
                 assert_eq!(resolved(&parsed.season), Some(season), "{path}");
                 assert_eq!(parsed.episodes.as_deref(), Some(episodes), "{path}");
                 assert_eq!(parsed.episode_title, sample.episode_title, "{path}");
                 let series_folder = path.split('/').next().expect("a series folder");
-                let series = parse_series_name(series_folder);
+                let series = Rules::builtin().parse_series_name(series_folder);
                 assert_eq!(resolved_ids(&series.provider_ids), sample.provider_ids);
             }
         }
@@ -197,7 +193,7 @@ fn render_names_dated_episode_parses_back_to_date() {
     sample.date = Some("2024-05-17".to_owned());
     sample.episode_title = Some("Election Night".to_owned());
     let path = rendered(&sample);
-    let parsed = parse_episode_name(&path, EntryKind::File, None);
+    let parsed = Rules::builtin().parse_episode_name(&path, EntryKind::File, None);
     assert_eq!(resolved(&parsed.date).as_deref(), Some("2024-05-17"));
     assert_eq!(
         resolved(&parsed.series_name).as_deref(),
@@ -236,7 +232,8 @@ fn render_names_sidecar_parses_back_to_language_flags_and_title() {
                 let path = rendered(&sidecar);
                 let name = path.rsplit('/').next().expect("a file name");
                 let video_name = video_path.rsplit('/').next().expect("a file name");
-                let parsed = parse_sidecar(name, video_name, SidecarKind::Subtitle);
+                let parsed =
+                    Rules::builtin().parse_sidecar(name, video_name, SidecarKind::Subtitle);
                 assert!(parsed.matches, "{name}");
                 assert_eq!(resolved(&parsed.language).as_deref(), language, "{name}");
                 assert_eq!(parsed.flags, flags, "{name}");
@@ -279,8 +276,12 @@ fn render_names_extra_classifies_back_to_kind() {
         };
         let path = rendered(&extra);
         let context = vec![video_path.clone(), path.clone()];
-        let classified =
-            classify_extra(&path, EntryKind::File, Some(LibraryType::Movies), &context);
+        let classified = Rules::builtin().classify_extra(
+            &path,
+            EntryKind::File,
+            Some(LibraryType::Movies),
+            &context,
+        );
         assert_eq!(resolved(&classified.extra), Some(kind), "{path}");
     }
 }
@@ -308,8 +309,8 @@ fn messy_library() -> Vec<String> {
 }
 
 fn plan_of(paths: &[String]) -> nomenclator::RenamePlan {
-    let interpretation = interpret(LibraryType::Movies, paths, &[]);
-    plan_renames(&interpretation, paths, &OutputProfile::default())
+    let interpretation = Rules::builtin().interpret(LibraryType::Movies, paths, &[]);
+    Rules::builtin().plan_renames(&interpretation, paths, &OutputProfile::default())
 }
 
 #[test]

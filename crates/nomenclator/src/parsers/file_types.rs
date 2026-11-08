@@ -41,40 +41,6 @@ pub struct FileTypeCheck {
     pub result: bool,
 }
 
-/// Checks whether `path` is a supported video, or a recognised video that is reported as
-/// unsupported, under the built-in rules.
-#[must_use]
-pub fn is_video_file(path: &str) -> VideoFileCheck {
-    Rules::builtin().is_video_file(path)
-}
-
-/// Checks whether `path` is an audio file, by its extension, under the built-in rules.
-#[must_use]
-pub fn is_audio_file(path: &str) -> FileTypeCheck {
-    Rules::builtin().is_audio_file(path)
-}
-
-/// Checks whether `path` is an image, by its extension, under the built-in rules.
-#[must_use]
-pub fn is_image_file(path: &str) -> FileTypeCheck {
-    Rules::builtin().is_image_file(path)
-}
-
-/// Checks whether `path` is a subtitle under the built-in rules. An `.idx` counts only beside
-/// its `.sub`. That `.sub` is then part of the pair rather than a subtitle of its own.
-#[must_use]
-pub fn is_subtitle_file(path: &str, sibling_paths: &[String]) -> FileTypeCheck {
-    Rules::builtin().is_subtitle_file(path, sibling_paths)
-}
-
-/// Returns `true` if `path` is release junk under the built-in rules.
-///
-/// Uses the built-in rules; [`Rules::is_release_junk`] takes others.
-#[must_use]
-pub fn is_release_junk(path: &str) -> FileTypeCheck {
-    Rules::builtin().is_release_junk(path)
-}
-
 impl Rules {
     /// Returns whether `path` is release junk (X22): a tracker note or ad, a shortcut or an
     /// executable, or a screenshot or bitrate image. Media files are never junk.

@@ -6,7 +6,7 @@
 use std::path::Path;
 use std::time::{Duration, Instant};
 
-use nomenclator::{CallerInputs, LibraryType, OutputProfile, Rules, interpret, plan_renames};
+use nomenclator::{CallerInputs, LibraryType, OutputProfile, Rules};
 
 /// Returns the paths of movie folders, each with a video, its subtitle, artwork, an NFO
 /// and an extra. Every fourth movie is at the library root, next to its files.
@@ -64,9 +64,9 @@ fn timings(library: LibraryType, paths: &[String]) -> (Duration, Duration) {
     let mut fastest = (Duration::MAX, Duration::MAX);
     for _ in 0..3 {
         let start = Instant::now();
-        let interpretation = interpret(library, paths, &[]);
+        let interpretation = Rules::builtin().interpret(library, paths, &[]);
         let interpreted = start.elapsed();
-        let plan = plan_renames(&interpretation, paths, &OutputProfile::default());
+        let plan = Rules::builtin().plan_renames(&interpretation, paths, &OutputProfile::default());
         let planned = start.elapsed() - interpreted;
         assert!(!interpretation.items.is_empty() && !plan.proposals.is_empty());
         fastest = (fastest.0.min(interpreted), fastest.1.min(planned));

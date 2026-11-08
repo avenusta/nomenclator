@@ -21,22 +21,6 @@ pub struct SeasonFolder {
     pub provider_ids: BTreeMap<String, Finding<String>>,
 }
 
-/// Reads the season that a folder name states (T9). `parent_name` is the folder that
-/// contains it. `parent_is_series_folder` is `true` if the caller knows that the parent is a
-/// series folder. Only then is a bare number (`2`) or a word such as `Series 2` read as a
-/// season. Text before the season marker must be the series title of the parent
-/// (`Show.S01.1080p` under `Show`).
-///
-/// Uses the built-in rules. [`Rules::parse_season_folder`] takes other rules.
-#[must_use]
-pub fn parse_season_folder(
-    name: &str,
-    parent_name: Option<&str>,
-    parent_is_series_folder: bool,
-) -> SeasonFolder {
-    Rules::builtin().parse_season_folder(name, parent_name, parent_is_series_folder)
-}
-
 impl Rules {
     /// Reads the season that a folder name states (T9). `parent_name` is the folder that
     /// contains it. `parent_is_series_folder` is `true` if the caller knows that the parent is a

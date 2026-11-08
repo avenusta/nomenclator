@@ -351,33 +351,6 @@ pub enum InvalidEntryReason {
     Duplicate,
 }
 
-/// Interprets a complete scope: every entry of the library, as root-relative paths
-/// (directories end in `/`), with the contents of the rule files found in it.
-///
-/// Uses the built-in rules. [`Rules::interpret`] accepts other rules.
-#[must_use]
-pub fn interpret(
-    library: LibraryType,
-    paths: &[String],
-    ignore_files: &[IgnoreFile],
-) -> Interpretation {
-    Rules::builtin().interpret(library, paths, ignore_files)
-}
-
-/// Interprets a complete scope like [`interpret`], with the caller inputs, such as hints per
-/// path (T20).
-///
-/// Uses the built-in rules. [`Rules::interpret_with`] accepts other rules.
-#[must_use]
-pub fn interpret_with(
-    library: LibraryType,
-    paths: &[String],
-    ignore_files: &[IgnoreFile],
-    inputs: &CallerInputs,
-) -> Interpretation {
-    Rules::builtin().interpret_with(library, paths, ignore_files, inputs)
-}
-
 impl Rules {
     /// Interprets a complete scope: every entry of the library, as root-relative paths
     /// (directories end in `/`), with the contents of the rule files found in it.

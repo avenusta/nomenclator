@@ -185,14 +185,6 @@ static DOMAIN_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
 static TRAILING_TAG_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\[[^\[\]]*\]$").expect("valid trailing tag pattern"));
 
-/// Reads the release facts of `name` under the built-in rules.
-///
-/// Uses the built-in rules; [`Rules::parse_release`] takes others.
-#[must_use]
-pub fn parse_release(name: &str, kind: EntryKind) -> ReleaseFacts {
-    Rules::builtin().parse_release(name, kind)
-}
-
 impl Rules {
     /// Reads the release facts of `name`. Release words count only after the title, so a
     /// title such as `Cam` is never a source. A fact stated with two different values is

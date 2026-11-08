@@ -16,7 +16,6 @@ mod queries;
 
 pub use queries::{
     BatchRanking, HandledRanking, QueryReason, RankQuery, SearchQueries, SearchQuery, match_facts,
-    search_queries,
 };
 
 /// The points for a provider ID that the facts and the candidate both have with the same
@@ -263,14 +262,6 @@ pub struct CandidateRanking {
     pub candidates: Vec<ScoredCandidate>,
     /// The rules this result was produced under.
     pub rules: RulesIdentity,
-}
-
-/// Ranks caller-supplied candidates against the facts (P1-P6).
-///
-/// Uses the built-in rules. [`Rules::rank_candidates`] runs under another rules value.
-#[must_use]
-pub fn rank_candidates(facts: &MatchFacts, candidates: &[MatchCandidate]) -> CandidateRanking {
-    Rules::builtin().rank_candidates(facts, candidates)
 }
 
 impl Rules {

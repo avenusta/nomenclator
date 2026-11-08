@@ -174,17 +174,6 @@ struct RuleLine {
     pattern: Pattern,
 }
 
-/// Evaluates whether an entry is excluded by built-ins or the supplied rule files, under the
-/// built-in rules.
-#[must_use]
-pub fn evaluate_ignore(
-    path: &str,
-    kind: EntryKind,
-    ignore_files: &[IgnoreFile],
-) -> IgnoreEvaluation {
-    Rules::builtin().evaluate_ignore(path, kind, ignore_files)
-}
-
 impl Rules {
     /// Evaluates whether an entry is excluded by these rules' built-ins or the supplied rule
     /// files.

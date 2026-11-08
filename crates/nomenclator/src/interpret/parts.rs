@@ -43,16 +43,6 @@ struct StackKey {
     is_lettered: bool,
 }
 
-/// Groups root-relative paths (directories end in `/`) whose names differ only by a
-/// trailing part marker, under the built-in rules. Numbers and letters are not mixed in one
-/// stack. A single part is not a stack.
-///
-/// Uses the built-in rules. [`Rules::group_parts`] takes other rules.
-#[must_use]
-pub fn group_parts(paths: &[String]) -> Stacks {
-    Rules::builtin().group_parts(paths)
-}
-
 impl Rules {
     /// Groups root-relative paths (directories end in `/`) whose names differ only by a
     /// trailing part marker. Numbers and letters are not mixed in one stack. A single part
