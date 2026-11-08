@@ -8,7 +8,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::interpret::Item;
 use crate::lexical;
-use crate::model::ExtraKind;
+use crate::model::{AmbiguityReason, ExtraKind, Finding};
+use crate::rules::Rules;
 
 /// The facts that the caller already knows about a library, in addition to its names.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -352,6 +353,78 @@ pub(crate) fn settle(
         outcome,
         name_value: named,
     }
+}
+
+/// Settles a hint's title, year and provider IDs against the facts from the names of a
+/// movie or a series (T20), and returns each applied hint. A hint fills or overrides a fact
+/// as its outcome states. A contradicted provider ID becomes ambiguous between both values.
+pub(crate) fn settle_identity(
+    rules: &Rules,
+    hint: &Hint,
+    title: &mut Option<String>,
+    year: &mut Option<u16>,
+    provider_ids: &mut BTreeMap<String, Finding<String>>,
+) -> Vec<AppliedHint> {
+    let mut applied = Vec::new();
+    if let Some(hinted) = &hint.title {
+        let agrees = title.as_deref().is_some_and(|named| {
+            lexical::title_comparison_key(rules, named)
+                == lexical::title_comparison_key(rules, hinted)
+        });
+        let settled = settle(hint, "title", hinted.clone(), title.clone(), agrees);
+        if settled.outcome.takes_hint() {
+            *title = Some(hinted.clone());
+        }
+        applied.push(settled);
+    }
+    if let Some(hinted) = hint.year {
+        let named = year.map(|named| named.to_string());
+        let settled = settle(
+            hint,
+            "year",
+            hinted.to_string(),
+            named,
+            *year == Some(hinted),
+        );
+        if settled.outcome.takes_hint() {
+            *year = Some(hinted);
+        }
+        applied.push(settled);
+    }
+    for (provider, id) in &hint.provider_ids {
+        let provider = lexical::vocabulary_form(provider);
+        let named = provider_ids
+            .get(&provider)
+            .and_then(Finding::resolved_value)
+            .cloned();
+        let fact = format!("provider_id.{provider}");
+        let settled = settle(
+            hint,
+            &fact,
+            id.clone(),
+            named.clone(),
+            named.as_ref() == Some(id),
+        );
+        match settled.outcome {
+            HintOutcome::Filled | HintOutcome::Overrode => {
+                let value = Finding::Resolved {
+                    value: id.clone(),
+                    evidence: None,
+                };
+                provider_ids.insert(provider, value);
+            }
+            HintOutcome::Contradicted => {
+                let value = Finding::Ambiguous {
+                    candidates: named.into_iter().chain([id.clone()]).collect(),
+                    reason: AmbiguityReason::HintContradictsName,
+                };
+                provider_ids.insert(provider, value);
+            }
+            HintOutcome::Agreed => {}
+        }
+        applied.push(settled);
+    }
+    applied
 }
 
 /// Returns the hints and facts that no item took, the hints for paths outside the listing,

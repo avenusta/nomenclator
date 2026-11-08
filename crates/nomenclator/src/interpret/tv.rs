@@ -17,6 +17,7 @@ use super::{
 use crate::inputs::{
     AppliedHint, CallerInputs, EpisodeOrder, Hint, HintOutcome, Hints, MappedNumbering,
     NumberingMap, Overrides, SeriesInputs, episode_list, normalized, series_matches, settle,
+    settle_identity,
 };
 use crate::lexical;
 use crate::model::{ArtworkRole, EntryKind, Evidence, Finding, NfoRole, Rule};
@@ -1045,68 +1046,14 @@ impl Assembly {
             let Some(hint) = series.path.as_deref().and_then(|path| hints.at(path)) else {
                 continue;
             };
-            if let Some(title) = &hint.title {
-                let agrees = series.title.as_deref().is_some_and(|named| {
-                    lexical::title_comparison_key(rules, named)
-                        == lexical::title_comparison_key(rules, title)
-                });
-                let applied = settle(hint, "title", title.clone(), series.title.clone(), agrees);
-                if applied.outcome.takes_hint() {
-                    series.title = Some(title.clone());
-                }
-                series.hints.push(applied);
-            }
-            if let Some(year) = hint.year {
-                let applied = settle(
-                    hint,
-                    "year",
-                    year.to_string(),
-                    series.year.map(|named| named.to_string()),
-                    series.year == Some(year),
-                );
-                if applied.outcome.takes_hint() {
-                    series.year = Some(year);
-                }
-                series.hints.push(applied);
-            }
-            for (provider, id) in &hint.provider_ids {
-                let provider = lexical::vocabulary_form(provider);
-                let named = series
-                    .provider_ids
-                    .get(&provider)
-                    .and_then(Finding::resolved_value)
-                    .cloned();
-                let fact = format!("provider_id.{provider}");
-                let applied = settle(
-                    hint,
-                    &fact,
-                    id.clone(),
-                    named.clone(),
-                    named.as_ref() == Some(id),
-                );
-                match applied.outcome {
-                    HintOutcome::Filled | HintOutcome::Overrode => {
-                        series.provider_ids.insert(
-                            provider,
-                            Finding::Resolved {
-                                value: id.clone(),
-                                evidence: None,
-                            },
-                        );
-                    }
-                    HintOutcome::Contradicted => {
-                        series.provider_ids.insert(
-                            provider,
-                            Finding::Ambiguous {
-                                candidates: named.into_iter().chain([id.clone()]).collect(),
-                                reason: AmbiguityReason::HintContradictsName,
-                            },
-                        );
-                    }
-                    HintOutcome::Agreed => {}
-                }
-                series.hints.push(applied);
-            }
+            let applied = settle_identity(
+                rules,
+                hint,
+                &mut series.title,
+                &mut series.year,
+                &mut series.provider_ids,
+            );
+            series.hints.extend(applied);
             let contradicted = series
                 .hints
                 .iter()

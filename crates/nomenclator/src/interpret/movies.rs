@@ -13,7 +13,7 @@ use super::{
     collapse_same_named_wrappers, merge_provider_claims, parent_folder, resolution_of,
     sorted_by_path, unwrap_single_bracket, without_provider_and_edition_tags,
 };
-use crate::inputs::{HintOutcome, Hints, Overrides, settle};
+use crate::inputs::{HintOutcome, Hints, Overrides, settle_identity};
 use crate::lexical;
 use crate::model::{ArtworkRole, EntryKind, Finding, NfoRole};
 use crate::parsers::episode_name::is_season_folder;
@@ -800,70 +800,23 @@ fn apply_hints(rules: &Rules, hints: &Hints, movie: &mut Movie) {
         .flat_map(|version| version.paths.iter().cloned());
     let paths: Vec<String> = movie.path.clone().into_iter().chain(video_paths).collect();
     for hint in paths.iter().filter_map(|path| hints.at(path)) {
-        if let Some(title) = &hint.title {
-            let agrees = movie.title.as_deref().is_some_and(|named| {
-                lexical::title_comparison_key(rules, named)
-                    == lexical::title_comparison_key(rules, title)
-            });
-            let applied = settle(hint, "title", title.clone(), movie.title.clone(), agrees);
-            if applied.outcome.takes_hint() {
-                movie.title = Some(title.clone());
+        let applied = settle_identity(
+            rules,
+            hint,
+            &mut movie.title,
+            &mut movie.year,
+            &mut movie.provider_ids,
+        );
+        for settled in &applied {
+            // A hinted title or year comes from no name.
+            if settled.outcome.takes_hint() && settled.fact == "title" {
                 movie.title_source = None;
             }
-            movie.hints.push(applied);
-        }
-        if let Some(year) = hint.year {
-            let applied = settle(
-                hint,
-                "year",
-                year.to_string(),
-                movie.year.map(|named| named.to_string()),
-                movie.year == Some(year),
-            );
-            if applied.outcome.takes_hint() {
-                movie.year = Some(year);
+            if settled.outcome.takes_hint() && settled.fact == "year" {
                 movie.year_source = None;
             }
-            movie.hints.push(applied);
         }
-        for (provider, id) in &hint.provider_ids {
-            let provider = lexical::vocabulary_form(provider);
-            let named = movie
-                .provider_ids
-                .get(&provider)
-                .and_then(finding_value)
-                .cloned();
-            let fact = format!("provider_id.{provider}");
-            let applied = settle(
-                hint,
-                &fact,
-                id.clone(),
-                named.clone(),
-                named.as_ref() == Some(id),
-            );
-            match applied.outcome {
-                HintOutcome::Filled | HintOutcome::Overrode => {
-                    movie.provider_ids.insert(
-                        provider,
-                        Finding::Resolved {
-                            value: id.clone(),
-                            evidence: None,
-                        },
-                    );
-                }
-                HintOutcome::Contradicted => {
-                    movie.provider_ids.insert(
-                        provider,
-                        Finding::Ambiguous {
-                            candidates: named.into_iter().chain([id.clone()]).collect(),
-                            reason: AmbiguityReason::HintContradictsName,
-                        },
-                    );
-                }
-                HintOutcome::Agreed => {}
-            }
-            movie.hints.push(applied);
-        }
+        movie.hints.extend(applied);
     }
     if movie
         .hints
