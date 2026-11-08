@@ -35,11 +35,11 @@ struct Unit {
 
 impl Unit {
     fn title(&self) -> Option<&str> {
-        finding_value(&self.parsed.title).map(String::as_str)
+        self.parsed.title.resolved_value().map(String::as_str)
     }
 
     fn year(&self) -> Option<u16> {
-        finding_value(&self.parsed.year).copied()
+        self.parsed.year.resolved_value().copied()
     }
 
     fn title_words(&self) -> Vec<String> {
@@ -61,13 +61,6 @@ impl Unit {
     }
 }
 
-fn finding_value<T>(finding: &Finding<T>) -> Option<&T> {
-    match finding {
-        Finding::Resolved { value, .. } => Some(value),
-        _ => None,
-    }
-}
-
 /// The folder that owns a unit, with its parsed name.
 struct Owner {
     /// The owning folder. A same-named wrapper folder above it is collapsed into it.
@@ -82,11 +75,13 @@ impl Owner {
     /// Returns `true` if the folder name has a year or a provider ID. Such a folder owns
     /// everything it contains (M1) and gives the work its name (M2).
     fn is_anchored(&self) -> bool {
-        finding_value(&self.parsed.year).is_some() || !self.parsed.provider_ids.is_empty()
+        self.parsed.year.resolved_value().is_some() || !self.parsed.provider_ids.is_empty()
     }
 
     fn title_words(&self) -> Vec<String> {
-        finding_value(&self.parsed.title)
+        self.parsed
+            .title
+            .resolved_value()
             .map(|title| lexical::comparison_words(title))
             .unwrap_or_default()
     }
@@ -119,7 +114,7 @@ impl Owner {
         if !unit.parsed.trusted || self.name_end_in(&unit.name).is_some() {
             return false;
         }
-        let folder_year = finding_value(&self.parsed.year).copied();
+        let folder_year = self.parsed.year.resolved_value().copied();
         let folder_words = self.title_words();
         let unit_words = unit.title_words();
         let repeats_folder_year = folder_year.is_some_and(|year| {
@@ -128,7 +123,7 @@ impl Owner {
                     *last == year.to_string() && rest == folder_words.as_slice()
                 })
         });
-        let titles_differ = match (finding_value(&self.parsed.title), unit.title()) {
+        let titles_differ = match (self.parsed.title.resolved_value(), unit.title()) {
             (Some(_), Some(_)) => {
                 !names_agree(rules, &self.parsed, &unit.parsed) && !repeats_folder_year
             }
@@ -144,7 +139,8 @@ impl Owner {
 /// the folder's title and alternate titles agrees with any of the file's.
 fn names_agree(rules: &Rules, folder: &MovieName, file: &MovieName) -> bool {
     let titles = |name: &MovieName| -> Vec<String> {
-        finding_value(&name.title)
+        name.title
+            .resolved_value()
             .cloned()
             .into_iter()
             .chain(
@@ -534,14 +530,20 @@ fn apply_structure_overrides<'a>(works: &mut Vec<Work<'a>>, overrides: &Override
 /// trusted video that contradicts the folder makes the work ambiguous, unless the folder has
 /// a provider ID.
 fn anchored_work<'a>(rules: &Rules, owner: &'a Owner, units: Vec<&'a Unit>) -> Work<'a> {
-    let title = finding_value(&owner.parsed.title)
+    let title = owner
+        .parsed
+        .title
+        .resolved_value()
         .map(|title| (title.clone(), owner.path.clone()))
         .or_else(|| {
             units
                 .iter()
                 .find_map(|unit| Some((unit.title()?.to_owned(), unit.paths[0].clone())))
         });
-    let year = finding_value(&owner.parsed.year)
+    let year = owner
+        .parsed
+        .year
+        .resolved_value()
         .map(|year| (*year, owner.path.clone()))
         .or_else(|| {
             let agreeing: Vec<&&Unit> = units
@@ -589,7 +591,10 @@ fn titled_folder_works<'a>(rules: &Rules, owner: &'a Owner, units: Vec<&'a Unit>
             Work {
                 units: group,
                 owner: Some(owner),
-                title: finding_value(&owner.parsed.title)
+                title: owner
+                    .parsed
+                    .title
+                    .resolved_value()
                     .map(|title| (title.clone(), owner.path.clone())),
                 year,
                 is_folder_identity: true,
@@ -680,8 +685,9 @@ fn assemble_movie(rules: &Rules, work: &Work) -> Movie {
             };
             let folder_name = work.owner.map(|owner| &owner.parsed);
             let own_or_folder = |fact: fn(&MovieName) -> &Finding<String>| {
-                finding_value(fact(&unit.parsed))
-                    .or_else(|| folder_name.and_then(|folder| finding_value(fact(folder))))
+                fact(&unit.parsed)
+                    .resolved_value()
+                    .or_else(|| folder_name.and_then(|folder| fact(folder).resolved_value()))
                     .cloned()
             };
             let version = Version {
@@ -690,8 +696,11 @@ fn assemble_movie(rules: &Rules, work: &Work) -> Movie {
                 ambiguity_reason: unit.part_ambiguity,
                 edition: own_or_folder(|name| &name.edition),
                 edition_hint: own_or_folder(|name| &name.edition_hint),
-                format_3d: finding_value(&unit.parsed.format_3d)
-                    .or_else(|| folder_name.and_then(|folder| finding_value(&folder.format_3d)))
+                format_3d: unit
+                    .parsed
+                    .format_3d
+                    .resolved_value()
+                    .or_else(|| folder_name.and_then(|folder| folder.format_3d.resolved_value()))
                     .copied(),
                 nfo: None,
             };

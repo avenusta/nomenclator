@@ -640,13 +640,6 @@ fn named(reason: &str) -> Option<DiagnosticReason> {
     Some(DiagnosticReason::Named(reason.to_owned()))
 }
 
-fn finding_value<T>(finding: &Finding<T>) -> Option<&T> {
-    match finding {
-        Finding::Resolved { value, .. } => Some(value),
-        _ => None,
-    }
-}
-
 fn diagnose_item(rules: &Rules, item: &Item, diagnostics: &mut Vec<Diagnostic>) {
     match item {
         Item::Movie(movie) => {
@@ -727,7 +720,7 @@ fn video_paths(versions: &[Version]) -> Vec<String> {
 fn has_provider_id(provider_ids: &BTreeMap<String, Finding<String>>) -> bool {
     provider_ids
         .values()
-        .any(|finding| finding_value(finding).is_some())
+        .any(|finding| finding.resolved_value().is_some())
 }
 
 /// Reports the ambiguity reasons of an item, except the reasons that a rule of their own
@@ -823,7 +816,7 @@ fn diagnose_movie_folder(rules: &Rules, movie: &Movie, diagnostics: &mut Vec<Dia
         return;
     };
     let folder = rules.parse_movie_name(file_name(folder_path), EntryKind::Directory);
-    if finding_value(&folder.year).is_none() && !has_provider_id(&folder.provider_ids) {
+    if folder.year.resolved_value().is_none() && !has_provider_id(&folder.provider_ids) {
         return;
     }
     for path in movie.versions.iter().flat_map(|version| &version.paths) {
@@ -839,12 +832,12 @@ fn diagnose_movie_folder(rules: &Rules, movie: &Movie, diagnostics: &mut Vec<Dia
 
 fn movie_mismatches(rules: &Rules, folder: &MovieName, file: &MovieName) -> Vec<MismatchedFact> {
     let mut facts = Vec::new();
-    let folder_year = finding_value(&folder.year).copied();
+    let folder_year = folder.year.resolved_value().copied();
     if let (Some(folder_title), Some(file_title)) =
-        (finding_value(&folder.title), finding_value(&file.title))
+        (folder.title.resolved_value(), file.title.resolved_value())
     {
         let repeats_folder_year = folder_year.is_some_and(|year| {
-            finding_value(&file.year) == Some(&year)
+            file.year.resolved_value() == Some(&year)
                 && file_title
                     .strip_suffix(&year.to_string())
                     .is_some_and(|rest| lexical::titles_agree(rules, folder_title, rest.trim_end()))
@@ -854,14 +847,15 @@ fn movie_mismatches(rules: &Rules, folder: &MovieName, file: &MovieName) -> Vec<
         }
     }
     if matches!(
-        (folder_year, finding_value(&file.year)),
+        (folder_year, file.year.resolved_value()),
         (Some(folder), Some(own)) if folder != *own
     ) {
         facts.push(MismatchedFact::Year);
     }
-    if let (Some(folder_edition), Some(file_edition)) =
-        (finding_value(&folder.edition), finding_value(&file.edition))
-        && lexical::fold_case_text(folder_edition) != lexical::fold_case_text(file_edition)
+    if let (Some(folder_edition), Some(file_edition)) = (
+        folder.edition.resolved_value(),
+        file.edition.resolved_value(),
+    ) && lexical::fold_case_text(folder_edition) != lexical::fold_case_text(file_edition)
     {
         facts.push(MismatchedFact::Edition);
     }
@@ -937,7 +931,7 @@ fn diagnose_episode_folders(
             continue;
         }
         let file = rules.parse_episode_name(file_name(path), EntryKind::File, None);
-        let file_series = finding_value(&file.series_name);
+        let file_series = file.series_name.resolved_value();
         let agrees_with_series = file_series
             .zip(series.title.as_deref())
             .is_some_and(|(own, title)| lexical::titles_agree(rules, title, own));
@@ -949,7 +943,7 @@ fn diagnose_episode_folders(
         }
         if agrees_with_series
             && matches!(
-                (series.year, finding_value(&file.series_year)),
+                (series.year, file.series_year.resolved_value()),
                 (Some(folder), Some(own)) if folder != *own
             )
         {
@@ -963,8 +957,8 @@ fn diagnose_episode_folders(
                     .season
             });
         if let (Some(folder), Some(own)) = (
-            folder_season.as_ref().and_then(finding_value),
-            finding_value(&file.season),
+            folder_season.as_ref().and_then(Finding::resolved_value),
+            file.season.resolved_value(),
         ) && folder != own
         {
             diagnostics.push(mismatch(path, MismatchedFact::Season));
@@ -984,7 +978,7 @@ fn diagnose_overlapping_episodes(
     let mut by_season: BTreeMap<SeasonKey, Vec<&Episode>> = BTreeMap::new();
     for item in &interpretation.items {
         if let Item::Episode(episode) = item
-            && let Some(season) = finding_value(&episode.season)
+            && let Some(season) = episode.season.resolved_value()
             && episode.episodes.is_some()
         {
             by_season

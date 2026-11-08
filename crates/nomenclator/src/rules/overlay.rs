@@ -311,13 +311,6 @@ impl Overlay {
         &self.name
     }
 
-    /// Returns the version of the overlay.
-    /// Returns `None` if the overlay states no version.
-    #[must_use]
-    pub fn version(&self) -> Option<&str> {
-        self.version.as_deref()
-    }
-
     fn identity(&self) -> OverlayIdentity {
         // FNV-1a over the replaced vocabularies and the sorted changes: stable across
         // builds and platforms.
