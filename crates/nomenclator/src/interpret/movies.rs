@@ -746,9 +746,7 @@ fn assemble_movie(rules: &Rules, work: &Work) -> Movie {
     Movie {
         title: work.title.as_ref().map(|(title, _)| title.clone()),
         alternate_titles,
-        title_source: work.title.as_ref().map(|(_, source)| source.clone()),
         year: work.year.as_ref().map(|(year, _)| *year),
-        year_source: work.year.as_ref().map(|(_, source)| source.clone()),
         path: work.owner.map(|owner| owner.path.clone()),
         provider_ids,
         tags: merged_tags(work),
@@ -807,15 +805,6 @@ fn apply_hints(rules: &Rules, hints: &Hints, movie: &mut Movie) {
             &mut movie.year,
             &mut movie.provider_ids,
         );
-        for settled in &applied {
-            // A hinted title or year comes from no name.
-            if settled.outcome.takes_hint() && settled.fact == "title" {
-                movie.title_source = None;
-            }
-            if settled.outcome.takes_hint() && settled.fact == "year" {
-                movie.year_source = None;
-            }
-        }
         movie.hints.extend(applied);
     }
     if movie

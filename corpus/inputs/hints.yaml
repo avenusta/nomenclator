@@ -62,7 +62,6 @@
     items:
       - kind: movie
         year: 2017
-        year_source: null
         ambiguous: false
         hints: [{ fact: year, value: "2017", outcome: overrode, name_value: "2016" }]
 

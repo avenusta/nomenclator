@@ -108,6 +108,7 @@ First release. It implements the conventions in `docs/decisions.md`, and the cor
 - `RulesIdentity`: every response, including `GetVersion`, states the rules it was answered under in `rules`.
 - `GroupPartsRequest.rules` selects the rules of a `GroupParts` call.
 - `OutputProfile.reserved_names` and `OutputProfile.templates`.
+- `Movie.title_source` and `Movie.year_source` are removed, and their field numbers are reserved.
 - `ExtraQuery.ignore_files`: the context entries that the rule files exclude are not read.
 - Every call runs its queries through the library's one operation dispatch. A query field that the operation does not read fails the call with `INVALID_ARGUMENT`.
 - `tags` on `MovieName`, `SeriesName`, `EpisodeName`, `Movie`, `Series` and `Episode`.

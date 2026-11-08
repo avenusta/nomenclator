@@ -971,10 +971,9 @@ message Item {
 
 message Movie {
   optional string title = 1;
-  // The folder or file whose name gave the title.
-  optional string title_source = 2;
+  reserved 2, 4;
+  reserved "title_source", "year_source";
   optional uint32 year = 3;
-  optional string year_source = 4;
   // The folder that owns the movie; unset for a video that is its own movie.
   optional string path = 5;
   map<string, TextFinding> provider_ids = 6;

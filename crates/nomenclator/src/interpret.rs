@@ -91,12 +91,8 @@ pub struct Movie {
     pub title: Option<String>,
     /// The other titles that the name giving the title states (M16).
     pub alternate_titles: Vec<String>,
-    /// The folder or file whose name gave the title.
-    pub title_source: Option<String>,
     /// The release year.
     pub year: Option<u16>,
-    /// The folder or file whose name gave the year.
-    pub year_source: Option<String>,
     /// The folder that owns the movie; `None` for a video that is its own movie.
     pub path: Option<String>,
     /// The collection or category folder that contains the movie's folder, or the movie's
