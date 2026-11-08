@@ -107,8 +107,9 @@ impl IdShape {
 }
 
 /// Choices between alternatives that the decision catalogue records as contested (X12). The
-/// defaults are the recorded decisions.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// defaults are the recorded decisions. A field's name is the preset's name in an overlay,
+/// and a variant's name is a value of the preset.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct Presets {
     /// The first year a name's number can be (X5).
     pub earliest_plausible_year: u16,
@@ -137,27 +138,31 @@ impl Default for Presets {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub(crate) enum DateOrder {
     Ambiguous,
     DayFirst,
     MonthFirst,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub(crate) enum BareNumbers {
     Anywhere,
     SeasonFoldersOnly,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub(crate) enum IgnoreNesting {
     #[default]
     Stack,
     Nearest,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub(crate) enum Samples {
     Extras,
     Excluded,
@@ -166,59 +171,33 @@ pub(crate) enum Samples {
 impl Presets {
     /// Sets the preset `name` to `value`.
     /// Fails with [`PresetError::UnknownPreset`] if `name` is not a preset.
-    /// Fails with [`PresetError::InvalidValue`] if `value` is not an alternative of the preset.
+    /// Fails with [`PresetError::InvalidValue`] if `value` is not an alternative of the preset,
+    /// or a year outside the preset's range.
     pub(crate) fn set(&mut self, name: &str, value: &str) -> Result<(), PresetError> {
-        let invalid = Err(PresetError::InvalidValue);
-        match name {
-            "latest_plausible_year" => match value.parse::<u16>() {
-                Ok(year)
-                    if (data::EARLIEST_PLAUSIBLE_YEAR..=data::LATEST_PLAUSIBLE_YEAR)
-                        .contains(&year) =>
-                {
-                    self.latest_plausible_year = year;
-                }
-                _ => return invalid,
-            },
-            "earliest_plausible_year" => match value.parse::<u16>() {
-                Ok(year)
-                    if (data::LOWEST_EARLIEST_YEAR..=data::LATEST_PLAUSIBLE_YEAR)
-                        .contains(&year) =>
-                {
-                    self.earliest_plausible_year = year;
-                }
-                _ => return invalid,
-            },
-            "date_order" => {
-                self.date_order = match value {
-                    "ambiguous" => DateOrder::Ambiguous,
-                    "day_first" => DateOrder::DayFirst,
-                    "month_first" => DateOrder::MonthFirst,
-                    _ => return invalid,
-                }
-            }
-            "bare_numbers" => {
-                self.bare_numbers = match value {
-                    "anywhere" => BareNumbers::Anywhere,
-                    "season_folders_only" => BareNumbers::SeasonFoldersOnly,
-                    _ => return invalid,
-                }
-            }
-            "ignore_nesting" => {
-                self.ignore_nesting = match value {
-                    "stack" => IgnoreNesting::Stack,
-                    "nearest" => IgnoreNesting::Nearest,
-                    _ => return invalid,
-                }
-            }
-            "samples" => {
-                self.samples = match value {
-                    "extras" => Samples::Extras,
-                    "excluded" => Samples::Excluded,
-                    _ => return invalid,
-                }
-            }
-            _ => return Err(PresetError::UnknownPreset),
+        let serde_json::Value::Object(mut fields) =
+            serde_json::to_value(*self).expect("the presets serialize")
+        else {
+            unreachable!("the presets serialize as a mapping");
+        };
+        let field = fields.get_mut(name).ok_or(PresetError::UnknownPreset)?;
+        *field = if field.is_number() {
+            value
+                .parse::<u16>()
+                .map(serde_json::Value::from)
+                .map_err(|_| PresetError::InvalidValue)?
+        } else {
+            serde_json::Value::String(value.to_owned())
+        };
+        let presets: Presets = serde_json::from_value(serde_json::Value::Object(fields))
+            .map_err(|_| PresetError::InvalidValue)?;
+        let years = data::LOWEST_EARLIEST_YEAR..=data::LATEST_PLAUSIBLE_YEAR;
+        let latest_years = data::EARLIEST_PLAUSIBLE_YEAR..=data::LATEST_PLAUSIBLE_YEAR;
+        if !years.contains(&presets.earliest_plausible_year)
+            || !latest_years.contains(&presets.latest_plausible_year)
+        {
+            return Err(PresetError::InvalidValue);
         }
+        *self = presets;
         Ok(())
     }
 }
