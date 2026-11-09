@@ -66,7 +66,13 @@ jobs:
         with:
           setup_only: true
       - run: buf lint crates/nomenclator-grpc/proto
-      - run: buf breaking crates/nomenclator-grpc/proto --against ".git#ref=${AGAINST},subdir=crates/nomenclator-grpc/proto"
+      # The first commit of the repository has no parent to compare against.
+      - run: |
+          if ! git rev-parse --verify --quiet "${AGAINST}^{commit}" >/dev/null; then
+            echo "No commit ${AGAINST} to compare against. The breaking check is skipped."
+            exit 0
+          fi
+          buf breaking crates/nomenclator-grpc/proto --against ".git#ref=${AGAINST},subdir=crates/nomenclator-grpc/proto"
         env:
           AGAINST: ${{ github.event_name == 'pull_request' && format('refs/remotes/origin/{0}', github.base_ref) || 'HEAD~1' }}
 

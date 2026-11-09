@@ -1,7 +1,9 @@
 name: release
 
-# A `v<version>` tag publishes every crate to crates.io. Running the workflow by hand
-# checks the same steps with `cargo publish --dry-run` and publishes nothing.
+# A `v<version>` tag publishes every crate to crates.io, builds the CLI and the server
+# for every platform, and attaches the archives to the GitHub release. Running the
+# workflow by hand checks the same steps with `cargo publish --dry-run`, keeps the
+# archives as workflow artifacts, and publishes nothing.
 on:
   push:
     tags: ["v*"]
@@ -75,3 +77,79 @@ jobs:
         run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file release-notes.md --verify-tag
         env:
           GH_TOKEN: ${{ github.token }}
+
+  # One archive per platform, named by the .NET runtime identifier that hosts use:
+  # `nomenclator-<version>-<rid>.tar.gz` (`.zip` on Windows) with the `nomenclator` CLI,
+  # `nomenclator-server`, the wire contract and the license. The Linux builds are static
+  # (musl) and run on any distribution.
+  binaries:
+    name: binaries (${{ matrix.rid }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { rid: linux-x64, target: x86_64-unknown-linux-musl, runner: ubuntu-latest, cross: true }
+          - { rid: linux-arm64, target: aarch64-unknown-linux-musl, runner: ubuntu-latest, cross: true }
+          - { rid: osx-arm64, target: aarch64-apple-darwin, runner: macos-latest }
+          - { rid: osx-x64, target: x86_64-apple-darwin, runner: macos-latest }
+          - { rid: win-x64, target: x86_64-pc-windows-msvc, runner: windows-latest }
+          - { rid: win-arm64, target: aarch64-pc-windows-msvc, runner: windows-latest }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - run: rustup target add ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      # cross builds the musl targets in a container that has the matching linker.
+      - uses: taiki-e/install-action@v2
+        if: matrix.cross
+        with:
+          tool: cross
+      - name: Build the CLI and the server
+        run: ${{ matrix.cross && 'cross' || 'cargo' }} build --release --locked --target ${{ matrix.target }} --package nomenclator-cli --package nomenclator-grpc
+      - name: Package the archive
+        shell: bash
+        run: |
+          version=$(cargo pkgid --package nomenclator | sed 's/.*[#@]//')
+          name="nomenclator-${version}-${{ matrix.rid }}"
+          exe=""
+          case "${{ matrix.rid }}" in win-*) exe=".exe" ;; esac
+          mkdir "$name"
+          cp "target/${{ matrix.target }}/release/nomenclator$exe" "target/${{ matrix.target }}/release/nomenclator-server$exe" "$name/"
+          cp crates/nomenclator-grpc/proto/nomenclator/v1/nomenclator.proto LICENSE "$name/"
+          if [ -n "$exe" ]; then
+            7z a "$name.zip" "$name" > /dev/null
+          else
+            COPYFILE_DISABLE=1 tar -czf "$name.tar.gz" "$name"
+          fi
+          ls -l "$name".*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.rid }}
+          path: |
+            nomenclator-*.tar.gz
+            nomenclator-*.zip
+          if-no-files-found: error
+
+  # Attaches the archives and their checksums to the GitHub release that `publish` created.
+  attach:
+    needs: [publish, binaries]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: binaries-*
+          merge-multiple: true
+          path: dist
+      - name: Write the checksums
+        run: cd dist && sha256sum * > SHA256SUMS && cat SHA256SUMS
+      - name: Attach the archives to the release
+        run: gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}

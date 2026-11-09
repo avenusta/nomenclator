@@ -1,15 +1,26 @@
 # Changelog
 
-This file lists every notable change, for every package that the project publishes. Every package has the same version, so one entry covers all of them. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). While the version is 0.x, a minor version may change naming results (README, "Versioning").
+This file lists every notable change, for every package that the project publishes. Every package has the same version, so one entry covers all of them. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each version lists its changes in these sections, in this order. A section without changes is left out.
 
 - **Naming behaviour:** changes in the facts that names resolve to. They apply to every package.
 - **Library API:** the `nomenclator` crate.
 - **Wire contract:** `nomenclator.v1`, which changes only compatibly.
+- **Server:** `nomenclator-server`.
 - **CLI:** `nomenclator-cli`.
 - **Packages:** packaging, dependencies, platforms and the minimum Rust version.
 - **Performance**
+
+## Versioning
+
+The project has three versions, and each has its own compatibility guarantee:
+
+- **Wire contract** (`nomenclator.v1`). It changes only compatibly. An incompatible change creates a new package (`v2`).
+- **Naming rules** (`rules_version`, the library's version). While the version is 0.x, any minor version bump may change naming results. A patch version bump only fixes bugs, and a corpus case pins each fix.
+- **Implementation** (`implementation_version`). It identifies the build that produced a result.
+
+Every crate, and every package for another platform, has the same version. Each release on GitHub has that version's section of this file as its notes.
 
 ## [Unreleased]
 
@@ -88,6 +99,11 @@ First release. It implements the conventions in `docs/decisions.md`, and the cor
 - `RulesSelection rules` on `ParseNames`, `EvaluateIgnore`, `Interpret`, `RankCandidates`, `PlanRenames` and `Validate` requests. The field holds overlay documents that apply to that call. If an overlay is rejected, the call fails with `INVALID_ARGUMENT` and lists the diagnostics. `RulesIdentity.overlays` lists the applied overlays.
 - `RulesIdentity`: every response, including `GetVersion`, states the rules it was answered under in `rules`.
 
+### Server
+
+- `nomenclator-server --tcp <address>` or `--unix <path>` serves the wire contract and prints one `listening on` line. It stops on Ctrl-C and removes its socket file.
+- `--stop-on-stdin-close` also stops the server when its standard input closes, so a host that launches it as a child process ends it however the host ends.
+
 ### CLI
 
 - `nomenclator parse`, `interpret` and `plan` read names and real folders (with `.ignore`/`.nomedia`) and print a table or `--format json` output. They do not rename any file.
@@ -107,6 +123,7 @@ First release. It implements the conventions in `docs/decisions.md`, and the cor
 ### Packages
 
 - The minimum Rust version is 1.89, because `serde-saphyr` requires it.
+- Every release attaches one archive per platform, `nomenclator-<version>-<rid>.tar.gz` (`.zip` on Windows) for linux-x64, linux-arm64, osx-x64, osx-arm64, win-x64 and win-arm64, with the `nomenclator` CLI, `nomenclator-server`, the wire contract and the license, plus `SHA256SUMS`. The Linux builds are static.
 
 ### Performance
 
