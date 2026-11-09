@@ -1,5 +1,7 @@
 # nomenclator
 
+A universal naming scheme for media libraries.
+
 <p>
 
   <a href="https://github.com/avenusta/nomenclator/actions/workflows/ci.yml"><img alt="CI status" src="https://img.shields.io/github/actions/workflow/status/avenusta/nomenclator/ci.yml?branch=main&style=for-the-badge&labelColor=000000&label=ci" height="28"></a>
@@ -9,8 +11,6 @@
   <a href="https://crates.io/crates/nomenclator"><img alt="crates.io downloads: nomenclator" src="https://img.shields.io/crates/d/nomenclator.svg?style=for-the-badge&labelColor=000000&label=downloads" height="28"></a>
 
 </p>
-
-A universal naming scheme for media libraries.
 
 Nomenclator's goal is to bring and enforce a universal naming scheme and structure for media libraries. It recognizes and reads a broad range of existing file and folder naming styles, gathered from existing naming conventions. It validates them against one clean, consistent scheme. It reports naming violations and proposes corrections, so libraries can adopt the same convention.
 
