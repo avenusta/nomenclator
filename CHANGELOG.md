@@ -24,6 +24,8 @@ Every crate, and every package for another platform, has the same version. Each 
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-09
+
 ### Naming behaviour
 
 First release. It implements the conventions in `docs/decisions.md`, and the corpus pins them:
