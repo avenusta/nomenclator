@@ -1,30 +1,18 @@
 # nomenclator
 
 <p>
+
   <a href="https://github.com/avenusta/nomenclator/actions/workflows/ci.yml"><img alt="CI status" src="https://img.shields.io/github/actions/workflow/status/avenusta/nomenclator/ci.yml?branch=main&style=for-the-badge&labelColor=000000&label=ci" height="28"></a>
   <a href="https://crates.io/crates/nomenclator"><img alt="crates.io version: nomenclator" src="https://img.shields.io/crates/v/nomenclator.svg?style=for-the-badge&labelColor=000000" height="28"></a>
   <a href="https://docs.rs/nomenclator"><img alt="docs.rs" src="https://img.shields.io/docsrs/nomenclator?style=for-the-badge&labelColor=000000" height="28"></a>
   <a href="https://github.com/avenusta/nomenclator/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/avenusta/nomenclator.svg?style=for-the-badge&labelColor=000000" height="28"></a>
   <a href="https://crates.io/crates/nomenclator"><img alt="crates.io downloads: nomenclator" src="https://img.shields.io/crates/d/nomenclator.svg?style=for-the-badge&labelColor=000000&label=downloads" height="28"></a>
+
 </p>
 
 A universal naming scheme for media libraries.
 
 Nomenclator's goal is to bring and enforce a universal naming scheme and structure for media libraries. It recognizes and reads a broad range of existing file and folder naming styles, gathered from existing naming conventions. It validates them against one clean, consistent scheme. It reports naming violations and proposes corrections, so libraries can adopt the same convention.
-
-For a library that contains a bare `Blade.Runner.1982.1080p.BluRay.x264.mkv`:
-
-```sh
-nomenclator validate ./Movies --library movies
-```
-
-```text
-SEVERITY  CODE  RULE               PATHS                                    DETAIL
-warning   N403  profile_violation  Blade.Runner.1982.1080p.BluRay.x264.mkv  → Blade Runner (1982)/Blade Runner (1982).mkv
-0 errors, 1 warnings, 1 infos, 0 suppressed
-```
-
-The tool reads the title and year, warns that the path does not follow the naming scheme, and proposes a corrected path. It does not rename the file.
 
 The project is a work in progress.
 
@@ -40,15 +28,13 @@ cargo build -p nomenclator-cli
 
 ## Quick start
 
-Parse a movie name with provider IDs, an edition tag, a 3D layout and release details:
+### Read a name
 
 ```sh
 cargo run -p nomenclator-cli -- parse \
   "Avatar (2009) {tmdb-19995} {imdb-tt0499549} {edition-Extended} 3D HSBS 1080p BluRay x264 DTS 5.1.mkv" \
   --library movies
 ```
-
-The result includes the title, year, both provider IDs, edition, 3D layout and container, with evidence spans for the parsed facts:
 
 ```text
 FACT               VALUE              EVIDENCE
@@ -64,16 +50,24 @@ trusted            true
 year               2009               bracketed_year [8,12]
 ```
 
-Read the release details from the same name:
-
 ```sh
 cargo run -p nomenclator-cli -- release \
   "Avatar (2009) {tmdb-19995} {imdb-tt0499549} {edition-Extended} 3D HSBS 1080p BluRay x264 DTS 5.1.mkv"
 ```
 
-This resolves the resolution to `1080p`, source to `bluray`, video codec to `h264`, audio codec to `dts`, and audio channels to `5.1`.
+### Validate a library
 
-Parse a TV episode, inspect a library, or propose renames:
+```sh
+cargo run -p nomenclator-cli -- validate ./Movies --library movies
+```
+
+```text
+SEVERITY  CODE  RULE               PATHS                                    DETAIL
+warning   N403  profile_violation  Blade.Runner.1982.1080p.BluRay.x264.mkv  → Blade Runner (1982)/Blade Runner (1982).mkv
+0 errors, 1 warnings, 1 infos, 0 suppressed
+```
+
+### More commands
 
 ```sh
 cargo run -p nomenclator-cli -- parse "Show/Season 02/Show S02E03E04.mkv" --library tv
@@ -81,9 +75,8 @@ cargo run -p nomenclator-cli -- interpret ~/Media/Movies --library movies
 cargo run -p nomenclator-cli -- plan ~/Media/TV --library tv --format json
 ```
 
-- `--library movies` and `--library tv` select separate naming pipelines. In TV mode, `parse` reads a file as an episode and a path with a trailing `/` as a series folder.
 - The CLI prints tables by default. Use `--format json` for structured output.
-- `plan` prints proposals and blocked renames. It does not rename files. No nomenclator command moves or renames media files.
+- `plan` prints proposals and blocked renames. It does not rename files.
 
 ## Commands
 
@@ -122,18 +115,20 @@ Use `--help` or `<command> --help` for details.
 
 ## Options
 
-| Feature | Example | Effect |
-|---|---|---|
-| JSON output | `--format json` | Return structured results instead of tables. |
-| Languages | `--language en --language de` | Read English, German and shared vocabulary. Default: all languages. |
-| Vocabulary | `--overlay words.yaml` | Add or remove vocabulary words. Repeatable; accepts YAML or JSON. |
-| Overrides | `--inputs inputs.yaml` | Supply known facts, hints and series numbering. |
-| Ignore files | `--rule-file .skip:glob` | Read additional ignore rules. `.ignore` and `.nomedia` are read by default. |
-| Output profile | `--profile profile.yaml` | Set naming layout and validation options. |
-| Layout conversion | `plan --from-profile old.yaml --profile new.yaml` | Propose changes between layouts. |
-| Rename script | `plan --script sh --undo-script undo.sh` | Print a shell script and write its reversal script. PowerShell: `--script ps1`. |
-| Filesystem | `--target-filesystem posix` | Relax portable filename restrictions. |
-| Reference checks | `validate --reference reference.yaml` | Check catalogue years and episode lists. |
+
+| Feature           | Example                                           | Effect                                                                          |
+| ----------------- | ------------------------------------------------- | ------------------------------------------------------------------------------- |
+| JSON output       | `--format json`                                   | Return structured results instead of tables.                                    |
+| Languages         | `--language en --language de`                     | Read English, German and shared vocabulary. Default: all languages.             |
+| Vocabulary        | `--overlay words.yaml`                            | Add or remove vocabulary words. Repeatable; accepts YAML or JSON.               |
+| Overrides         | `--inputs inputs.yaml`                            | Supply known facts, hints and series numbering.                                 |
+| Ignore files      | `--rule-file .skip:glob`                          | Read additional ignore rules. `.ignore` and `.nomedia` are read by default.     |
+| Output profile    | `--profile profile.yaml`                          | Set naming layout and validation options.                                       |
+| Layout conversion | `plan --from-profile old.yaml --profile new.yaml` | Propose changes between layouts.                                                |
+| Rename script     | `plan --script sh --undo-script undo.sh`          | Print a shell script and write its reversal script. PowerShell: `--script ps1`. |
+| Filesystem        | `--target-filesystem posix`                       | Relax portable filename restrictions.                                           |
+| Reference checks  | `validate --reference reference.yaml`             | Check catalogue years and episode lists.                                        |
+
 
 ## Library and gRPC
 
